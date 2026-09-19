@@ -1,0 +1,2968 @@
+[
+  {
+    "invoice_id": "INV-V008-001",
+    "invoice_number": "ON-2207",
+    "vendor_id": "V008",
+    "vendor_name": "OfficeNest Properties",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-04-24",
+    "received_date": "2026-04-25",
+    "service_period_start": "2026-05-01",
+    "service_period_end": "2026-05-31",
+    "po_id": null,
+    "currency": "USD",
+    "amount": 22500.0,
+    "line_items": [
+      {
+        "description": "Office rent, Suite 400 - May 2026",
+        "quantity": 1,
+        "unit_price": 22500.0,
+        "amount": 22500.0
+      }
+    ],
+    "payment_terms": "Due on 1st",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V008-002",
+    "invoice_number": "ON-2214",
+    "vendor_id": "V008",
+    "vendor_name": "OfficeNest Properties",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-05-24",
+    "received_date": "2026-05-25",
+    "service_period_start": "2026-06-01",
+    "service_period_end": "2026-06-30",
+    "po_id": null,
+    "currency": "USD",
+    "amount": 22500.0,
+    "line_items": [
+      {
+        "description": "Office rent, Suite 400 - June 2026",
+        "quantity": 1,
+        "unit_price": 22500.0,
+        "amount": 22500.0
+      }
+    ],
+    "payment_terms": "Due on 1st",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V001-001",
+    "invoice_number": "DF-2207",
+    "vendor_id": "V001",
+    "vendor_name": "DataForge Inc.",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-05-31",
+    "received_date": "2026-06-02",
+    "service_period_start": "2026-05-01",
+    "service_period_end": "2026-05-31",
+    "po_id": "PO-1029",
+    "currency": "USD",
+    "amount": 50000.0,
+    "line_items": [
+      {
+        "description": "DataForge Platform subscription - May 2026",
+        "quantity": 1,
+        "unit_price": 50000.0,
+        "amount": 50000.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V004-001",
+    "invoice_number": "LC-2207",
+    "vendor_id": "V004",
+    "vendor_name": "Lumen CRM Corp.",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-05-31",
+    "received_date": "2026-06-02",
+    "service_period_start": "2026-05-01",
+    "service_period_end": "2026-05-31",
+    "po_id": "PO-1008",
+    "currency": "USD",
+    "amount": 18000.0,
+    "line_items": [
+      {
+        "description": "Lumen CRM Enterprise - May 2026",
+        "quantity": 1,
+        "unit_price": 18000.0,
+        "amount": 18000.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V009-001",
+    "invoice_number": "PC-2207",
+    "vendor_id": "V009",
+    "vendor_name": "PayCircle Inc.",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-05-31",
+    "received_date": "2026-06-02",
+    "service_period_start": "2026-05-01",
+    "service_period_end": "2026-05-31",
+    "po_id": "PO-1005",
+    "currency": "USD",
+    "amount": 4150.0,
+    "line_items": [
+      {
+        "description": "Payroll platform - May 2026",
+        "quantity": 1,
+        "unit_price": 4150.0,
+        "amount": 4150.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V016-001",
+    "invoice_number": "NT-2207",
+    "vendor_id": "V016",
+    "vendor_name": "Northwind Telecom",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-05-31",
+    "received_date": "2026-06-02",
+    "service_period_start": "2026-05-01",
+    "service_period_end": "2026-05-31",
+    "po_id": null,
+    "currency": "USD",
+    "amount": 5350.0,
+    "line_items": [
+      {
+        "description": "Business voice and data - May 2026",
+        "quantity": 1,
+        "unit_price": 5350.0,
+        "amount": 5350.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V017-001",
+    "invoice_number": "TW-2207",
+    "vendor_id": "V017",
+    "vendor_name": "Thames Workspace Ltd",
+    "bill_to": "Northstar Analytics UK Ltd",
+    "invoice_date": "2026-05-31",
+    "received_date": "2026-06-02",
+    "service_period_start": "2026-05-01",
+    "service_period_end": "2026-05-31",
+    "po_id": null,
+    "currency": "USD",
+    "amount": 6900.0,
+    "line_items": [
+      {
+        "description": "Serviced office, Floor 3 - May 2026",
+        "quantity": 1,
+        "unit_price": 6900.0,
+        "amount": 6900.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V003-001",
+    "invoice_number": "HD-2207",
+    "vendor_id": "V003",
+    "vendor_name": "Helpline Desk Co.",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-05-31",
+    "received_date": "2026-06-03",
+    "service_period_start": "2026-05-01",
+    "service_period_end": "2026-05-31",
+    "po_id": "PO-1017",
+    "currency": "USD",
+    "amount": 10200.0,
+    "line_items": [
+      {
+        "description": "Agent seats - May 2026",
+        "quantity": 120,
+        "unit_price": 85.0,
+        "amount": 10200.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V005-001",
+    "invoice_number": "PL-2207",
+    "vendor_id": "V005",
+    "vendor_name": "PagerLoop Inc.",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-05-31",
+    "received_date": "2026-06-04",
+    "service_period_start": "2026-05-01",
+    "service_period_end": "2026-05-31",
+    "po_id": "PO-1021",
+    "currency": "USD",
+    "amount": 6400.0,
+    "line_items": [
+      {
+        "description": "PagerLoop Business plan - May 2026",
+        "quantity": 1,
+        "unit_price": 6400.0,
+        "amount": 6400.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V002-001",
+    "invoice_number": "CH-2207",
+    "vendor_id": "V002",
+    "vendor_name": "CloudHarbor LLC",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-06-03",
+    "received_date": "2026-06-08",
+    "service_period_start": "2026-05-01",
+    "service_period_end": "2026-05-31",
+    "po_id": "PO-1011",
+    "currency": "USD",
+    "amount": 36000.0,
+    "line_items": [
+      {
+        "description": "Committed compute, 300,000 hrs - May 2026",
+        "quantity": 1,
+        "unit_price": 36000.0,
+        "amount": 36000.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V013-001",
+    "invoice_number": "SG-2207",
+    "vendor_id": "V013",
+    "vendor_name": "StreamGrid Networks",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-06-04",
+    "received_date": "2026-06-09",
+    "service_period_start": "2026-05-01",
+    "service_period_end": "2026-05-31",
+    "po_id": "PO-1014",
+    "currency": "USD",
+    "amount": 8000.0,
+    "line_items": [
+      {
+        "description": "Committed egress, 400,000 GB - May 2026",
+        "quantity": 1,
+        "unit_price": 8000.0,
+        "amount": 8000.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V007-001",
+    "invoice_number": "ML-2207",
+    "vendor_id": "V007",
+    "vendor_name": "Meridian Legal LLP",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-06-18",
+    "received_date": "2026-06-20",
+    "service_period_start": "2026-05-01",
+    "service_period_end": "2026-05-31",
+    "po_id": null,
+    "currency": "USD",
+    "amount": 8500.0,
+    "line_items": [
+      {
+        "description": "Professional services rendered - May 2026",
+        "quantity": 1,
+        "unit_price": 8500.0,
+        "amount": 8500.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V008-003",
+    "invoice_number": "ON-2221",
+    "vendor_id": "V008",
+    "vendor_name": "OfficeNest Properties",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-06-24",
+    "received_date": "2026-06-25",
+    "service_period_start": "2026-07-01",
+    "service_period_end": "2026-07-31",
+    "po_id": null,
+    "currency": "USD",
+    "amount": 22500.0,
+    "line_items": [
+      {
+        "description": "Office rent, Suite 400 - July 2026",
+        "quantity": 1,
+        "unit_price": 22500.0,
+        "amount": 22500.0
+      }
+    ],
+    "payment_terms": "Due on 1st",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V001-002",
+    "invoice_number": "DF-2214",
+    "vendor_id": "V001",
+    "vendor_name": "DataForge Inc.",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-06-30",
+    "received_date": "2026-07-02",
+    "service_period_start": "2026-06-01",
+    "service_period_end": "2026-06-30",
+    "po_id": "PO-1029",
+    "currency": "USD",
+    "amount": 50000.0,
+    "line_items": [
+      {
+        "description": "DataForge Platform subscription - June 2026",
+        "quantity": 1,
+        "unit_price": 50000.0,
+        "amount": 50000.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V004-002",
+    "invoice_number": "LC-2214",
+    "vendor_id": "V004",
+    "vendor_name": "Lumen CRM Corp.",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-06-30",
+    "received_date": "2026-07-02",
+    "service_period_start": "2026-06-01",
+    "service_period_end": "2026-06-30",
+    "po_id": "PO-1008",
+    "currency": "USD",
+    "amount": 18000.0,
+    "line_items": [
+      {
+        "description": "Lumen CRM Enterprise - June 2026",
+        "quantity": 1,
+        "unit_price": 18000.0,
+        "amount": 18000.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V009-002",
+    "invoice_number": "PC-2214",
+    "vendor_id": "V009",
+    "vendor_name": "PayCircle Inc.",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-06-30",
+    "received_date": "2026-07-02",
+    "service_period_start": "2026-06-01",
+    "service_period_end": "2026-06-30",
+    "po_id": "PO-1005",
+    "currency": "USD",
+    "amount": 4150.0,
+    "line_items": [
+      {
+        "description": "Payroll platform - June 2026",
+        "quantity": 1,
+        "unit_price": 4150.0,
+        "amount": 4150.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V016-002",
+    "invoice_number": "NT-2214",
+    "vendor_id": "V016",
+    "vendor_name": "Northwind Telecom",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-06-30",
+    "received_date": "2026-07-02",
+    "service_period_start": "2026-06-01",
+    "service_period_end": "2026-06-30",
+    "po_id": null,
+    "currency": "USD",
+    "amount": 5410.0,
+    "line_items": [
+      {
+        "description": "Business voice and data - June 2026",
+        "quantity": 1,
+        "unit_price": 5410.0,
+        "amount": 5410.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V017-002",
+    "invoice_number": "TW-2214",
+    "vendor_id": "V017",
+    "vendor_name": "Thames Workspace Ltd",
+    "bill_to": "Northstar Analytics UK Ltd",
+    "invoice_date": "2026-06-30",
+    "received_date": "2026-07-02",
+    "service_period_start": "2026-06-01",
+    "service_period_end": "2026-06-30",
+    "po_id": null,
+    "currency": "USD",
+    "amount": 6900.0,
+    "line_items": [
+      {
+        "description": "Serviced office, Floor 3 - June 2026",
+        "quantity": 1,
+        "unit_price": 6900.0,
+        "amount": 6900.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V003-002",
+    "invoice_number": "HD-2214",
+    "vendor_id": "V003",
+    "vendor_name": "Helpline Desk Co.",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-06-30",
+    "received_date": "2026-07-03",
+    "service_period_start": "2026-06-01",
+    "service_period_end": "2026-06-30",
+    "po_id": "PO-1017",
+    "currency": "USD",
+    "amount": 10200.0,
+    "line_items": [
+      {
+        "description": "Agent seats - June 2026",
+        "quantity": 120,
+        "unit_price": 85.0,
+        "amount": 10200.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V005-002",
+    "invoice_number": "PL-2214",
+    "vendor_id": "V005",
+    "vendor_name": "PagerLoop Inc.",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-06-30",
+    "received_date": "2026-07-04",
+    "service_period_start": "2026-06-01",
+    "service_period_end": "2026-06-30",
+    "po_id": "PO-1021",
+    "currency": "USD",
+    "amount": 6400.0,
+    "line_items": [
+      {
+        "description": "PagerLoop Business plan - June 2026",
+        "quantity": 1,
+        "unit_price": 6400.0,
+        "amount": 6400.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V002-002",
+    "invoice_number": "CH-2214",
+    "vendor_id": "V002",
+    "vendor_name": "CloudHarbor LLC",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-07-03",
+    "received_date": "2026-07-08",
+    "service_period_start": "2026-06-01",
+    "service_period_end": "2026-06-30",
+    "po_id": "PO-1011",
+    "currency": "USD",
+    "amount": 36000.0,
+    "line_items": [
+      {
+        "description": "Committed compute, 300,000 hrs - June 2026",
+        "quantity": 1,
+        "unit_price": 36000.0,
+        "amount": 36000.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V013-002",
+    "invoice_number": "SG-2214",
+    "vendor_id": "V013",
+    "vendor_name": "StreamGrid Networks",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-07-04",
+    "received_date": "2026-07-09",
+    "service_period_start": "2026-06-01",
+    "service_period_end": "2026-06-30",
+    "po_id": "PO-1014",
+    "currency": "USD",
+    "amount": 8000.0,
+    "line_items": [
+      {
+        "description": "Committed egress, 400,000 GB - June 2026",
+        "quantity": 1,
+        "unit_price": 8000.0,
+        "amount": 8000.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V011-001",
+    "invoice_number": "TB-2207",
+    "vendor_id": "V011",
+    "vendor_name": "TalentBridge Partners",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-07-06",
+    "received_date": "2026-07-10",
+    "service_period_start": "2026-06-08",
+    "service_period_end": "2026-06-08",
+    "po_id": null,
+    "currency": "USD",
+    "amount": 27000.0,
+    "line_items": [
+      {
+        "description": "Placement fee, Senior Backend Engineer (start Jun 08, 2026), 20% of $135,000",
+        "quantity": 1,
+        "unit_price": 27000.0,
+        "amount": 27000.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V008-004",
+    "invoice_number": "ON-2228",
+    "vendor_id": "V008",
+    "vendor_name": "OfficeNest Properties",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-07-24",
+    "received_date": "2026-07-25",
+    "service_period_start": "2026-08-01",
+    "service_period_end": "2026-08-31",
+    "po_id": null,
+    "currency": "USD",
+    "amount": 22500.0,
+    "line_items": [
+      {
+        "description": "Office rent, Suite 400 - August 2026",
+        "quantity": 1,
+        "unit_price": 22500.0,
+        "amount": 22500.0
+      }
+    ],
+    "payment_terms": "Due on 1st",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V001-003",
+    "invoice_number": "DF-2221",
+    "vendor_id": "V001",
+    "vendor_name": "DataForge Inc.",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-07-31",
+    "received_date": "2026-08-02",
+    "service_period_start": "2026-07-01",
+    "service_period_end": "2026-07-31",
+    "po_id": "PO-1029",
+    "currency": "USD",
+    "amount": 50000.0,
+    "line_items": [
+      {
+        "description": "DataForge Platform subscription - July 2026",
+        "quantity": 1,
+        "unit_price": 50000.0,
+        "amount": 50000.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V004-003",
+    "invoice_number": "LC-2221",
+    "vendor_id": "V004",
+    "vendor_name": "Lumen CRM Corp.",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-07-31",
+    "received_date": "2026-08-02",
+    "service_period_start": "2026-07-01",
+    "service_period_end": "2026-07-31",
+    "po_id": "PO-1008",
+    "currency": "USD",
+    "amount": 18000.0,
+    "line_items": [
+      {
+        "description": "Lumen CRM Enterprise - July 2026",
+        "quantity": 1,
+        "unit_price": 18000.0,
+        "amount": 18000.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V009-003",
+    "invoice_number": "PC-2221",
+    "vendor_id": "V009",
+    "vendor_name": "PayCircle Inc.",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-07-31",
+    "received_date": "2026-08-02",
+    "service_period_start": "2026-07-01",
+    "service_period_end": "2026-07-31",
+    "po_id": "PO-1005",
+    "currency": "USD",
+    "amount": 4150.0,
+    "line_items": [
+      {
+        "description": "Payroll platform - July 2026",
+        "quantity": 1,
+        "unit_price": 4150.0,
+        "amount": 4150.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V016-003",
+    "invoice_number": "NT-2221",
+    "vendor_id": "V016",
+    "vendor_name": "Northwind Telecom",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-07-31",
+    "received_date": "2026-08-02",
+    "service_period_start": "2026-07-01",
+    "service_period_end": "2026-07-31",
+    "po_id": null,
+    "currency": "USD",
+    "amount": 5395.0,
+    "line_items": [
+      {
+        "description": "Business voice and data - July 2026",
+        "quantity": 1,
+        "unit_price": 5395.0,
+        "amount": 5395.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V017-003",
+    "invoice_number": "TW-2221",
+    "vendor_id": "V017",
+    "vendor_name": "Thames Workspace Ltd",
+    "bill_to": "Northstar Analytics UK Ltd",
+    "invoice_date": "2026-07-31",
+    "received_date": "2026-08-02",
+    "service_period_start": "2026-07-01",
+    "service_period_end": "2026-07-31",
+    "po_id": null,
+    "currency": "USD",
+    "amount": 6900.0,
+    "line_items": [
+      {
+        "description": "Serviced office, Floor 3 - July 2026",
+        "quantity": 1,
+        "unit_price": 6900.0,
+        "amount": 6900.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V003-003",
+    "invoice_number": "HD-2221",
+    "vendor_id": "V003",
+    "vendor_name": "Helpline Desk Co.",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-07-31",
+    "received_date": "2026-08-03",
+    "service_period_start": "2026-07-01",
+    "service_period_end": "2026-07-31",
+    "po_id": "PO-1017",
+    "currency": "USD",
+    "amount": 10200.0,
+    "line_items": [
+      {
+        "description": "Agent seats - July 2026",
+        "quantity": 120,
+        "unit_price": 85.0,
+        "amount": 10200.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V010-001",
+    "invoice_number": "SL-2207",
+    "vendor_id": "V010",
+    "vendor_name": "SecureLayer Systems",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-08-01",
+    "received_date": "2026-08-03",
+    "service_period_start": "2026-08-01",
+    "service_period_end": "2027-07-31",
+    "po_id": "PO-1033",
+    "currency": "USD",
+    "amount": 96000.0,
+    "line_items": [
+      {
+        "description": "SecureLayer Platform, annual subscription Aug 2026 - Jul 2027",
+        "quantity": 1,
+        "unit_price": 96000.0,
+        "amount": 96000.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V012-001",
+    "invoice_number": "PW-2207",
+    "vendor_id": "V012",
+    "vendor_name": "PrintWorks Studio",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-08-01",
+    "received_date": "2026-08-03",
+    "service_period_start": "2026-07-01",
+    "service_period_end": "2026-07-31",
+    "po_id": "PO-0977",
+    "currency": "USD",
+    "amount": 5400.0,
+    "line_items": [
+      {
+        "description": "Summer conference booth graphics",
+        "quantity": 1,
+        "unit_price": 5400.0,
+        "amount": 5400.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V005-003",
+    "invoice_number": "PL-2221",
+    "vendor_id": "V005",
+    "vendor_name": "PagerLoop Inc.",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-07-31",
+    "received_date": "2026-08-04",
+    "service_period_start": "2026-07-01",
+    "service_period_end": "2026-07-31",
+    "po_id": "PO-1021",
+    "currency": "USD",
+    "amount": 6400.0,
+    "line_items": [
+      {
+        "description": "PagerLoop Business plan - July 2026",
+        "quantity": 1,
+        "unit_price": 6400.0,
+        "amount": 6400.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V014-001",
+    "invoice_number": "AF-2207",
+    "vendor_id": "V014",
+    "vendor_name": "Atlas Facilities Services",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-08-03",
+    "received_date": "2026-08-06",
+    "service_period_start": "2026-05-01",
+    "service_period_end": "2026-07-31",
+    "po_id": "PO-1019",
+    "currency": "USD",
+    "amount": 13500.0,
+    "line_items": [
+      {
+        "description": "Janitorial and maintenance - May 2026",
+        "quantity": 1,
+        "unit_price": 4500.0,
+        "amount": 4500.0
+      },
+      {
+        "description": "Janitorial and maintenance - June 2026",
+        "quantity": 1,
+        "unit_price": 4500.0,
+        "amount": 4500.0
+      },
+      {
+        "description": "Janitorial and maintenance - July 2026",
+        "quantity": 1,
+        "unit_price": 4500.0,
+        "amount": 4500.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V002-003",
+    "invoice_number": "CH-2221",
+    "vendor_id": "V002",
+    "vendor_name": "CloudHarbor LLC",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-08-03",
+    "received_date": "2026-08-08",
+    "service_period_start": "2026-07-01",
+    "service_period_end": "2026-07-31",
+    "po_id": "PO-1011",
+    "currency": "USD",
+    "amount": 36000.0,
+    "line_items": [
+      {
+        "description": "Committed compute, 300,000 hrs - July 2026",
+        "quantity": 1,
+        "unit_price": 36000.0,
+        "amount": 36000.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V013-003",
+    "invoice_number": "SG-2221",
+    "vendor_id": "V013",
+    "vendor_name": "StreamGrid Networks",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-08-04",
+    "received_date": "2026-08-09",
+    "service_period_start": "2026-07-01",
+    "service_period_end": "2026-07-31",
+    "po_id": "PO-1014",
+    "currency": "USD",
+    "amount": 8000.0,
+    "line_items": [
+      {
+        "description": "Committed egress, 400,000 GB - July 2026",
+        "quantity": 1,
+        "unit_price": 8000.0,
+        "amount": 8000.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V007-002",
+    "invoice_number": "ML-2214",
+    "vendor_id": "V007",
+    "vendor_name": "Meridian Legal LLP",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-08-18",
+    "received_date": "2026-08-20",
+    "service_period_start": "2026-07-01",
+    "service_period_end": "2026-07-31",
+    "po_id": null,
+    "currency": "USD",
+    "amount": 22300.0,
+    "line_items": [
+      {
+        "description": "Professional services rendered - July 2026",
+        "quantity": 1,
+        "unit_price": 22300.0,
+        "amount": 22300.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V008-005",
+    "invoice_number": "ON-2235",
+    "vendor_id": "V008",
+    "vendor_name": "OfficeNest Properties",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-08-24",
+    "received_date": "2026-08-25",
+    "service_period_start": "2026-09-01",
+    "service_period_end": "2026-09-30",
+    "po_id": null,
+    "currency": "USD",
+    "amount": 22500.0,
+    "line_items": [
+      {
+        "description": "Office rent, Suite 400 - September 2026",
+        "quantity": 1,
+        "unit_price": 22500.0,
+        "amount": 22500.0
+      }
+    ],
+    "payment_terms": "Due on 1st",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V001-004",
+    "invoice_number": "DF-2228",
+    "vendor_id": "V001",
+    "vendor_name": "DataForge Inc.",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-08-31",
+    "received_date": "2026-09-02",
+    "service_period_start": "2026-08-01",
+    "service_period_end": "2026-08-31",
+    "po_id": "PO-1029",
+    "currency": "USD",
+    "amount": 50000.0,
+    "line_items": [
+      {
+        "description": "DataForge Platform subscription - August 2026",
+        "quantity": 1,
+        "unit_price": 50000.0,
+        "amount": 50000.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V004-004",
+    "invoice_number": "LC-2228",
+    "vendor_id": "V004",
+    "vendor_name": "Lumen CRM Corp.",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-08-31",
+    "received_date": "2026-09-02",
+    "service_period_start": "2026-08-01",
+    "service_period_end": "2026-08-31",
+    "po_id": "PO-1008",
+    "currency": "USD",
+    "amount": 18000.0,
+    "line_items": [
+      {
+        "description": "Lumen CRM Enterprise - August 2026",
+        "quantity": 1,
+        "unit_price": 18000.0,
+        "amount": 18000.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V009-004",
+    "invoice_number": "PC-2228",
+    "vendor_id": "V009",
+    "vendor_name": "PayCircle Inc.",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-08-31",
+    "received_date": "2026-09-02",
+    "service_period_start": "2026-08-01",
+    "service_period_end": "2026-08-31",
+    "po_id": "PO-1005",
+    "currency": "USD",
+    "amount": 4150.0,
+    "line_items": [
+      {
+        "description": "Payroll platform - August 2026",
+        "quantity": 1,
+        "unit_price": 4150.0,
+        "amount": 4150.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V016-004",
+    "invoice_number": "NT-2228",
+    "vendor_id": "V016",
+    "vendor_name": "Northwind Telecom",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-08-31",
+    "received_date": "2026-09-02",
+    "service_period_start": "2026-08-01",
+    "service_period_end": "2026-08-31",
+    "po_id": null,
+    "currency": "USD",
+    "amount": 5520.0,
+    "line_items": [
+      {
+        "description": "Business voice and data - August 2026",
+        "quantity": 1,
+        "unit_price": 5520.0,
+        "amount": 5520.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V017-004",
+    "invoice_number": "TW-2228",
+    "vendor_id": "V017",
+    "vendor_name": "Thames Workspace Ltd",
+    "bill_to": "Northstar Analytics UK Ltd",
+    "invoice_date": "2026-08-31",
+    "received_date": "2026-09-02",
+    "service_period_start": "2026-08-01",
+    "service_period_end": "2026-08-31",
+    "po_id": null,
+    "currency": "USD",
+    "amount": 6900.0,
+    "line_items": [
+      {
+        "description": "Serviced office, Floor 3 - August 2026",
+        "quantity": 1,
+        "unit_price": 6900.0,
+        "amount": 6900.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V003-004",
+    "invoice_number": "HD-2228",
+    "vendor_id": "V003",
+    "vendor_name": "Helpline Desk Co.",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-08-31",
+    "received_date": "2026-09-03",
+    "service_period_start": "2026-08-01",
+    "service_period_end": "2026-08-31",
+    "po_id": "PO-1017",
+    "currency": "USD",
+    "amount": 10200.0,
+    "line_items": [
+      {
+        "description": "Agent seats - August 2026",
+        "quantity": 120,
+        "unit_price": 85.0,
+        "amount": 10200.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V005-004",
+    "invoice_number": "PL-2228",
+    "vendor_id": "V005",
+    "vendor_name": "PagerLoop Inc.",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-08-31",
+    "received_date": "2026-09-04",
+    "service_period_start": "2026-08-01",
+    "service_period_end": "2026-08-31",
+    "po_id": "PO-1021",
+    "currency": "USD",
+    "amount": 6400.0,
+    "line_items": [
+      {
+        "description": "PagerLoop Business plan - August 2026",
+        "quantity": 1,
+        "unit_price": 6400.0,
+        "amount": 6400.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V002-004",
+    "invoice_number": "CH-2228",
+    "vendor_id": "V002",
+    "vendor_name": "CloudHarbor LLC",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-09-03",
+    "received_date": "2026-09-08",
+    "service_period_start": "2026-08-01",
+    "service_period_end": "2026-08-31",
+    "po_id": "PO-1011",
+    "currency": "USD",
+    "amount": 36000.0,
+    "line_items": [
+      {
+        "description": "Committed compute, 300,000 hrs - August 2026",
+        "quantity": 1,
+        "unit_price": 36000.0,
+        "amount": 36000.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V013-004",
+    "invoice_number": "SG-2228",
+    "vendor_id": "V013",
+    "vendor_name": "StreamGrid Networks",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-09-04",
+    "received_date": "2026-09-09",
+    "service_period_start": "2026-08-01",
+    "service_period_end": "2026-08-31",
+    "po_id": "PO-1014",
+    "currency": "USD",
+    "amount": 8000.0,
+    "line_items": [
+      {
+        "description": "Committed egress, 400,000 GB - August 2026",
+        "quantity": 1,
+        "unit_price": 8000.0,
+        "amount": 8000.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V007-003",
+    "invoice_number": "ML-2221",
+    "vendor_id": "V007",
+    "vendor_name": "Meridian Legal LLP",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-09-18",
+    "received_date": "2026-09-20",
+    "service_period_start": "2026-08-01",
+    "service_period_end": "2026-08-31",
+    "po_id": null,
+    "currency": "USD",
+    "amount": 4100.0,
+    "line_items": [
+      {
+        "description": "Professional services rendered - August 2026",
+        "quantity": 1,
+        "unit_price": 4100.0,
+        "amount": 4100.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V008-006",
+    "invoice_number": "ON-2242",
+    "vendor_id": "V008",
+    "vendor_name": "OfficeNest Properties",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-09-24",
+    "received_date": "2026-09-25",
+    "service_period_start": "2026-10-01",
+    "service_period_end": "2026-10-31",
+    "po_id": null,
+    "currency": "USD",
+    "amount": 22500.0,
+    "line_items": [
+      {
+        "description": "Office rent, Suite 400 - October 2026",
+        "quantity": 1,
+        "unit_price": 22500.0,
+        "amount": 22500.0
+      }
+    ],
+    "payment_terms": "Due on 1st",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V001-005",
+    "invoice_number": "DF-2235",
+    "vendor_id": "V001",
+    "vendor_name": "DataForge Inc.",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-09-30",
+    "received_date": "2026-10-02",
+    "service_period_start": "2026-09-01",
+    "service_period_end": "2026-09-30",
+    "po_id": "PO-1029",
+    "currency": "USD",
+    "amount": 50000.0,
+    "line_items": [
+      {
+        "description": "DataForge Platform subscription - September 2026",
+        "quantity": 1,
+        "unit_price": 50000.0,
+        "amount": 50000.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V004-005",
+    "invoice_number": "LC-2235",
+    "vendor_id": "V004",
+    "vendor_name": "Lumen CRM Corp.",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-09-30",
+    "received_date": "2026-10-02",
+    "service_period_start": "2026-09-01",
+    "service_period_end": "2026-09-30",
+    "po_id": "PO-1008",
+    "currency": "USD",
+    "amount": 18000.0,
+    "line_items": [
+      {
+        "description": "Lumen CRM Enterprise - September 2026",
+        "quantity": 1,
+        "unit_price": 18000.0,
+        "amount": 18000.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V009-005",
+    "invoice_number": "PC-2235",
+    "vendor_id": "V009",
+    "vendor_name": "PayCircle Inc.",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-09-30",
+    "received_date": "2026-10-02",
+    "service_period_start": "2026-09-01",
+    "service_period_end": "2026-09-30",
+    "po_id": "PO-1005",
+    "currency": "USD",
+    "amount": 4150.0,
+    "line_items": [
+      {
+        "description": "Payroll platform - September 2026",
+        "quantity": 1,
+        "unit_price": 4150.0,
+        "amount": 4150.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V012-002",
+    "invoice_number": "PW-2214",
+    "vendor_id": "V012",
+    "vendor_name": "PrintWorks Studio",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-09-30",
+    "received_date": "2026-10-02",
+    "service_period_start": "2026-09-01",
+    "service_period_end": "2026-09-30",
+    "po_id": "PO-1002",
+    "currency": "USD",
+    "amount": 6950.0,
+    "line_items": [
+      {
+        "description": "Customer summit print collateral",
+        "quantity": 1,
+        "unit_price": 6950.0,
+        "amount": 6950.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V016-005",
+    "invoice_number": "NT-2235",
+    "vendor_id": "V016",
+    "vendor_name": "Northwind Telecom",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-09-30",
+    "received_date": "2026-10-02",
+    "service_period_start": "2026-09-01",
+    "service_period_end": "2026-09-30",
+    "po_id": null,
+    "currency": "USD",
+    "amount": 5460.0,
+    "line_items": [
+      {
+        "description": "Business voice and data - September 2026",
+        "quantity": 1,
+        "unit_price": 5460.0,
+        "amount": 5460.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V017-005",
+    "invoice_number": "TW-2235",
+    "vendor_id": "V017",
+    "vendor_name": "Thames Workspace Ltd",
+    "bill_to": "Northstar Analytics UK Ltd",
+    "invoice_date": "2026-09-30",
+    "received_date": "2026-10-02",
+    "service_period_start": "2026-09-01",
+    "service_period_end": "2026-09-30",
+    "po_id": null,
+    "currency": "USD",
+    "amount": 6900.0,
+    "line_items": [
+      {
+        "description": "Serviced office, Floor 3 - September 2026",
+        "quantity": 1,
+        "unit_price": 6900.0,
+        "amount": 6900.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V003-005",
+    "invoice_number": "HD-2235",
+    "vendor_id": "V003",
+    "vendor_name": "Helpline Desk Co.",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-09-30",
+    "received_date": "2026-10-03",
+    "service_period_start": "2026-09-01",
+    "service_period_end": "2026-09-30",
+    "po_id": "PO-1017",
+    "currency": "USD",
+    "amount": 10200.0,
+    "line_items": [
+      {
+        "description": "Agent seats - September 2026",
+        "quantity": 120,
+        "unit_price": 85.0,
+        "amount": 10200.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V005-005",
+    "invoice_number": "PL-2235",
+    "vendor_id": "V005",
+    "vendor_name": "PagerLoop Inc.",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-09-30",
+    "received_date": "2026-10-04",
+    "service_period_start": "2026-09-01",
+    "service_period_end": "2026-09-30",
+    "po_id": "PO-1021",
+    "currency": "USD",
+    "amount": 6400.0,
+    "line_items": [
+      {
+        "description": "PagerLoop Business plan - September 2026",
+        "quantity": 1,
+        "unit_price": 6400.0,
+        "amount": 6400.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V002-005",
+    "invoice_number": "CH-2235",
+    "vendor_id": "V002",
+    "vendor_name": "CloudHarbor LLC",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-10-03",
+    "received_date": "2026-10-08",
+    "service_period_start": "2026-09-01",
+    "service_period_end": "2026-09-30",
+    "po_id": "PO-1011",
+    "currency": "USD",
+    "amount": 36000.0,
+    "line_items": [
+      {
+        "description": "Committed compute, 300,000 hrs - September 2026",
+        "quantity": 1,
+        "unit_price": 36000.0,
+        "amount": 36000.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V013-005",
+    "invoice_number": "SG-2235",
+    "vendor_id": "V013",
+    "vendor_name": "StreamGrid Networks",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-10-04",
+    "received_date": "2026-10-09",
+    "service_period_start": "2026-09-01",
+    "service_period_end": "2026-09-30",
+    "po_id": "PO-1014",
+    "currency": "USD",
+    "amount": 8000.0,
+    "line_items": [
+      {
+        "description": "Committed egress, 400,000 GB - September 2026",
+        "quantity": 1,
+        "unit_price": 8000.0,
+        "amount": 8000.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V008-007",
+    "invoice_number": "ON-2249",
+    "vendor_id": "V008",
+    "vendor_name": "OfficeNest Properties",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-10-24",
+    "received_date": "2026-10-25",
+    "service_period_start": "2026-11-01",
+    "service_period_end": "2026-11-30",
+    "po_id": null,
+    "currency": "USD",
+    "amount": 22500.0,
+    "line_items": [
+      {
+        "description": "Office rent, Suite 400 - November 2026",
+        "quantity": 1,
+        "unit_price": 22500.0,
+        "amount": 22500.0
+      }
+    ],
+    "payment_terms": "Due on 1st",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V001-006",
+    "invoice_number": "DF-2242",
+    "vendor_id": "V001",
+    "vendor_name": "DataForge Inc.",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-10-31",
+    "received_date": "2026-11-02",
+    "service_period_start": "2026-10-01",
+    "service_period_end": "2026-10-31",
+    "po_id": "PO-1029",
+    "currency": "USD",
+    "amount": 50000.0,
+    "line_items": [
+      {
+        "description": "DataForge Platform subscription - October 2026",
+        "quantity": 1,
+        "unit_price": 50000.0,
+        "amount": 50000.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V004-006",
+    "invoice_number": "LC-2242",
+    "vendor_id": "V004",
+    "vendor_name": "Lumen CRM Corp.",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-10-31",
+    "received_date": "2026-11-02",
+    "service_period_start": "2026-10-01",
+    "service_period_end": "2026-10-31",
+    "po_id": "PO-1008",
+    "currency": "USD",
+    "amount": 18000.0,
+    "line_items": [
+      {
+        "description": "Lumen CRM Enterprise - October 2026",
+        "quantity": 1,
+        "unit_price": 18000.0,
+        "amount": 18000.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V009-006",
+    "invoice_number": "PC-2242",
+    "vendor_id": "V009",
+    "vendor_name": "PayCircle Inc.",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-10-31",
+    "received_date": "2026-11-02",
+    "service_period_start": "2026-10-01",
+    "service_period_end": "2026-10-31",
+    "po_id": "PO-1005",
+    "currency": "USD",
+    "amount": 4150.0,
+    "line_items": [
+      {
+        "description": "Payroll platform - October 2026",
+        "quantity": 1,
+        "unit_price": 4150.0,
+        "amount": 4150.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V016-006",
+    "invoice_number": "NT-2242",
+    "vendor_id": "V016",
+    "vendor_name": "Northwind Telecom",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-10-31",
+    "received_date": "2026-11-02",
+    "service_period_start": "2026-10-01",
+    "service_period_end": "2026-10-31",
+    "po_id": null,
+    "currency": "USD",
+    "amount": 5430.0,
+    "line_items": [
+      {
+        "description": "Business voice and data - October 2026",
+        "quantity": 1,
+        "unit_price": 5430.0,
+        "amount": 5430.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V017-006",
+    "invoice_number": "TW-2242",
+    "vendor_id": "V017",
+    "vendor_name": "Thames Workspace Ltd",
+    "bill_to": "Northstar Analytics UK Ltd",
+    "invoice_date": "2026-10-31",
+    "received_date": "2026-11-02",
+    "service_period_start": "2026-10-01",
+    "service_period_end": "2026-10-31",
+    "po_id": null,
+    "currency": "USD",
+    "amount": 6900.0,
+    "line_items": [
+      {
+        "description": "Serviced office, Floor 3 - October 2026",
+        "quantity": 1,
+        "unit_price": 6900.0,
+        "amount": 6900.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V003-006",
+    "invoice_number": "HD-2242",
+    "vendor_id": "V003",
+    "vendor_name": "Helpline Desk Co.",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-10-31",
+    "received_date": "2026-11-03",
+    "service_period_start": "2026-10-01",
+    "service_period_end": "2026-10-31",
+    "po_id": "PO-1017",
+    "currency": "USD",
+    "amount": 10200.0,
+    "line_items": [
+      {
+        "description": "Agent seats - October 2026",
+        "quantity": 120,
+        "unit_price": 85.0,
+        "amount": 10200.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V005-006",
+    "invoice_number": "PL-2242",
+    "vendor_id": "V005",
+    "vendor_name": "PagerLoop Inc.",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-10-31",
+    "received_date": "2026-11-04",
+    "service_period_start": "2026-10-01",
+    "service_period_end": "2026-10-31",
+    "po_id": "PO-1021",
+    "currency": "USD",
+    "amount": 6400.0,
+    "line_items": [
+      {
+        "description": "PagerLoop Business plan - October 2026",
+        "quantity": 1,
+        "unit_price": 6400.0,
+        "amount": 6400.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V014-002",
+    "invoice_number": "AF-2214",
+    "vendor_id": "V014",
+    "vendor_name": "Atlas Facilities Services",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-11-03",
+    "received_date": "2026-11-06",
+    "service_period_start": "2026-08-01",
+    "service_period_end": "2026-10-31",
+    "po_id": "PO-1019",
+    "currency": "USD",
+    "amount": 13500.0,
+    "line_items": [
+      {
+        "description": "Janitorial and maintenance - August 2026",
+        "quantity": 1,
+        "unit_price": 4500.0,
+        "amount": 4500.0
+      },
+      {
+        "description": "Janitorial and maintenance - September 2026",
+        "quantity": 1,
+        "unit_price": 4500.0,
+        "amount": 4500.0
+      },
+      {
+        "description": "Janitorial and maintenance - October 2026",
+        "quantity": 1,
+        "unit_price": 4500.0,
+        "amount": 4500.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V002-006",
+    "invoice_number": "CH-2242",
+    "vendor_id": "V002",
+    "vendor_name": "CloudHarbor LLC",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-11-03",
+    "received_date": "2026-11-08",
+    "service_period_start": "2026-10-01",
+    "service_period_end": "2026-10-31",
+    "po_id": "PO-1011",
+    "currency": "USD",
+    "amount": 36000.0,
+    "line_items": [
+      {
+        "description": "Committed compute, 300,000 hrs - October 2026",
+        "quantity": 1,
+        "unit_price": 36000.0,
+        "amount": 36000.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V013-006",
+    "invoice_number": "SG-2242",
+    "vendor_id": "V013",
+    "vendor_name": "StreamGrid Networks",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-11-04",
+    "received_date": "2026-11-09",
+    "service_period_start": "2026-10-01",
+    "service_period_end": "2026-10-31",
+    "po_id": "PO-1014",
+    "currency": "USD",
+    "amount": 8000.0,
+    "line_items": [
+      {
+        "description": "Committed egress, 400,000 GB - October 2026",
+        "quantity": 1,
+        "unit_price": 8000.0,
+        "amount": 8000.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V006-001",
+    "invoice_number": "BW-2207",
+    "vendor_id": "V006",
+    "vendor_name": "Brightwork Consulting Group",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-11-10",
+    "received_date": "2026-11-15",
+    "service_period_start": "2026-10-01",
+    "service_period_end": "2026-10-31",
+    "po_id": "PO-1042",
+    "currency": "USD",
+    "amount": 27750.0,
+    "line_items": [
+      {
+        "description": "Implementation consulting - October 2026",
+        "quantity": 150,
+        "unit_price": 185.0,
+        "amount": 27750.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V007-004",
+    "invoice_number": "ML-2228",
+    "vendor_id": "V007",
+    "vendor_name": "Meridian Legal LLP",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-11-18",
+    "received_date": "2026-11-20",
+    "service_period_start": "2026-10-01",
+    "service_period_end": "2026-10-31",
+    "po_id": null,
+    "currency": "USD",
+    "amount": 12750.0,
+    "line_items": [
+      {
+        "description": "Professional services rendered - October 2026",
+        "quantity": 1,
+        "unit_price": 12750.0,
+        "amount": 12750.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V008-008",
+    "invoice_number": "ON-2256",
+    "vendor_id": "V008",
+    "vendor_name": "OfficeNest Properties",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-11-24",
+    "received_date": "2026-11-25",
+    "service_period_start": "2026-12-01",
+    "service_period_end": "2026-12-31",
+    "po_id": null,
+    "currency": "USD",
+    "amount": 22500.0,
+    "line_items": [
+      {
+        "description": "Office rent, Suite 400 - December 2026",
+        "quantity": 1,
+        "unit_price": 22500.0,
+        "amount": 22500.0
+      }
+    ],
+    "payment_terms": "Due on 1st",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V012-003",
+    "invoice_number": "7731",
+    "vendor_id": "V012",
+    "vendor_name": "PrintWorks Studio",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-11-29",
+    "received_date": "2026-12-01",
+    "service_period_start": "2026-11-01",
+    "service_period_end": "2026-11-30",
+    "po_id": "PO-1046",
+    "currency": "USD",
+    "amount": 7850.0,
+    "line_items": [
+      {
+        "description": "Year-end campaign brochures and banners",
+        "quantity": 1,
+        "unit_price": 7850.0,
+        "amount": 7850.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V001-007",
+    "invoice_number": "DF-2249",
+    "vendor_id": "V001",
+    "vendor_name": "DataForge Inc.",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-11-30",
+    "received_date": "2026-12-02",
+    "service_period_start": "2026-11-01",
+    "service_period_end": "2026-11-30",
+    "po_id": "PO-1029",
+    "currency": "USD",
+    "amount": 50000.0,
+    "line_items": [
+      {
+        "description": "DataForge Platform subscription - November 2026",
+        "quantity": 1,
+        "unit_price": 50000.0,
+        "amount": 50000.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V004-007",
+    "invoice_number": "LC-2249",
+    "vendor_id": "V004",
+    "vendor_name": "Lumen CRM Corp.",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-11-30",
+    "received_date": "2026-12-02",
+    "service_period_start": "2026-11-01",
+    "service_period_end": "2026-11-30",
+    "po_id": "PO-1008",
+    "currency": "USD",
+    "amount": 18000.0,
+    "line_items": [
+      {
+        "description": "Lumen CRM Enterprise - November 2026",
+        "quantity": 1,
+        "unit_price": 18000.0,
+        "amount": 18000.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V009-007",
+    "invoice_number": "PC-2249",
+    "vendor_id": "V009",
+    "vendor_name": "PayCircle Inc.",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-11-30",
+    "received_date": "2026-12-02",
+    "service_period_start": "2026-11-01",
+    "service_period_end": "2026-11-30",
+    "po_id": "PO-1005",
+    "currency": "USD",
+    "amount": 4150.0,
+    "line_items": [
+      {
+        "description": "Payroll platform - November 2026",
+        "quantity": 1,
+        "unit_price": 4150.0,
+        "amount": 4150.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V017-007",
+    "invoice_number": "TW-2249",
+    "vendor_id": "V017",
+    "vendor_name": "Thames Workspace Ltd",
+    "bill_to": "Northstar Analytics UK Ltd",
+    "invoice_date": "2026-11-30",
+    "received_date": "2026-12-02",
+    "service_period_start": "2026-11-01",
+    "service_period_end": "2026-11-30",
+    "po_id": null,
+    "currency": "USD",
+    "amount": 6900.0,
+    "line_items": [
+      {
+        "description": "Serviced office, Floor 3 - November 2026",
+        "quantity": 1,
+        "unit_price": 6900.0,
+        "amount": 6900.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V003-007",
+    "invoice_number": "HD-2249",
+    "vendor_id": "V003",
+    "vendor_name": "Helpline Desk Co.",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-11-30",
+    "received_date": "2026-12-03",
+    "service_period_start": "2026-11-01",
+    "service_period_end": "2026-11-30",
+    "po_id": "PO-1017",
+    "currency": "USD",
+    "amount": 10200.0,
+    "line_items": [
+      {
+        "description": "Agent seats - November 2026",
+        "quantity": 120,
+        "unit_price": 85.0,
+        "amount": 10200.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V005-007",
+    "invoice_number": "PL-2249",
+    "vendor_id": "V005",
+    "vendor_name": "PagerLoop Inc.",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-11-30",
+    "received_date": "2026-12-04",
+    "service_period_start": "2026-11-01",
+    "service_period_end": "2026-11-30",
+    "po_id": "PO-1021",
+    "currency": "USD",
+    "amount": 6400.0,
+    "line_items": [
+      {
+        "description": "PagerLoop Business plan - November 2026",
+        "quantity": 1,
+        "unit_price": 6400.0,
+        "amount": 6400.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V002-007",
+    "invoice_number": "CH-2249",
+    "vendor_id": "V002",
+    "vendor_name": "CloudHarbor LLC",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-12-03",
+    "received_date": "2026-12-08",
+    "service_period_start": "2026-11-01",
+    "service_period_end": "2026-11-30",
+    "po_id": "PO-1011",
+    "currency": "USD",
+    "amount": 36000.0,
+    "line_items": [
+      {
+        "description": "Committed compute, 300,000 hrs - November 2026",
+        "quantity": 1,
+        "unit_price": 36000.0,
+        "amount": 36000.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V011-002",
+    "invoice_number": "TB-2214",
+    "vendor_id": "V011",
+    "vendor_name": "TalentBridge Partners",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-11-20",
+    "received_date": "2026-12-09",
+    "service_period_start": "2026-10-19",
+    "service_period_end": "2026-10-19",
+    "po_id": null,
+    "currency": "USD",
+    "amount": 31000.0,
+    "line_items": [
+      {
+        "description": "Placement fee, Staff Data Scientist (start Oct 19, 2026), 20% of $155,000",
+        "quantity": 1,
+        "unit_price": 31000.0,
+        "amount": 31000.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V013-007",
+    "invoice_number": "SG-2249",
+    "vendor_id": "V013",
+    "vendor_name": "StreamGrid Networks",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-12-04",
+    "received_date": "2026-12-09",
+    "service_period_start": "2026-11-01",
+    "service_period_end": "2026-11-30",
+    "po_id": "PO-1014",
+    "currency": "USD",
+    "amount": 8000.0,
+    "line_items": [
+      {
+        "description": "Committed egress, 400,000 GB - November 2026",
+        "quantity": 1,
+        "unit_price": 8000.0,
+        "amount": 8000.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V016-007",
+    "invoice_number": "NT-2249",
+    "vendor_id": "V016",
+    "vendor_name": "Northwind Telecom",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-11-30",
+    "received_date": "2026-12-09",
+    "service_period_start": "2026-11-01",
+    "service_period_end": "2026-11-30",
+    "po_id": null,
+    "currency": "USD",
+    "amount": 5480.0,
+    "line_items": [
+      {
+        "description": "Business voice and data - November 2026",
+        "quantity": 1,
+        "unit_price": 5480.0,
+        "amount": 5480.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap-old@northstar.example (retired mailbox)",
+    "notes": "Re-sent by vendor on request"
+  },
+  {
+    "invoice_id": "INV-V011-003",
+    "invoice_number": "TB-2221",
+    "vendor_id": "V011",
+    "vendor_name": "TalentBridge Partners",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-12-10",
+    "received_date": "2026-12-14",
+    "service_period_start": "2026-11-16",
+    "service_period_end": "2026-11-16",
+    "po_id": null,
+    "currency": "USD",
+    "amount": 30000.0,
+    "line_items": [
+      {
+        "description": "Placement fee, Engineering Manager (start Nov 16, 2026), 20% of $150,000",
+        "quantity": 1,
+        "unit_price": 30000.0,
+        "amount": 30000.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V006-002",
+    "invoice_number": "BW-2214",
+    "vendor_id": "V006",
+    "vendor_name": "Brightwork Consulting Group",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-12-10",
+    "received_date": "2026-12-15",
+    "service_period_start": "2026-11-01",
+    "service_period_end": "2026-11-30",
+    "po_id": "PO-1042",
+    "currency": "USD",
+    "amount": 29600.0,
+    "line_items": [
+      {
+        "description": "Implementation consulting - November 2026",
+        "quantity": 160,
+        "unit_price": 185.0,
+        "amount": 29600.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V015-001",
+    "invoice_number": "QB-2207",
+    "vendor_id": "V015",
+    "vendor_name": "Quantive BI Ltd.",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-12-15",
+    "received_date": "2026-12-16",
+    "service_period_start": "2026-12-15",
+    "service_period_end": "2027-01-14",
+    "po_id": "PO-1051",
+    "currency": "USD",
+    "amount": 9300.0,
+    "line_items": [
+      {
+        "description": "Quantive BI Team plan, Dec 15 - Jan 14, 2027",
+        "quantity": 1,
+        "unit_price": 9300.0,
+        "amount": 9300.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V007-005",
+    "invoice_number": "ML-2235",
+    "vendor_id": "V007",
+    "vendor_name": "Meridian Legal LLP",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-12-16",
+    "received_date": "2026-12-18",
+    "service_period_start": "2026-11-01",
+    "service_period_end": "2026-11-30",
+    "po_id": null,
+    "currency": "USD",
+    "amount": 6200.0,
+    "line_items": [
+      {
+        "description": "Professional services rendered - November 2026",
+        "quantity": 1,
+        "unit_price": 6200.0,
+        "amount": 6200.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V012-004",
+    "invoice_number": "7731-R",
+    "vendor_id": "V012",
+    "vendor_name": "PrintWorks Studio",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-12-17",
+    "received_date": "2026-12-18",
+    "service_period_start": "2026-11-01",
+    "service_period_end": "2026-11-30",
+    "po_id": "PO-1046",
+    "currency": "USD",
+    "amount": 7850.0,
+    "line_items": [
+      {
+        "description": "Year-end campaign brochures and banners",
+        "quantity": 1,
+        "unit_price": 7850.0,
+        "amount": 7850.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": "Statement copy"
+  },
+  {
+    "invoice_id": "INV-V008-009",
+    "invoice_number": "ON-2263",
+    "vendor_id": "V008",
+    "vendor_name": "OfficeNest Properties",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-12-24",
+    "received_date": "2026-12-25",
+    "service_period_start": "2027-01-01",
+    "service_period_end": "2027-01-31",
+    "po_id": null,
+    "currency": "USD",
+    "amount": 22500.0,
+    "line_items": [
+      {
+        "description": "Office rent, Suite 400 - January 2027",
+        "quantity": 1,
+        "unit_price": 22500.0,
+        "amount": 22500.0
+      }
+    ],
+    "payment_terms": "Due on 1st",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V004-008",
+    "invoice_number": "LC-2256",
+    "vendor_id": "V004",
+    "vendor_name": "Lumen CRM Corp.",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-12-31",
+    "received_date": "2027-01-02",
+    "service_period_start": "2026-12-01",
+    "service_period_end": "2026-12-31",
+    "po_id": "PO-1008",
+    "currency": "USD",
+    "amount": 18000.0,
+    "line_items": [
+      {
+        "description": "Lumen CRM Enterprise - December 2026",
+        "quantity": 1,
+        "unit_price": 18000.0,
+        "amount": 18000.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V009-008",
+    "invoice_number": "PC-2256",
+    "vendor_id": "V009",
+    "vendor_name": "PayCircle Inc.",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-12-31",
+    "received_date": "2027-01-02",
+    "service_period_start": "2026-12-01",
+    "service_period_end": "2026-12-31",
+    "po_id": "PO-1005",
+    "currency": "USD",
+    "amount": 4980.0,
+    "line_items": [
+      {
+        "description": "Payroll platform - December 2026",
+        "quantity": 1,
+        "unit_price": 4150.0,
+        "amount": 4150.0
+      },
+      {
+        "description": "Benefits Admin module",
+        "quantity": 1,
+        "unit_price": 830.0,
+        "amount": 830.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V016-008",
+    "invoice_number": "NT-2256",
+    "vendor_id": "V016",
+    "vendor_name": "Northwind Telecom",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-12-31",
+    "received_date": "2027-01-02",
+    "service_period_start": "2026-12-01",
+    "service_period_end": "2026-12-31",
+    "po_id": null,
+    "currency": "USD",
+    "amount": 5515.0,
+    "line_items": [
+      {
+        "description": "Business voice and data - December 2026",
+        "quantity": 1,
+        "unit_price": 5515.0,
+        "amount": 5515.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V017-008",
+    "invoice_number": "TW-2256",
+    "vendor_id": "V017",
+    "vendor_name": "Thames Workspace Ltd",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-12-31",
+    "received_date": "2027-01-02",
+    "service_period_start": "2026-12-01",
+    "service_period_end": "2026-12-31",
+    "po_id": null,
+    "currency": "USD",
+    "amount": 6900.0,
+    "line_items": [
+      {
+        "description": "Serviced office, Floor 3 - December 2026",
+        "quantity": 1,
+        "unit_price": 6900.0,
+        "amount": 6900.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V005-008",
+    "invoice_number": "PL-2256",
+    "vendor_id": "V005",
+    "vendor_name": "PagerLoop Inc.",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-12-31",
+    "received_date": "2027-01-04",
+    "service_period_start": "2026-12-01",
+    "service_period_end": "2026-12-31",
+    "po_id": "PO-1021",
+    "currency": "USD",
+    "amount": 6400.0,
+    "line_items": [
+      {
+        "description": "PagerLoop Business plan - December 2026",
+        "quantity": 1,
+        "unit_price": 6400.0,
+        "amount": 6400.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V002-008",
+    "invoice_number": "CH-2256",
+    "vendor_id": "V002",
+    "vendor_name": "CloudHarbor LLC",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2027-01-03",
+    "received_date": "2027-01-08",
+    "service_period_start": "2026-12-01",
+    "service_period_end": "2026-12-31",
+    "po_id": "PO-1011",
+    "currency": "USD",
+    "amount": 43800.0,
+    "line_items": [
+      {
+        "description": "Committed compute, 300,000 hrs - December 2026",
+        "quantity": 1,
+        "unit_price": 36000.0,
+        "amount": 36000.0
+      },
+      {
+        "description": "Overage compute hours",
+        "quantity": 52000,
+        "unit_price": 0.15,
+        "amount": 7800.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V003-008",
+    "invoice_number": "HD-2256",
+    "vendor_id": "V003",
+    "vendor_name": "Helpline Desk Co.",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-12-31",
+    "received_date": "2027-01-09",
+    "service_period_start": "2026-12-01",
+    "service_period_end": "2026-12-31",
+    "po_id": "PO-1017",
+    "currency": "USD",
+    "amount": 12009.68,
+    "line_items": [
+      {
+        "description": "Agent seats - December 2026",
+        "quantity": 120,
+        "unit_price": 85.0,
+        "amount": 10200.0
+      },
+      {
+        "description": "Added seats (CO-1), prorated Dec 10-31",
+        "quantity": 30,
+        "unit_price": 85.0,
+        "amount": 1809.68
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V013-008",
+    "invoice_number": "SG-2256",
+    "vendor_id": "V013",
+    "vendor_name": "StreamGrid Networks",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2027-01-04",
+    "received_date": "2027-01-09",
+    "service_period_start": "2026-12-01",
+    "service_period_end": "2026-12-31",
+    "po_id": "PO-1014",
+    "currency": "USD",
+    "amount": 8000.0,
+    "line_items": [
+      {
+        "description": "Committed egress, 400,000 GB - December 2026",
+        "quantity": 1,
+        "unit_price": 8000.0,
+        "amount": 8000.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V001-008",
+    "invoice_number": "DF-2256",
+    "vendor_id": "V001",
+    "vendor_name": "DataForge Inc.",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2026-12-31",
+    "received_date": "2027-01-12",
+    "service_period_start": "2026-12-01",
+    "service_period_end": "2026-12-31",
+    "po_id": "PO-1029",
+    "currency": "USD",
+    "amount": 52500.0,
+    "line_items": [
+      {
+        "description": "DataForge Platform subscription - December 2026",
+        "quantity": 1,
+        "unit_price": 52500.0,
+        "amount": 52500.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V006-003",
+    "invoice_number": "BW-2221",
+    "vendor_id": "V006",
+    "vendor_name": "Brightwork Consulting Group",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2027-01-10",
+    "received_date": "2027-01-15",
+    "service_period_start": "2026-12-01",
+    "service_period_end": "2026-12-31",
+    "po_id": "PO-1042",
+    "currency": "USD",
+    "amount": 26270.0,
+    "line_items": [
+      {
+        "description": "Implementation consulting - December 2026",
+        "quantity": 142,
+        "unit_price": 185.0,
+        "amount": 26270.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V015-002",
+    "invoice_number": "QB-2214",
+    "vendor_id": "V015",
+    "vendor_name": "Quantive BI Ltd.",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2027-01-15",
+    "received_date": "2027-01-16",
+    "service_period_start": "2027-01-15",
+    "service_period_end": "2027-02-14",
+    "po_id": "PO-1051",
+    "currency": "USD",
+    "amount": 9300.0,
+    "line_items": [
+      {
+        "description": "Quantive BI Team plan, Jan 15 - Feb 14, 2027",
+        "quantity": 1,
+        "unit_price": 9300.0,
+        "amount": 9300.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V009-010",
+    "invoice_number": "PC-CM-0114",
+    "vendor_id": "V009",
+    "vendor_name": "PayCircle Inc.",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2027-01-19",
+    "received_date": "2027-01-20",
+    "service_period_start": "2026-12-01",
+    "service_period_end": "2026-12-31",
+    "po_id": "PO-1005",
+    "currency": "USD",
+    "amount": -830.0,
+    "line_items": [
+      {
+        "description": "Credit: Benefits Admin module billed in error (Dec 2026)",
+        "quantity": 1,
+        "unit_price": -830.0,
+        "amount": -830.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": "Credit memo"
+  },
+  {
+    "invoice_id": "INV-V007-006",
+    "invoice_number": "ML-2242",
+    "vendor_id": "V007",
+    "vendor_name": "Meridian Legal LLP",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2027-01-20",
+    "received_date": "2027-01-22",
+    "service_period_start": "2026-12-01",
+    "service_period_end": "2026-12-31",
+    "po_id": null,
+    "currency": "USD",
+    "amount": 41870.0,
+    "line_items": [
+      {
+        "description": "Professional services rendered - December 2026",
+        "quantity": 1,
+        "unit_price": 41870.0,
+        "amount": 41870.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V009-009",
+    "invoice_number": "PC-2263",
+    "vendor_id": "V009",
+    "vendor_name": "PayCircle Inc.",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2027-01-31",
+    "received_date": "2027-02-02",
+    "service_period_start": "2027-01-01",
+    "service_period_end": "2027-01-31",
+    "po_id": "PO-1005",
+    "currency": "USD",
+    "amount": 4150.0,
+    "line_items": [
+      {
+        "description": "Payroll platform - January 2027",
+        "quantity": 1,
+        "unit_price": 4150.0,
+        "amount": 4150.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V016-009",
+    "invoice_number": "NT-2263",
+    "vendor_id": "V016",
+    "vendor_name": "Northwind Telecom",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2027-01-31",
+    "received_date": "2027-02-02",
+    "service_period_start": "2027-01-01",
+    "service_period_end": "2027-01-31",
+    "po_id": null,
+    "currency": "USD",
+    "amount": 5440.0,
+    "line_items": [
+      {
+        "description": "Business voice and data - January 2027",
+        "quantity": 1,
+        "unit_price": 5440.0,
+        "amount": 5440.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V017-009",
+    "invoice_number": "TW-2263",
+    "vendor_id": "V017",
+    "vendor_name": "Thames Workspace Ltd",
+    "bill_to": "Northstar Analytics UK Ltd",
+    "invoice_date": "2027-01-31",
+    "received_date": "2027-02-02",
+    "service_period_start": "2027-01-01",
+    "service_period_end": "2027-01-31",
+    "po_id": null,
+    "currency": "USD",
+    "amount": 6900.0,
+    "line_items": [
+      {
+        "description": "Serviced office, Floor 3 - January 2027",
+        "quantity": 1,
+        "unit_price": 6900.0,
+        "amount": 6900.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V003-009",
+    "invoice_number": "HD-2263",
+    "vendor_id": "V003",
+    "vendor_name": "Helpline Desk Co.",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2027-01-31",
+    "received_date": "2027-02-03",
+    "service_period_start": "2027-01-01",
+    "service_period_end": "2027-01-31",
+    "po_id": "PO-1017",
+    "currency": "USD",
+    "amount": 12750.0,
+    "line_items": [
+      {
+        "description": "Agent seats - January 2027",
+        "quantity": 150,
+        "unit_price": 85.0,
+        "amount": 12750.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V012-005",
+    "invoice_number": "PW-2235",
+    "vendor_id": "V012",
+    "vendor_name": "PrintWorks Studio",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2027-02-04",
+    "received_date": "2027-02-06",
+    "service_period_start": "2027-01-01",
+    "service_period_end": "2027-01-31",
+    "po_id": "PO-1058",
+    "currency": "USD",
+    "amount": 3200.0,
+    "line_items": [
+      {
+        "description": "Sales kickoff signage",
+        "quantity": 1,
+        "unit_price": 3200.0,
+        "amount": 3200.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V002-009",
+    "invoice_number": "CH-2263",
+    "vendor_id": "V002",
+    "vendor_name": "CloudHarbor LLC",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2027-02-03",
+    "received_date": "2027-02-08",
+    "service_period_start": "2027-01-01",
+    "service_period_end": "2027-01-31",
+    "po_id": "PO-1011",
+    "currency": "USD",
+    "amount": 37500.0,
+    "line_items": [
+      {
+        "description": "Committed compute, 300,000 hrs - January 2027",
+        "quantity": 1,
+        "unit_price": 36000.0,
+        "amount": 36000.0
+      },
+      {
+        "description": "Overage compute hours",
+        "quantity": 10000,
+        "unit_price": 0.15,
+        "amount": 1500.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V011-004",
+    "invoice_number": "TB-2228",
+    "vendor_id": "V011",
+    "vendor_name": "TalentBridge Partners",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2027-02-04",
+    "received_date": "2027-02-08",
+    "service_period_start": "2027-01-11",
+    "service_period_end": "2027-01-11",
+    "po_id": null,
+    "currency": "USD",
+    "amount": 28000.0,
+    "line_items": [
+      {
+        "description": "Placement fee, Product Designer (start Jan 11, 2027), 20% of $140,000",
+        "quantity": 1,
+        "unit_price": 28000.0,
+        "amount": 28000.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V014-003",
+    "invoice_number": "AF-2221",
+    "vendor_id": "V014",
+    "vendor_name": "Atlas Facilities Services",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2027-02-05",
+    "received_date": "2027-02-08",
+    "service_period_start": "2026-11-01",
+    "service_period_end": "2027-01-31",
+    "po_id": "PO-1019",
+    "currency": "USD",
+    "amount": 13500.0,
+    "line_items": [
+      {
+        "description": "Janitorial and maintenance - November 2026",
+        "quantity": 1,
+        "unit_price": 4500.0,
+        "amount": 4500.0
+      },
+      {
+        "description": "Janitorial and maintenance - December 2026",
+        "quantity": 1,
+        "unit_price": 4500.0,
+        "amount": 4500.0
+      },
+      {
+        "description": "Janitorial and maintenance - January 2027",
+        "quantity": 1,
+        "unit_price": 4500.0,
+        "amount": 4500.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V005-009",
+    "invoice_number": "PL-2263",
+    "vendor_id": "V005",
+    "vendor_name": "PagerLoop Inc.",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2027-01-31",
+    "received_date": "2027-02-09",
+    "service_period_start": "2027-01-01",
+    "service_period_end": "2027-01-31",
+    "po_id": "PO-1021",
+    "currency": "USD",
+    "amount": 6752.0,
+    "line_items": [
+      {
+        "description": "PagerLoop Business plan - January 2027",
+        "quantity": 1,
+        "unit_price": 6752.0,
+        "amount": 6752.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V013-009",
+    "invoice_number": "SG-2263",
+    "vendor_id": "V013",
+    "vendor_name": "StreamGrid Networks",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2027-02-04",
+    "received_date": "2027-02-09",
+    "service_period_start": "2027-01-01",
+    "service_period_end": "2027-01-31",
+    "po_id": "PO-1014",
+    "currency": "USD",
+    "amount": 11600.0,
+    "line_items": [
+      {
+        "description": "Committed egress, 400,000 GB - January 2027",
+        "quantity": 1,
+        "unit_price": 8000.0,
+        "amount": 8000.0
+      },
+      {
+        "description": "Overage egress GB",
+        "quantity": 120000,
+        "unit_price": 0.03,
+        "amount": 3600.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V001-009",
+    "invoice_number": "DF-2263",
+    "vendor_id": "V001",
+    "vendor_name": "DataForge Inc.",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2027-01-31",
+    "received_date": "2027-02-10",
+    "service_period_start": "2027-01-01",
+    "service_period_end": "2027-01-31",
+    "po_id": "PO-1029",
+    "currency": "USD",
+    "amount": 52500.0,
+    "line_items": [
+      {
+        "description": "DataForge Platform subscription - January 2027",
+        "quantity": 1,
+        "unit_price": 52500.0,
+        "amount": 52500.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V004-009",
+    "invoice_number": "LC-2263",
+    "vendor_id": "V004",
+    "vendor_name": "Lumen CRM Corp.",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2027-01-31",
+    "received_date": "2027-02-11",
+    "service_period_start": "2027-01-01",
+    "service_period_end": "2027-01-31",
+    "po_id": "PO-1008",
+    "currency": "USD",
+    "amount": 18720.0,
+    "line_items": [
+      {
+        "description": "Lumen CRM Enterprise - January 2027",
+        "quantity": 1,
+        "unit_price": 18720.0,
+        "amount": 18720.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  },
+  {
+    "invoice_id": "INV-V006-004",
+    "invoice_number": "BW-2228",
+    "vendor_id": "V006",
+    "vendor_name": "Brightwork Consulting Group",
+    "bill_to": "Northstar Analytics, Inc.",
+    "invoice_date": "2027-02-10",
+    "received_date": "2027-02-15",
+    "service_period_start": "2027-01-01",
+    "service_period_end": "2027-01-31",
+    "po_id": "PO-1042",
+    "currency": "USD",
+    "amount": 17760.0,
+    "line_items": [
+      {
+        "description": "Implementation consulting - January 2027",
+        "quantity": 96,
+        "unit_price": 185.0,
+        "amount": 17760.0
+      }
+    ],
+    "payment_terms": "Net 30",
+    "received_channel": "ap@northstar.example",
+    "notes": ""
+  }
+]

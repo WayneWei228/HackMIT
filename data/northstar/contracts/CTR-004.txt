@@ -1,0 +1,19 @@
+MASTER SERVICES AGREEMENT
+Contract ID: CTR-004
+Between Lumen CRM Corp. ("Provider") and Northstar Analytics, Inc. ("Customer").
+Effective Date: January 1, 2025. Term: 36 months.
+
+1. Services. Provider will supply the services described in the Order Form to Customer's Sales team.
+2. Acceptance. Services are deemed received when made available to or performed for Customer.
+3. Confidentiality. Each party will protect the other's confidential information.
+4. Fees.
+4.1 Customer shall pay a Subscription Fee of $18,000.00 per month, invoiced monthly in arrears.
+4.2 Payment terms: Net 30. Invoices are sent to ap@northstar.example.
+Order Form footnote (1): Subscription Fee is subject to an uplift of four percent (4%) effective each January 1 following the first contract year.
+5. Taxes. Fees exclude applicable taxes.
+6. Termination. Either party may terminate for material breach on 30 days' notice.
+7. Governing law. State of Delaware.
+
+Provider billing contact: Lumen Accounts <accounts@lumencrm.example>
+Customer business owner: Jordan Blake
+Purchase Order: PO-1008

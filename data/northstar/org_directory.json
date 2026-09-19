@@ -1,0 +1,306 @@
+{
+  "employees": [
+    {
+      "employee_id": "E001",
+      "name": "Dana Whitfield",
+      "title": "Controller",
+      "role": "CONTROLLER",
+      "cost_center": null,
+      "legal_entity_id": "NS-US",
+      "email": "dana.whitfield@northstar.example"
+    },
+    {
+      "employee_id": "E002",
+      "name": "Marcus Oyelaran",
+      "title": "Accounting Manager",
+      "role": "ACCOUNTING_MANAGER",
+      "cost_center": null,
+      "legal_entity_id": "NS-US",
+      "email": "marcus.oyelaran@northstar.example"
+    },
+    {
+      "employee_id": "E003",
+      "name": "Sofia Brandt",
+      "title": "AP Specialist",
+      "role": "AP_SPECIALIST",
+      "cost_center": null,
+      "legal_entity_id": "NS-US",
+      "email": "sofia.brandt@northstar.example"
+    },
+    {
+      "employee_id": "E004",
+      "name": "Ken Ito",
+      "title": "Senior Close Accountant",
+      "role": "CLOSE_ACCOUNTANT",
+      "cost_center": null,
+      "legal_entity_id": "NS-US",
+      "email": "ken.ito@northstar.example"
+    },
+    {
+      "employee_id": "E005",
+      "name": "Laila Haddad",
+      "title": "FP&A Manager",
+      "role": "FPA",
+      "cost_center": null,
+      "legal_entity_id": "NS-US",
+      "email": "laila.haddad@northstar.example"
+    },
+    {
+      "employee_id": "E006",
+      "name": "Tom Reyes",
+      "title": "Treasury Analyst",
+      "role": "TREASURY",
+      "cost_center": null,
+      "legal_entity_id": "NS-US",
+      "email": "tom.reyes@northstar.example"
+    },
+    {
+      "employee_id": "E010",
+      "name": "Priya Raman",
+      "title": "Head of Data",
+      "role": "BUDGET_OWNER",
+      "cost_center": "CC-100",
+      "legal_entity_id": "NS-US",
+      "email": "priya.raman@northstar.example"
+    },
+    {
+      "employee_id": "E011",
+      "name": "Sam Okafor",
+      "title": "SRE Lead",
+      "role": "BUDGET_OWNER",
+      "cost_center": "CC-110",
+      "legal_entity_id": "NS-US",
+      "email": "sam.okafor@northstar.example"
+    },
+    {
+      "employee_id": "E012",
+      "name": "Maria Santos",
+      "title": "Head of Support",
+      "role": "BUDGET_OWNER",
+      "cost_center": "CC-120",
+      "legal_entity_id": "NS-US",
+      "email": "maria.santos@northstar.example"
+    },
+    {
+      "employee_id": "E013",
+      "name": "Jordan Blake",
+      "title": "VP Sales",
+      "role": "BUDGET_OWNER",
+      "cost_center": "CC-130",
+      "legal_entity_id": "NS-US",
+      "email": "jordan.blake@northstar.example"
+    },
+    {
+      "employee_id": "E014",
+      "name": "Nina Petrov",
+      "title": "Head of PMO",
+      "role": "BUDGET_OWNER",
+      "cost_center": "CC-140",
+      "legal_entity_id": "NS-US",
+      "email": "nina.petrov@northstar.example"
+    },
+    {
+      "employee_id": "E015",
+      "name": "Rachel Kim",
+      "title": "General Counsel",
+      "role": "BUDGET_OWNER",
+      "cost_center": "CC-150",
+      "legal_entity_id": "NS-US",
+      "email": "rachel.kim@northstar.example"
+    },
+    {
+      "employee_id": "E016",
+      "name": "Omar Farouk",
+      "title": "Workplace Manager",
+      "role": "BUDGET_OWNER",
+      "cost_center": "CC-160",
+      "legal_entity_id": "NS-US",
+      "email": "omar.farouk@northstar.example"
+    },
+    {
+      "employee_id": "E017",
+      "name": "Grace Liu",
+      "title": "HR Director",
+      "role": "BUDGET_OWNER",
+      "cost_center": "CC-170",
+      "legal_entity_id": "NS-US",
+      "email": "grace.liu@northstar.example"
+    },
+    {
+      "employee_id": "E018",
+      "name": "Victor Hale",
+      "title": "CISO",
+      "role": "BUDGET_OWNER",
+      "cost_center": "CC-180",
+      "legal_entity_id": "NS-US",
+      "email": "victor.hale@northstar.example"
+    },
+    {
+      "employee_id": "E019",
+      "name": "Elena Rossi",
+      "title": "Marketing Director",
+      "role": "BUDGET_OWNER",
+      "cost_center": "CC-190",
+      "legal_entity_id": "NS-US",
+      "email": "elena.rossi@northstar.example"
+    },
+    {
+      "employee_id": "E020",
+      "name": "Dev Patel",
+      "title": "BI Lead",
+      "role": "BUDGET_OWNER",
+      "cost_center": "CC-200",
+      "legal_entity_id": "NS-US",
+      "email": "dev.patel@northstar.example"
+    },
+    {
+      "employee_id": "E021",
+      "name": "Chris Novak",
+      "title": "IT Manager",
+      "role": "BUDGET_OWNER",
+      "cost_center": "CC-210",
+      "legal_entity_id": "NS-US",
+      "email": "chris.novak@northstar.example"
+    },
+    {
+      "employee_id": "E022",
+      "name": "Harriet Cole",
+      "title": "UK General Manager",
+      "role": "BUDGET_OWNER",
+      "cost_center": "CC-300",
+      "legal_entity_id": "NS-UK",
+      "email": "harriet.cole@northstar.example"
+    },
+    {
+      "employee_id": "E030",
+      "name": "Ben Adler",
+      "title": "Data Platform Engineer",
+      "role": "REQUESTER",
+      "cost_center": "CC-100",
+      "legal_entity_id": "NS-US",
+      "email": "ben.adler@northstar.example"
+    },
+    {
+      "employee_id": "E031",
+      "name": "Yuki Tanaka",
+      "title": "Support Operations Analyst",
+      "role": "REQUESTER",
+      "cost_center": "CC-120",
+      "legal_entity_id": "NS-US",
+      "email": "yuki.tanaka@northstar.example"
+    },
+    {
+      "employee_id": "E032",
+      "name": "Luis Moreno",
+      "title": "Program Manager",
+      "role": "REQUESTER",
+      "cost_center": "CC-140",
+      "legal_entity_id": "NS-US",
+      "email": "luis.moreno@northstar.example"
+    }
+  ],
+  "vendor_contacts": [
+    {
+      "vendor_id": "V001",
+      "name": "Amira Khan",
+      "email": "billing@dataforge.example",
+      "role": "VENDOR_BILLING"
+    },
+    {
+      "vendor_id": "V002",
+      "name": "CloudHarbor Billing",
+      "email": "ar@cloudharbor.example",
+      "role": "VENDOR_BILLING"
+    },
+    {
+      "vendor_id": "V003",
+      "name": "Paul Wenger",
+      "email": "invoices@helplinedesk.example",
+      "role": "VENDOR_BILLING"
+    },
+    {
+      "vendor_id": "V004",
+      "name": "Lumen Accounts",
+      "email": "accounts@lumencrm.example",
+      "role": "VENDOR_BILLING"
+    },
+    {
+      "vendor_id": "V005",
+      "name": "Tessa Byrne",
+      "email": "billing@pagerloop.example",
+      "role": "VENDOR_BILLING"
+    },
+    {
+      "vendor_id": "V006",
+      "name": "Henry Osei",
+      "email": "finance@brightwork.example",
+      "role": "VENDOR_BILLING"
+    },
+    {
+      "vendor_id": "V007",
+      "name": "Meridian Billing Dept",
+      "email": "billing@meridianlegal.example",
+      "role": "VENDOR_BILLING"
+    },
+    {
+      "vendor_id": "V008",
+      "name": "OfficeNest AR",
+      "email": "ar@officenest.example",
+      "role": "VENDOR_BILLING"
+    },
+    {
+      "vendor_id": "V009",
+      "name": "PayCircle Billing",
+      "email": "billing@paycircle.example",
+      "role": "VENDOR_BILLING"
+    },
+    {
+      "vendor_id": "V010",
+      "name": "SecureLayer AR",
+      "email": "ar@securelayer.example",
+      "role": "VENDOR_BILLING"
+    },
+    {
+      "vendor_id": "V011",
+      "name": "Carla Mendes",
+      "email": "carla.mendes@talentbridge.example",
+      "role": "VENDOR_BILLING"
+    },
+    {
+      "vendor_id": "V012",
+      "name": "PrintWorks Accounts",
+      "email": "accounts@printworks.example",
+      "role": "VENDOR_BILLING"
+    },
+    {
+      "vendor_id": "V013",
+      "name": "StreamGrid Billing",
+      "email": "billing@streamgrid.example",
+      "role": "VENDOR_BILLING"
+    },
+    {
+      "vendor_id": "V014",
+      "name": "Atlas AR",
+      "email": "ar@atlasfacilities.example",
+      "role": "VENDOR_BILLING"
+    },
+    {
+      "vendor_id": "V015",
+      "name": "Quantive Billing",
+      "email": "billing@quantivebi.example",
+      "role": "VENDOR_BILLING"
+    },
+    {
+      "vendor_id": "V016",
+      "name": "Northwind Business Billing",
+      "email": "bizbilling@northwindtel.example",
+      "role": "VENDOR_BILLING"
+    },
+    {
+      "vendor_id": "V017",
+      "name": "Thames Workspace Accounts",
+      "email": "accounts@thamesworkspace.example",
+      "role": "VENDOR_BILLING"
+    }
+  ]
+}

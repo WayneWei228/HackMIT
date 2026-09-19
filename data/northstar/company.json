@@ -1,0 +1,168 @@
+{
+  "name": "Northstar Analytics, Inc.",
+  "description": "B2B analytics software company, ~260 employees",
+  "base_currency": "USD",
+  "entities": [
+    {
+      "entity_id": "NS-US",
+      "name": "Northstar Analytics, Inc.",
+      "country": "US"
+    },
+    {
+      "entity_id": "NS-UK",
+      "name": "Northstar Analytics UK Ltd",
+      "country": "GB"
+    }
+  ],
+  "cost_centers": [
+    {
+      "id": "CC-100",
+      "name": "Data Engineering"
+    },
+    {
+      "id": "CC-110",
+      "name": "Platform / SRE"
+    },
+    {
+      "id": "CC-120",
+      "name": "Customer Support"
+    },
+    {
+      "id": "CC-130",
+      "name": "Sales"
+    },
+    {
+      "id": "CC-140",
+      "name": "PMO"
+    },
+    {
+      "id": "CC-150",
+      "name": "Legal"
+    },
+    {
+      "id": "CC-160",
+      "name": "Workplace"
+    },
+    {
+      "id": "CC-170",
+      "name": "People / HR"
+    },
+    {
+      "id": "CC-180",
+      "name": "Security"
+    },
+    {
+      "id": "CC-190",
+      "name": "Marketing"
+    },
+    {
+      "id": "CC-200",
+      "name": "Business Intelligence"
+    },
+    {
+      "id": "CC-210",
+      "name": "IT"
+    },
+    {
+      "id": "CC-300",
+      "name": "UK Operations"
+    }
+  ],
+  "chart_of_accounts": [
+    {
+      "account": "1000",
+      "name": "Cash",
+      "type": "asset"
+    },
+    {
+      "account": "1300",
+      "name": "Prepaid Expenses",
+      "type": "asset"
+    },
+    {
+      "account": "2000",
+      "name": "Accounts Payable",
+      "type": "liability"
+    },
+    {
+      "account": "2100",
+      "name": "Accrued Expenses",
+      "type": "liability"
+    },
+    {
+      "account": "6100",
+      "name": "Data Services Expense",
+      "type": "expense"
+    },
+    {
+      "account": "6110",
+      "name": "Cloud Hosting Expense",
+      "type": "expense"
+    },
+    {
+      "account": "6120",
+      "name": "Software Subscriptions",
+      "type": "expense"
+    },
+    {
+      "account": "6200",
+      "name": "Professional Services",
+      "type": "expense"
+    },
+    {
+      "account": "6210",
+      "name": "Legal Fees",
+      "type": "expense"
+    },
+    {
+      "account": "6300",
+      "name": "Rent and Facilities",
+      "type": "expense"
+    },
+    {
+      "account": "6310",
+      "name": "Facilities Maintenance",
+      "type": "expense"
+    },
+    {
+      "account": "6400",
+      "name": "Recruiting Fees",
+      "type": "expense"
+    },
+    {
+      "account": "6500",
+      "name": "Marketing Programs",
+      "type": "expense"
+    },
+    {
+      "account": "6600",
+      "name": "Telecom",
+      "type": "expense"
+    }
+  ],
+  "close_calendar": [
+    {
+      "period": "2026-11",
+      "cutoff": "2026-12-05",
+      "status": "OPEN"
+    },
+    {
+      "period": "2026-12",
+      "cutoff": "2027-01-05",
+      "status": "OPEN"
+    },
+    {
+      "period": "2027-01",
+      "cutoff": "2027-02-05",
+      "status": "OPEN"
+    }
+  ],
+  "closed_periods": [
+    "2026-05",
+    "2026-06",
+    "2026-07",
+    "2026-08",
+    "2026-09",
+    "2026-10"
+  ]
+}

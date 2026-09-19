@@ -1,0 +1,19 @@
+MASTER SERVICES AGREEMENT
+Contract ID: CTR-005
+Between PagerLoop Inc. ("Provider") and Northstar Analytics, Inc. ("Customer").
+Effective Date: March 1, 2025. Term: 12 months, auto-renewing.
+
+1. Services. Provider will supply the services described in the Order Form to Customer's Platform / SRE team.
+2. Acceptance. Services are deemed received when made available to or performed for Customer.
+3. Confidentiality. Each party will protect the other's confidential information.
+4. Fees.
+4.1 Customer shall pay a Subscription Fee of $6,400.00 per month, invoiced monthly in arrears.
+4.2 Payment terms: Net 30. Invoices are sent to ap@northstar.example.
+4.3 Renewal Pricing. Provider may increase Fees effective each January 1 by a percentage notified in writing to Customer's billing contact no later than sixty (60) days prior, not to exceed seven percent (7%). Absent notice, Fees are unchanged.
+5. Taxes. Fees exclude applicable taxes.
+6. Termination. Either party may terminate for material breach on 30 days' notice.
+7. Governing law. State of Delaware.
+
+Provider billing contact: Tessa Byrne <billing@pagerloop.example>
+Customer business owner: Sam Okafor
+Purchase Order: PO-1021

@@ -1,0 +1,20 @@
+MASTER SERVICES AGREEMENT
+Contract ID: CTR-002
+Between CloudHarbor LLC ("Provider") and Northstar Analytics, Inc. ("Customer").
+Effective Date: January 1, 2026. Term: 36 months.
+
+1. Services. Provider will supply the services described in the Order Form to Customer's Platform / SRE team.
+2. Acceptance. Services are deemed received when made available to or performed for Customer.
+3. Confidentiality. Each party will protect the other's confidential information.
+4. Fees.
+4.1 Customer commits to a Monthly Commitment of $36,000.00, which includes 300,000 compute hours (an effective rate of $0.12 per hour). The Monthly Commitment is payable regardless of usage.
+4.2 Payment terms: Net 30. Invoices are sent to ap@northstar.example.
+4.3 Overage. Compute hours above 300,000 in a calendar month are billed at $0.15 per hour.
+4.4 Invoices issue by the 5th business day following month end, based on metered usage.
+5. Taxes. Fees exclude applicable taxes.
+6. Termination. Either party may terminate for material breach on 30 days' notice.
+7. Governing law. State of Delaware.
+
+Provider billing contact: CloudHarbor Billing <ar@cloudharbor.example>
+Customer business owner: Sam Okafor
+Purchase Order: PO-1011
