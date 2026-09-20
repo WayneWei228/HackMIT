@@ -12,8 +12,8 @@ sys.path.insert(0, str(ROOT))
 from trueup.agents.classification_agent import classify  # noqa: E402
 from trueup.agents.estimation_agent import estimate  # noqa: E402
 from trueup.agents.policy_agent import enforce  # noqa: E402
+from trueup.close_orchestrator import walk_to  # noqa: E402
 from trueup.simulator.simulator import Simulator  # noqa: E402
-from trueup.simulator.stand_in import open_obligation_for_classification  # noqa: E402
 from trueup.store.enums import PolicyDecision as D  # noqa: E402
 
 PERIOD = "2026-12"
@@ -34,9 +34,8 @@ def main() -> None:
     sim.advance_to("2026-12-31T23:00:00Z")
     hits = 0
     with sim.session() as session:
-        # TEMPORARY: the Detection agent will open these obligations once it exists.
         for vendor_id, expected in EXPECTED.items():
-            ob = open_obligation_for_classification(session, vendor_id, PERIOD, now=NOW)
+            ob = walk_to(session, vendor_id, PERIOD, now=NOW)
             classify(session, ob.obligation_id, now=NOW)
             estimated = estimate(session, ob.obligation_id, now=NOW)
             amount = estimated.amount if estimated.amount is not None else "no estimate"

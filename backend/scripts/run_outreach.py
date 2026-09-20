@@ -1,8 +1,8 @@
 """Run the outreach flow for OpenAI and ASUS: python scripts/run_outreach.py.
 
 OpenAI has partial December usage at close, so it asks for the total and, after the reply, is
-re-estimated and permitted. ASUS goes to the Controller under policy; a stand-in for the
-Controller's request then asks for the in-service date and the reply is not enough.
+re-estimated and permitted. ASUS goes to the Controller under policy; the Controller then asks
+for the in-service date and the reply is not enough.
 A language model drafts and reads the messages when one is configured; otherwise the template
 and the offline reader are used.
 """
@@ -18,14 +18,14 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from trueup.agents.classification_agent import classify  # noqa: E402
+from trueup.agents.controller_workspace import controller_id, decide  # noqa: E402
 from trueup.agents.estimation_agent import estimate  # noqa: E402
 from trueup.agents.outreach_agent import Topic, poll_replies, send_outreach  # noqa: E402
 from trueup.agents.policy_agent import enforce  # noqa: E402
+from trueup.close_orchestrator import walk_to  # noqa: E402
 from trueup.learning.testing import activate_escalator_rule  # noqa: E402
 from trueup.simulator.simulator import Simulator  # noqa: E402
-from trueup.simulator.stand_in import open_obligation_for_classification  # noqa: E402
 from trueup.store import enums as e  # noqa: E402
-from trueup.store.workflow import advance  # noqa: E402
 
 PERIOD = "2026-12"
 CLOSE = datetime(2026, 12, 31, 23, 59, tzinfo=UTC)
@@ -57,7 +57,7 @@ def main() -> None:
             return sim.reply_to_outreach(key, session)
 
         print("== At close (2026-12-31) ==")
-        openai = open_obligation_for_classification(session, "VEN-OPENAI", PERIOD, now=CLOSE)
+        openai = walk_to(session, "VEN-OPENAI", PERIOD, now=CLOSE)
         classify(session, openai.obligation_id, now=CLOSE)
         first = estimate(session, openai.obligation_id, now=CLOSE)
         print(f"OpenAI  estimate: {first.outcome}, evidence {first.evidence_status.value}")
@@ -67,7 +67,7 @@ def main() -> None:
             and first.evidence_status == e.EvidenceStatus.MISSING_USAGE,
         )
 
-        asus = open_obligation_for_classification(session, "VEN-ASUS", PERIOD, now=CLOSE)
+        asus = walk_to(session, "VEN-ASUS", PERIOD, now=CLOSE)
         classify(session, asus.obligation_id, now=CLOSE)
         estimate(session, asus.obligation_id, now=CLOSE)
         gate = enforce(session, asus.obligation_id, now=CLOSE)
@@ -86,12 +86,13 @@ def main() -> None:
             "OpenAI outreach asks the service owner for usage",
             request.topic == Topic.USAGE_CONFIRMATION and request.recipient_person_id == "ENG-001",
         )
-        advance(
-            asus,
-            e.WorkflowStage.AWAITING_OUTREACH,
-            e.NextAction.SEND_OUTREACH,
-            "controller-stand-in",
-            at=CLOSE,
+        decide(
+            session,
+            asus.obligation_id,
+            e.ControllerDecision.REQUEST_MORE_EVIDENCE,
+            now=CLOSE,
+            decided_by=controller_id(session),
+            notes="Ask the service owner for the in-service date.",
         )
         asus_request = send_outreach(
             session, asus.obligation_id, now=CLOSE, topic=Topic.IN_SERVICE_DATE

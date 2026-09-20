@@ -4,27 +4,25 @@ from decimal import Decimal
 import pytest
 from sqlalchemy import select
 
-from trueup.agents.classification_agent import classify
-from trueup.agents.detection_agent import detect
-from trueup.agents.estimation_agent import estimate
-from trueup.agents.invoice_lookup_agent import lookup
-from trueup.agents.journal_entry_service import draft_entry, post_simulated
-from trueup.agents.policy_agent import enforce
+from trueup.agents.controller_workspace import controller_id
 from trueup.agents.reconciliation_agent import (
     ReconciliationError,
     _diagnose,
     collect_arrivals,
     reconcile,
 )
+from trueup.close_orchestrator import CloseRun
+from trueup.demo_controller import ScriptedController
 from trueup.learning.testing import activate_escalator_rule
 from trueup.simulator import generator
 from trueup.simulator.simulator import Simulator
 from trueup.store import enums as e
 from trueup.store import models as m
-from trueup.store.workflow import IllegalTransitionError, advance
+from trueup.store.workflow import IllegalTransitionError
 
 CLOSE = datetime(2026, 12, 31, 23, 59, tzinfo=UTC)
 JAN = datetime(2027, 1, 31, tzinfo=UTC)
+OPENAI_REPLY_AT = "2027-01-02T10:00:00Z"
 PERIOD = "2026-12"
 M = e.EstimationMethod
 WAIT = (e.WorkflowStage.AWAITING_ACTUAL_INVOICE, e.NextAction.WAIT_FOR_INVOICE)
@@ -581,41 +579,13 @@ def january(sim):
     """The December close run end to end, then the clock moved past the January invoices."""
     sim.advance_to("2026-12-31T23:00:00Z")
     with sim.session() as s:
-        opened = detect(s, PERIOD, now=CLOSE).opened
-        for oid in opened:
-            lookup(s, oid, now=CLOSE)
-            ob = s.get(m.TrueUpObligation, oid)
-            # TEMPORARY stand-in for the orchestrator, which will move evidence gathering along.
-            if (ob.workflow_stage, ob.next_action) == (
-                e.WorkflowStage.GATHERING_EVIDENCE,
-                e.NextAction.GATHER_EVIDENCE,
-            ):
-                advance(
-                    ob, e.WorkflowStage.CLASSIFYING, e.NextAction.CLASSIFY, "orchestrator", at=CLOSE
-                )
-            classify(s, oid, now=CLOSE)
-            estimate(s, oid, now=CLOSE)
-
-        openai = s.get(m.TrueUpObligation, "OBL-OPENAI-2026-12")
         activate_escalator_rule(s, now=CLOSE)
-        full_usage(s)
-        advance(openai, e.WorkflowStage.ESTIMATING, e.NextAction.ESTIMATE, "outreach", at=CLOSE)
-        estimate(s, openai.obligation_id, now=CLOSE)
-
-        for oid in opened:
-            if state(s, oid) == (e.WorkflowStage.ESTIMATING, e.NextAction.VERIFY_POLICY):
-                enforce(s, oid, now=CLOSE)
-
-        asus = s.get(m.TrueUpObligation, "OBL-ASUS-2026-12")
-        wp = s.get(m.TrueUpWorkpaper, asus.current_workpaper_id)
-        wp.controller_decision = e.ControllerDecision.APPROVE
-        wp.status = e.WorkpaperStatus.APPROVED
-        advance(asus, e.WorkflowStage.READY_TO_DRAFT, e.NextAction.DRAFT_ENTRY, "test", at=CLOSE)
-
-        for oid in opened:
-            if state(s, oid) == (e.WorkflowStage.READY_TO_DRAFT, e.NextAction.DRAFT_ENTRY):
-                draft_entry(s, oid, now=CLOSE)
-                post_simulated(s, oid, now=CLOSE)
+        controller = ScriptedController(controller_id(s), approve_vendors=["VEN-ASUS"])
+        run = CloseRun(s, sim, controller)
+        run.detect(PERIOD, now=CLOSE)
+        run.settle(now=CLOSE, period=PERIOD)
+        sim.advance_to(OPENAI_REPLY_AT)
+        run.tick(now=sim.now())
         sim.advance_to(JAN)
         yield s
 

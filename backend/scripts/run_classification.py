@@ -11,9 +11,9 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from trueup.agents.classification_agent import classify  # noqa: E402
+from trueup.close_orchestrator import walk_to  # noqa: E402
 from trueup.gateway import llm  # noqa: E402
 from trueup.simulator.simulator import Simulator  # noqa: E402
-from trueup.simulator.stand_in import open_obligation_for_classification  # noqa: E402
 from trueup.store.enums import PurchaseType as P  # noqa: E402
 
 PERIOD = "2026-12"
@@ -37,9 +37,8 @@ def main() -> None:
     sim = Simulator.initialize()
     hits = 0
     with sim.session() as session:
-        # TEMPORARY: the Detection agent will open these obligations once it exists.
         for vendor_id, expected in EXPECTED.items():
-            obligation = open_obligation_for_classification(session, vendor_id, PERIOD, now=NOW)
+            obligation = walk_to(session, vendor_id, PERIOD, now=NOW)
             result = classify(
                 session, obligation.obligation_id, now=NOW, cross_check=args.cross_check or None
             )

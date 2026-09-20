@@ -11,13 +11,12 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from trueup.agents.invoice_lookup_agent import lookup  # noqa: E402
+from trueup.close_orchestrator import SEARCH, walk_to  # noqa: E402
 from trueup.simulator.simulator import Simulator  # noqa: E402
-from trueup.simulator.stand_in import open_obligation_for_classification  # noqa: E402
 from trueup.store import enums as e  # noqa: E402
 
 PERIOD = "2026-12"
 CLOSE = "2026-12-31T23:59:00Z"
-AT_SEARCH = (e.WorkflowStage.SEARCHING_AP, e.NextAction.SEARCH_AP)
 S = e.InvoiceStatus
 # Expected outcome at close, and after every December invoice has arrived (a later --at).
 EXPECTED_AT_CLOSE = {
@@ -47,11 +46,8 @@ def main() -> None:
     sim.advance_to(now)
     hits = 0
     with sim.session() as session:
-        # TEMPORARY: the Detection agent will open these obligations once it exists.
         for vendor_id, want in expected.items():
-            ob = open_obligation_for_classification(
-                session, vendor_id, PERIOD, now=now, to=AT_SEARCH
-            )
+            ob = walk_to(session, vendor_id, PERIOD, now=now, to=SEARCH)
             result = lookup(session, ob.obligation_id, now=now)
             hit = result.invoice_status == want
             hits += hit

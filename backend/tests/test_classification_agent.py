@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 import pytest
 from sqlalchemy import inspect, select
 
+from tests.support import bare_obligation
 from trueup.agents import classification_agent as ca
 from trueup.agents.classification_agent import (
     ClassificationOpinion,
@@ -11,10 +12,10 @@ from trueup.agents.classification_agent import (
     classify,
     classify_structure,
 )
+from trueup.close_orchestrator import NO_EVIDENCE, walk_to
 from trueup.gateway import llm
 from trueup.simulator import generator
 from trueup.simulator.simulator import Simulator
-from trueup.simulator.stand_in import open_obligation_for_classification
 from trueup.store import enums as e
 from trueup.store import models as m
 from trueup.store.workflow import IllegalTransitionError
@@ -48,7 +49,7 @@ def session(sim):
 
 
 def open_for(session, vendor_id):
-    return open_obligation_for_classification(session, vendor_id, PERIOD, now=NOW)
+    return walk_to(session, vendor_id, PERIOD, now=NOW, settings=NO_EVIDENCE)
 
 
 def opinion(kind, reason="from the text"):
@@ -126,7 +127,7 @@ def test_no_structure_at_all_is_unknown_and_goes_to_the_controller(session):
         m.CompanyVendor(**_vendor_columns(session, "VEN-MINTLIFY", "VEN-BLANK", "Blank Co"))
     )
     session.flush()
-    obligation = open_for(session, "VEN-BLANK")
+    obligation = bare_obligation(session, "VEN-BLANK", PERIOD, now=NOW)
     result = classify(session, obligation.obligation_id, now=NOW)
     assert result.purchase_type == P.UNKNOWN
     assert (result.routed_stage, result.next_action) == (
@@ -146,7 +147,9 @@ def _vendor_columns(session, source_id, new_id, name):
 
 
 def _only_run(session):
-    return session.scalars(select(m.TrueUpAgentRun)).one()
+    return session.scalars(
+        select(m.TrueUpAgentRun).where(m.TrueUpAgentRun.agent_name == "classification")
+    ).one()
 
 
 def test_llm_disagreement_routes_to_the_controller_and_keeps_the_rules_type(session):
@@ -229,9 +232,10 @@ def test_evidence_that_contradicts_the_rules_goes_to_the_controller(session):
 def test_wrong_stage_raises_and_writes_nothing(session):
     obligation = open_for(session, "VEN-MINTLIFY")
     classify(session, obligation.obligation_id, now=NOW)
+    before_runs = len(session.scalars(select(m.TrueUpAgentRun)).all())
     with pytest.raises(IllegalTransitionError):
         classify(session, obligation.obligation_id, now=NOW)
-    assert len(session.scalars(select(m.TrueUpAgentRun)).all()) == 1
+    assert len(session.scalars(select(m.TrueUpAgentRun)).all()) == before_runs
 
 
 def test_unknown_obligation_raises(session):

@@ -15,23 +15,18 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from trueup.agents.classification_agent import classify  # noqa: E402
 from trueup.agents.controller_workspace import controller_id  # noqa: E402
-from trueup.agents.detection_agent import detect  # noqa: E402
 from trueup.agents.estimation_agent import compute, estimate  # noqa: E402
-from trueup.agents.invoice_lookup_agent import lookup  # noqa: E402
-from trueup.agents.journal_entry_service import draft_entry, post_simulated  # noqa: E402
 from trueup.agents.learning_agent import (  # noqa: E402
     approve_rule,
     record_outcome,
     run_learning_loop,
 )
-from trueup.agents.policy_agent import enforce  # noqa: E402
 from trueup.agents.reconciliation_agent import collect_arrivals, reconcile  # noqa: E402
+from trueup.close_orchestrator import ESTIMATE, CloseRun, walk_to  # noqa: E402
 from trueup.simulator.simulator import Simulator  # noqa: E402
 from trueup.store import enums as e  # noqa: E402
 from trueup.store import models as m  # noqa: E402
-from trueup.store.workflow import advance  # noqa: E402
 
 PERIOD = "2026-12"
 CLOSE = datetime(2026, 12, 31, 23, 0, tzinfo=UTC)
@@ -124,13 +119,8 @@ def main() -> None:
 
         sim.advance_to(CLOSE)
         print(f"DECEMBER CLOSE ({CLOSE:%Y-%m-%d}): OpenAI's estimate")
-        opened = detect(session, PERIOD, now=CLOSE).opened
-        assert OPENAI in opened
-        lookup(session, OPENAI, now=CLOSE)
-        ob = session.get(m.TrueUpObligation, OPENAI)
-        # TEMPORARY stand-in for the orchestrator, which will move evidence gathering along.
-        advance(ob, e.WorkflowStage.CLASSIFYING, e.NextAction.CLASSIFY, "orchestrator", at=CLOSE)
-        classify(session, OPENAI, now=CLOSE)
+        ob = walk_to(session, "VEN-OPENAI", PERIOD, now=CLOSE, to=ESTIMATE)
+        assert ob.obligation_id == OPENAI
         complete_openai_usage(session)
         baseline = compute(session, ob, rules=[]).estimate.amount
         print(f"  without the rule (baseline): {baseline}")
@@ -146,9 +136,7 @@ def main() -> None:
             and [a["learning_id"] for a in applied] == [replay.learning_id],
         )
 
-        enforce(session, OPENAI, now=CLOSE)
-        draft_entry(session, OPENAI, now=CLOSE)
-        post_simulated(session, OPENAI, now=CLOSE)
+        CloseRun(session).advance_obligation(OPENAI, now=CLOSE)
 
         sim.advance_to(JANUARY)
         print(f"JANUARY ({JANUARY:%Y-%m-%d}): the invoice grades the estimate")

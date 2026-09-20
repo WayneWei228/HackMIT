@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import cast
 
 from pydantic import BaseModel, Field
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from trueup.agents.ingestion import SEED_DIR, IngestionResult
@@ -166,6 +167,8 @@ def collect_evidence(
     dropped: list[DroppedFact] = []
     files: list[FileEvidence] = []
     uncertainties: list[str] = []
+    stored = _stored_cards(session, obligation_id)
+    seen = {(c.source_id, c.fact, c.source_excerpt) for c in stored}
 
     for file_id in ingestion.selected:
         entry = entries.get(file_id)
@@ -186,7 +189,7 @@ def collect_evidence(
             )
             continue
 
-        kept = 0
+        kept = repeated = 0
         for fact in extracted.facts:
             fact = _clear_ungrounded_date(fact, text, uncertainties, entry.name)
             reason = ungrounded_reason(fact, text)
@@ -196,16 +199,22 @@ def collect_evidence(
                 )
                 uncertainties.append(f"Dropped {fact.key.value} from {entry.name}: {reason}")
                 continue
+            card = _card(fact, entry, "", obligation_id, now)
+            if (card.source_id, card.fact, card.source_excerpt) in seen:
+                repeated += 1
+                continue
+            seen.add((card.source_id, card.fact, card.source_excerpt))
             kept += 1
-            cards.append(_card(fact, entry, f"EVD-{stem}-{len(cards) + 1:02d}", obligation_id, now))
-        if kept == 0:
+            number = len(stored) + len(cards) + 1
+            cards.append(card.model_copy(update={"evidence_id": f"EVD-{stem}-{number:02d}"}))
+        if kept == 0 and repeated == 0:
             uncertainties.append(f"No grounded facts from {entry.name}")
         files.append(
             FileEvidence(
                 file_id=file_id,
                 name=entry.name,
                 facts_kept=kept,
-                facts_dropped=len(extracted.facts) - kept,
+                facts_dropped=len(extracted.facts) - kept - repeated,
             )
         )
 
@@ -224,6 +233,20 @@ def collect_evidence(
     if session is not None:
         _log(session, case, ingestion, result, obligation_id, persisted, now)
     return result
+
+
+def _stored_cards(session: Session | None, obligation_id: str | None) -> list[TrueUpEvidence]:
+    """Document cards already on the obligation, so a second gathering adds only what is new."""
+    if session is None or obligation_id is None:
+        return []
+    return list(
+        session.scalars(
+            select(TrueUpEvidence).where(
+                TrueUpEvidence.obligation_id == obligation_id,
+                TrueUpEvidence.source_table == "document",
+            )
+        )
+    )
 
 
 def llm_extractor(case: CaseEntry, entry: FileEntry, text: str) -> DocumentFacts:

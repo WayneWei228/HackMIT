@@ -4,10 +4,11 @@ from decimal import Decimal
 import pytest
 from sqlalchemy import select
 
+from tests.support import bare_obligation
 from trueup.agents.invoice_lookup_agent import Verdict, lookup
+from trueup.close_orchestrator import NO_EVIDENCE, SEARCH, walk_to
 from trueup.simulator import generator
 from trueup.simulator.simulator import Simulator
-from trueup.simulator.stand_in import open_obligation_for_classification
 from trueup.store import enums as e
 from trueup.store import models as m
 from trueup.store.workflow import IllegalTransitionError
@@ -16,7 +17,6 @@ NOW = datetime(2026, 12, 31, 23, 59, tzinfo=UTC)
 JANUARY = datetime(2027, 1, 31, tzinfo=UTC)
 PERIOD = "2026-12"
 DEC_1, DEC_31 = date(2026, 12, 1), date(2026, 12, 31)
-AT_SEARCH = (e.WorkflowStage.SEARCHING_AP, e.NextAction.SEARCH_AP)
 GATHER = (e.WorkflowStage.GATHERING_EVIDENCE, e.NextAction.GATHER_EVIDENCE)
 CONTROLLER = (e.WorkflowStage.AWAITING_CONTROLLER, e.NextAction.CONTROLLER_REVIEW)
 DEMO_VENDORS = ("VEN-MINTLIFY", "VEN-OPENAI", "VEN-ASUS", "VEN-META")
@@ -39,7 +39,15 @@ def session(sim):
 
 
 def open_for(session, vendor_id, period=PERIOD):
-    return open_obligation_for_classification(session, vendor_id, period, now=NOW, to=AT_SEARCH)
+    if vendor_id in DEMO_VENDORS + ("VEN-NOTABILITY",):
+        return walk_to(session, vendor_id, period, now=NOW, to=SEARCH, settings=NO_EVIDENCE)
+    return bare_obligation(session, vendor_id, period, now=NOW, to=SEARCH)
+
+
+def lookup_run(session):
+    return session.scalars(
+        select(m.TrueUpAgentRun).where(m.TrueUpAgentRun.agent_name == "invoice_lookup")
+    ).one()
 
 
 def routed(result):
@@ -122,7 +130,7 @@ def test_prepaid_annual_invoice_routes_to_evidence_without_a_match(session):
     ]
     assert "in advance" in result.reason
     assert ob.accrual_status == e.AccrualStatus.NOT_STARTED and ob.resolved_at is None
-    run = session.scalars(select(m.TrueUpAgentRun)).one()
+    run = lookup_run(session)
     assert run.uncertainties_json and "INV-NOTABILITY-2026-12" in run.uncertainties_json[0]
 
 
@@ -262,7 +270,7 @@ def test_an_exact_invoice_plus_a_multi_period_one_is_ambiguous(session):
 
 
 def test_wrong_stage_raises_and_a_second_run_raises(session):
-    ob = open_obligation_for_classification(session, "VEN-META", PERIOD, now=NOW)
+    ob = walk_to(session, "VEN-META", PERIOD, now=NOW, settings=NO_EVIDENCE)
     with pytest.raises(IllegalTransitionError):
         lookup(session, ob.obligation_id, now=NOW)
     fresh = open_for(session, "VEN-MINTLIFY")
@@ -275,7 +283,7 @@ def test_run_log_records_candidates_and_outcome(session):
     vendor_id, ob = unseen(session)
     invoice = add_invoice(session, vendor_id, DEC_1, DEC_31)
     lookup(session, ob.obligation_id, now=NOW)
-    run = session.scalars(select(m.TrueUpAgentRun)).one()
+    run = lookup_run(session)
     assert (run.agent_name, run.action) == ("invoice_lookup", "search_ap")
     assert run.status == e.AgentRunStatus.COMPLETED
     assert run.obligation_id == ob.obligation_id
@@ -290,21 +298,5 @@ def test_an_ambiguous_run_is_escalated_with_an_uncertainty(session):
     vendor_id, ob = unseen(session)
     add_invoice(session, vendor_id, DEC_1, date(2026, 12, 15))
     lookup(session, ob.obligation_id, now=NOW)
-    run = session.scalars(select(m.TrueUpAgentRun)).one()
+    run = lookup_run(session)
     assert run.status == e.AgentRunStatus.ESCALATED and run.uncertainties_json
-
-
-def test_stand_in_default_walk_is_unchanged_and_rejects_unknown_states(session):
-    ob = open_obligation_for_classification(session, "VEN-META", PERIOD, now=NOW)
-    assert (ob.workflow_stage, ob.next_action) == (
-        e.WorkflowStage.CLASSIFYING,
-        e.NextAction.CLASSIFY,
-    )
-    with pytest.raises(ValueError):
-        open_obligation_for_classification(
-            session,
-            "VEN-OPENAI",
-            PERIOD,
-            now=NOW,
-            to=(e.WorkflowStage.CLOSED, e.NextAction.NONE),
-        )

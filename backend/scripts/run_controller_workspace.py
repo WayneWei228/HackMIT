@@ -9,19 +9,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from sqlalchemy import select  # noqa: E402
-
 from trueup.agents import controller_workspace as cw  # noqa: E402
-from trueup.agents.classification_agent import classify  # noqa: E402
-from trueup.agents.detection_agent import detect  # noqa: E402
-from trueup.agents.estimation_agent import estimate  # noqa: E402
-from trueup.agents.invoice_lookup_agent import lookup  # noqa: E402
 from trueup.agents.journal_entry_service import draft_entry, post_simulated  # noqa: E402
-from trueup.agents.policy_agent import enforce  # noqa: E402
+from trueup.close_orchestrator import CloseRun  # noqa: E402
 from trueup.simulator.simulator import Simulator  # noqa: E402
 from trueup.store import enums as e  # noqa: E402
 from trueup.store import models as m  # noqa: E402
-from trueup.store.workflow import advance  # noqa: E402
 
 PERIOD = "2026-12"
 NOW = datetime(2026, 12, 31, 23, 59, tzinfo=UTC)
@@ -29,20 +22,9 @@ ASUS, NOTABILITY = "OBL-ASUS-2026-12", "OBL-NOTABILITY-2026-12"
 
 
 def run_chain(session) -> None:
-    detect(session, PERIOD, now=NOW)
-    for ob in list(session.scalars(select(m.TrueUpObligation))):
-        lookup(session, ob.obligation_id, now=NOW)
-        # TEMPORARY: the orchestrator will move the obligation from evidence to classification.
-        advance(
-            ob, e.WorkflowStage.CLASSIFYING, e.NextAction.CLASSIFY, "orchestrator-stand-in", at=NOW
-        )
-        classify(session, ob.obligation_id, now=NOW)
-        estimate(session, ob.obligation_id, now=NOW)
-        if (ob.workflow_stage, ob.next_action) == (
-            e.WorkflowStage.ESTIMATING,
-            e.NextAction.VERIFY_POLICY,
-        ):
-            enforce(session, ob.obligation_id, now=NOW)
+    run = CloseRun(session)
+    run.detect(PERIOD, now=NOW)
+    run.settle(now=NOW, period=PERIOD)
 
 
 def main() -> None:

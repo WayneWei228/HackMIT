@@ -7,7 +7,6 @@ from sqlalchemy import select
 from trueup.agents.detection_agent import PeriodNotDetectableError, detect
 from trueup.simulator import generator
 from trueup.simulator.simulator import Simulator
-from trueup.simulator.stand_in import open_obligation_for_classification
 from trueup.store import enums as e
 from trueup.store import models as m
 from trueup.store.session import create_all, get_session, make_engine
@@ -190,28 +189,6 @@ def test_opens_the_five_demo_obligations_from_the_real_seed(demo):
     assert by_vendor["VEN-ASUS"].po_id == "PO-ASUS-2026"
     assert by_vendor["VEN-NOTABILITY"].po_id is None
     assert by_vendor["VEN-NOTABILITY"].contract_id == "CON-NOTABILITY"
-
-
-def test_detection_matches_what_the_stand_in_opens(world):
-    detected_sim, stand_in_sim = Simulator.from_world(world), Simulator.from_world(world)
-    for sim in (detected_sim, stand_in_sim):
-        sim.advance_to("2026-12-31T23:59:00Z")
-    with detected_sim.session() as a, stand_in_sim.session() as b:
-        detect(a, PERIOD, now=NOW)
-        for vendor_id in DEMO_VENDORS:
-            open_obligation_for_classification(b, vendor_id, PERIOD, now=NOW)
-        fields = (
-            "obligation_id",
-            "vendor_id",
-            "period",
-            "contract_id",
-            "po_id",
-            "service_start_date",
-            "service_end_date",
-        )
-        assert [tuple(getattr(o, f) for f in fields) for o in obligations(a)] == [
-            tuple(getattr(o, f) for f in fields) for o in obligations(b)
-        ]
 
 
 def test_every_obligation_ends_at_searching_ap_with_neutral_fields(demo):

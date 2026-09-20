@@ -1,4 +1,8 @@
-"""Run Ingestion then Evidence for every case: python scripts/run_evidence.py --judge llm."""
+"""Run Ingestion then Evidence for every case: python scripts/run_evidence.py [--judge llm].
+
+The default runs offline: the rule judge picks files and the regex extractor reads them.
+`--judge all` reads every visible file, which scores the extractor without the file picking.
+"""
 
 from __future__ import annotations
 
@@ -10,7 +14,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from trueup.agents import evidence_agent, ingestion  # noqa: E402
+from trueup.agents import evidence_agent, evidence_rules, ingestion  # noqa: E402
 from trueup.agents.evidence_agent import EvidenceError, EvidenceResult, FactKey  # noqa: E402
 
 K = FactKey
@@ -46,6 +50,13 @@ EXPECTED: dict[str, list[tuple[str, set[FactKey], Decimal | None, str | None]]] 
 }
 
 
+def select_all(case, cards):
+    return [
+        ingestion.FileDecision(file_id=c.entry.file_id, selected=True, reason="every file")
+        for c in cards
+    ]
+
+
 def _hit(result: EvidenceResult, keys: set[FactKey], number: Decimal | None, date: str | None):
     for card in result.cards:
         if card.value_json["key"] not in {k.value for k in keys}:
@@ -60,12 +71,17 @@ def _hit(result: EvidenceResult, keys: set[FactKey], number: Decimal | None, dat
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--judge", choices=["rule", "llm"], default="rule")
-    parser.add_argument("--extractor", choices=["llm"], default="llm")
+    parser.add_argument("--judge", choices=["rule", "llm", "all"], default="rule")
+    parser.add_argument("--extractor", choices=["rule", "llm"], default="rule")
     parser.add_argument("--seed-dir", type=Path, default=ingestion.SEED_DIR)
     args = parser.parse_args()
 
-    judge = ingestion.llm_judge if args.judge == "llm" else ingestion.rule_judge
+    judge = {"llm": ingestion.llm_judge, "rule": ingestion.rule_judge, "all": select_all}[
+        args.judge
+    ]
+    extractor = (
+        evidence_agent.llm_extractor if args.extractor == "llm" else evidence_rules.rule_extractor
+    )
     universe = ingestion.load_universe(args.seed_dir)
     hits = total = 0
     print(f"ingestion judge={args.judge}  extractor={args.extractor}")
@@ -75,7 +91,7 @@ def main() -> None:
         )
         try:
             result = evidence_agent.collect_evidence(
-                universe, picked, now=universe.as_of, seed_dir=args.seed_dir
+                universe, picked, now=universe.as_of, seed_dir=args.seed_dir, extractor=extractor
             )
         except EvidenceError as exc:
             sys.exit(str(exc))

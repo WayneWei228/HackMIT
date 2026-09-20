@@ -7,7 +7,6 @@ import pytest
 from sqlalchemy import delete, func, select
 
 from trueup.agents import controller_workspace as cw
-from trueup.agents.classification_agent import classify
 from trueup.agents.controller_workspace import (
     AdjustmentError,
     ControllerWorkspaceError,
@@ -19,15 +18,11 @@ from trueup.agents.controller_workspace import (
     decide,
     review_queue,
 )
-from trueup.agents.detection_agent import detect
-from trueup.agents.estimation_agent import estimate
-from trueup.agents.invoice_lookup_agent import lookup
 from trueup.agents.journal_entry_service import draft_entry, post_simulated
-from trueup.agents.policy_agent import enforce
+from trueup.close_orchestrator import NO_EVIDENCE, CloseRun, walk_to
 from trueup.gateway import llm
 from trueup.simulator import generator
 from trueup.simulator.simulator import Simulator
-from trueup.simulator.stand_in import open_obligation_for_classification
 from trueup.store import enums as e
 from trueup.store import models as m
 from trueup.store.integrity import AgentRunLog, assert_balanced
@@ -50,16 +45,10 @@ def world():
 
 
 def run_chain(session):
-    """Detection, Invoice Lookup, an orchestrator stand-in, Classification, Estimation, Policy."""
-    detect(session, PERIOD, now=NOW)
-    for ob in list(session.scalars(select(m.TrueUpObligation))):
-        lookup(session, ob.obligation_id, now=NOW)
-        # TEMPORARY stand-in for the orchestrator, which does not exist yet.
-        advance(ob, S.CLASSIFYING, A.CLASSIFY, "orchestrator-stand-in", at=NOW)
-        classify(session, ob.obligation_id, now=NOW)
-        estimate(session, ob.obligation_id, now=NOW)
-        if (ob.workflow_stage, ob.next_action) == (S.ESTIMATING, A.VERIFY_POLICY):
-            enforce(session, ob.obligation_id, now=NOW)
+    """The December close to rest: Detection through Policy, with no Controller attached."""
+    run = CloseRun(session)
+    run.detect(PERIOD, now=NOW)
+    run.settle(now=NOW, period=PERIOD)
 
 
 @pytest.fixture
@@ -99,7 +88,7 @@ def waiting(
     uncertainty=None,
 ):
     """A hand-built obligation waiting for the Controller, optionally with a workpaper."""
-    ob = open_obligation_for_classification(session, vendor_id, PERIOD, now=opened_at)
+    ob = walk_to(session, vendor_id, PERIOD, now=opened_at, settings=NO_EVIDENCE)
     ob.opened_at = opened_at
     ob.purchase_type = e.PurchaseType.FIXED_RECURRING
     if to == "controller":
@@ -506,7 +495,7 @@ def test_deciding_twice_raises_and_applies_once(hand):
 
 
 def test_an_obligation_that_is_not_in_review_is_refused(hand):
-    ob = open_obligation_for_classification(hand, "VEN-ASUS", PERIOD, now=NOW)
+    ob = walk_to(hand, "VEN-ASUS", PERIOD, now=NOW, settings=NO_EVIDENCE)
     with pytest.raises(NotInReviewError):
         decide(hand, ob.obligation_id, C.REJECT, now=NOW, decided_by=CONTROLLER, notes="x")
     with pytest.raises(LookupError):

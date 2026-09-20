@@ -23,11 +23,11 @@ from trueup.agents.learning_agent import (
     run_learning_loop,
 )
 from trueup.agents.reconciliation_agent import reconcile
+from trueup.close_orchestrator import NO_EVIDENCE, walk_to
 from trueup.learning.rules import BiasGuardError, CandidateRule, load_active_rules
 from trueup.learning.testing import activate_escalator_rule
 from trueup.simulator import generator
 from trueup.simulator.simulator import Simulator
-from trueup.simulator.stand_in import open_obligation_for_classification
 from trueup.store import enums as e
 from trueup.store import models as m
 from trueup.store.workflow import IllegalTransitionError
@@ -128,7 +128,7 @@ def complete_openai_usage(session):
 
 def december_openai(session):
     complete_openai_usage(session)
-    ob = open_obligation_for_classification(session, "VEN-OPENAI", "2026-12", now=NOW)
+    ob = walk_to(session, "VEN-OPENAI", "2026-12", now=NOW, settings=NO_EVIDENCE)
     classify(session, ob.obligation_id, now=NOW)
     return ob
 

@@ -20,8 +20,8 @@ from trueup.agents.journal_entry_service import (  # noqa: E402
     post_simulated,
 )
 from trueup.agents.policy_agent import enforce  # noqa: E402
+from trueup.close_orchestrator import walk_to  # noqa: E402
 from trueup.simulator.simulator import Simulator  # noqa: E402
-from trueup.simulator.stand_in import open_obligation_for_classification  # noqa: E402
 from trueup.store import models as m  # noqa: E402
 from trueup.store.workflow import IllegalTransitionError  # noqa: E402
 
@@ -52,9 +52,8 @@ def main() -> None:
     hits = 0
     drafted = []
     with sim.session() as session:
-        # TEMPORARY: the Detection agent will open these obligations once it exists.
         for vendor_id, expected in EXPECTED.items():
-            ob = open_obligation_for_classification(session, vendor_id, PERIOD, now=NOW)
+            ob = walk_to(session, vendor_id, PERIOD, now=NOW)
             classify(session, ob.obligation_id, now=NOW)
             estimate(session, ob.obligation_id, now=NOW)
             if (ob.workflow_stage.value, ob.next_action.value) == ("ESTIMATING", "VERIFY_POLICY"):

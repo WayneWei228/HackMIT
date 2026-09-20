@@ -1,8 +1,4 @@
-"""TEMPORARY stand-in for the Detection agent, which is not built yet.
-
-Opens one obligation for a vendor and month straight from the company tables and walks it to
-(CLASSIFYING, CLASSIFY) along legal workflow edges. Delete this module when Detection exists.
-"""
+"""Test helpers that build the states Detection would not open on its own."""
 
 from __future__ import annotations
 
@@ -12,28 +8,27 @@ from datetime import date, datetime
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from trueup.agents.detection_agent import PeriodNotDetectableError
+from trueup.close_orchestrator import CLASSIFY, GATHER, NO_EVIDENCE, SEARCH, State, walk_to
 from trueup.store import enums as e
 from trueup.store import models as m
 from trueup.store.workflow import advance
 
-_WALK = (
-    (e.WorkflowStage.SEARCHING_AP, e.NextAction.SEARCH_AP),
-    (e.WorkflowStage.GATHERING_EVIDENCE, e.NextAction.GATHER_EVIDENCE),
-    (e.WorkflowStage.CLASSIFYING, e.NextAction.CLASSIFY),
-)
 
-
-def open_obligation_for_classification(
+def bare_obligation(
     session: Session,
     vendor_id: str,
     period: str,
     *,
     now: datetime,
-    to: tuple[e.WorkflowStage, e.NextAction] = _WALK[-1],
+    to: State = CLASSIFY,
 ) -> m.TrueUpObligation:
-    """Open the obligation and walk it to `to`, one of the states in the standard walk."""
-    if to not in _WALK:
-        raise ValueError(f"the stand-in cannot open an obligation at {to[0]}/{to[1]}")
+    """Open an obligation by hand for a vendor or period Detection skips, then walk it to `to`.
+
+    Use it for a vendor with no contract or PO, or a closed or unknown period. The contract and
+    PO come from the tables, as Detection would link them. Every move goes through the workflow
+    graph, and no agent runs, so nothing else changes.
+    """
     year, month = (int(part) for part in period.split("-"))
     po = session.scalars(
         select(m.CompanyPurchaseOrder).where(m.CompanyPurchaseOrder.vendor_id == vendor_id)
@@ -63,8 +58,23 @@ def open_obligation_for_classification(
     )
     session.add(obligation)
     session.flush()
-    for stage, action in _WALK:
-        advance(obligation, stage, action, "detection-stand-in", at=now)
-        if (stage, action) == to:
+    advance(obligation, *SEARCH, "detection", at=now)
+    for state in (GATHER, CLASSIFY):
+        if to == SEARCH or _state(obligation) == to:
             break
+        advance(obligation, *state, "test", at=now)
     return obligation
+
+
+def open_obligation(
+    session: Session, vendor_id: str, period: str, *, now: datetime, to: State = CLASSIFY
+) -> m.TrueUpObligation:
+    """Detection's obligation, or a hand-opened one for an unseen vendor or a closed period."""
+    try:
+        return walk_to(session, vendor_id, period, now=now, to=to, settings=NO_EVIDENCE)
+    except (LookupError, PeriodNotDetectableError):
+        return bare_obligation(session, vendor_id, period, now=now, to=to)
+
+
+def _state(obligation: m.TrueUpObligation) -> State:
+    return e.WorkflowStage(obligation.workflow_stage), e.NextAction(obligation.next_action)

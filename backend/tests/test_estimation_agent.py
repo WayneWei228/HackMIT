@@ -6,11 +6,11 @@ from sqlalchemy import inspect, select
 
 from trueup.agents.classification_agent import classify
 from trueup.agents.estimation_agent import estimate, usage_rate
+from trueup.close_orchestrator import NO_EVIDENCE, walk_to
 from trueup.learning.rules import CandidateRule
 from trueup.learning.testing import LEARNING_ID, activate_escalator_rule
 from trueup.simulator import generator
 from trueup.simulator.simulator import Simulator
-from trueup.simulator.stand_in import open_obligation_for_classification
 from trueup.store import enums as e
 from trueup.store import models as m
 from trueup.store.integrity import assert_balanced
@@ -51,7 +51,7 @@ def taught(session):
 
 def ready(session, vendor_id):
     """Open an obligation and classify it so it sits at ESTIMATING/ESTIMATE."""
-    obligation = open_obligation_for_classification(session, vendor_id, PERIOD, now=NOW)
+    obligation = walk_to(session, vendor_id, PERIOD, now=NOW, settings=NO_EVIDENCE)
     classify(session, obligation.obligation_id, now=NOW)
     return obligation
 
@@ -388,7 +388,7 @@ def test_unseen_vendors_with_the_same_structure_estimate_the_same_way(session):
 
 
 def test_wrong_stage_raises(session):
-    obligation = open_obligation_for_classification(session, "VEN-MINTLIFY", PERIOD, now=NOW)
+    obligation = walk_to(session, "VEN-MINTLIFY", PERIOD, now=NOW, settings=NO_EVIDENCE)
     with pytest.raises(IllegalTransitionError):
         estimate(session, obligation.obligation_id, now=NOW)
 

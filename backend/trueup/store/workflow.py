@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
+from trueup.store.enums import AccrualStatus
 from trueup.store.enums import NextAction as A
 from trueup.store.enums import WorkflowStage as S
 from trueup.store.models import TrueUpObligation
@@ -70,8 +71,19 @@ def advance(
             f"{current[0]}/{current[1]} cannot move to {target[0]}/{target[1]}"
         )
     obligation.workflow_stage, obligation.next_action = target
+    _track_pending_approval(obligation, current, target)
     obligation.assigned_agent = assigned_agent
     obligation.updated_at = at
     if target[0] in TERMINAL_STAGES:
         obligation.resolved_at = at
     return obligation
+
+
+def _track_pending_approval(obligation: TrueUpObligation, current: State, target: State) -> None:
+    """An accrual waits for approval exactly while its workpaper sits in the Controller queue."""
+    status = AccrualStatus(obligation.accrual_status)
+    if target == _CONTROLLER and current != _CONTROLLER:
+        if status == AccrualStatus.NOT_STARTED and obligation.current_workpaper_id:
+            obligation.accrual_status = AccrualStatus.PENDING_APPROVAL
+    elif current == _CONTROLLER and status == AccrualStatus.PENDING_APPROVAL:
+        obligation.accrual_status = AccrualStatus.NOT_STARTED

@@ -6,6 +6,7 @@ from decimal import Decimal
 import pytest
 from sqlalchemy import func, select
 
+from tests.support import open_obligation
 from trueup.agents import journal_entry_service as jes
 from trueup.agents.journal_entry_service import (
     AlreadyDraftedError,
@@ -21,7 +22,6 @@ from trueup.agents.journal_entry_service import (
 )
 from trueup.simulator import generator
 from trueup.simulator.simulator import Simulator
-from trueup.simulator.stand_in import open_obligation_for_classification
 from trueup.store import enums as e
 from trueup.store import models as m
 from trueup.store.integrity import UnbalancedEntryError
@@ -70,7 +70,7 @@ def ready(
     with_workpaper=True,
 ):
     """An obligation with a hand-built workpaper, walked along legal edges to `stage`."""
-    ob = open_obligation_for_classification(session, vendor_id, period, now=NOW)
+    ob = open_obligation(session, vendor_id, period, now=NOW)
     advance(ob, S.ESTIMATING, A.ESTIMATE, "test", at=NOW)
     advance(ob, S.ESTIMATING, A.VERIFY_POLICY, "test", at=NOW)
     if stage == (S.READY_TO_DRAFT, A.DRAFT_ENTRY):
@@ -521,7 +521,7 @@ def closed(world):
     with sim.session() as s:
         obligations = {}
         for vendor in ("VEN-MINTLIFY", "VEN-OPENAI", "VEN-ASUS", "VEN-META", "VEN-NOTABILITY"):
-            ob = open_obligation_for_classification(s, vendor, PERIOD, now=NOW)
+            ob = open_obligation(s, vendor, PERIOD, now=NOW)
             classify(s, ob.obligation_id, now=NOW)
             estimate(s, ob.obligation_id, now=NOW)
             if (ob.workflow_stage, ob.next_action) == (S.ESTIMATING, A.VERIFY_POLICY):
@@ -551,4 +551,7 @@ def test_cases_that_need_a_person_or_evidence_never_draft(closed, vendor):
     ob = obligations[vendor]
     with pytest.raises((NotApprovedError, IllegalTransitionError)):
         draft_entry(s, ob.obligation_id, now=NOW)
-    assert ob.accrual_status == e.AccrualStatus.NOT_STARTED
+    waiting_for_approval = vendor == "VEN-ASUS"
+    assert ob.accrual_status == (
+        e.AccrualStatus.PENDING_APPROVAL if waiting_for_approval else e.AccrualStatus.NOT_STARTED
+    )

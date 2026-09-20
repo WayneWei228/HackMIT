@@ -4,6 +4,7 @@ from decimal import Decimal
 import pytest
 from sqlalchemy import inspect, select
 
+from tests.support import open_obligation
 from trueup.agents import outreach_agent as outreach
 from trueup.agents.classification_agent import classify
 from trueup.agents.estimation_agent import estimate
@@ -24,7 +25,6 @@ from trueup.gateway import llm
 from trueup.learning.testing import activate_escalator_rule
 from trueup.simulator import generator
 from trueup.simulator.simulator import Simulator
-from trueup.simulator.stand_in import open_obligation_for_classification
 from trueup.store import enums as e
 from trueup.store import models as m
 from trueup.store.workflow import IllegalTransitionError, advance
@@ -86,7 +86,7 @@ def clone_usage_vendor(session, new_id, name):
 
 
 def at_outreach(session, vendor_id, status=None):
-    obligation = open_obligation_for_classification(session, vendor_id, PERIOD, now=NOW, to=SEARCH)
+    obligation = open_obligation(session, vendor_id, PERIOD, now=NOW, to=SEARCH)
     if status is not None:
         obligation.evidence_status = status
     advance(obligation, *OUTREACH_STATE, "test", at=NOW)
@@ -460,7 +460,7 @@ def test_replying_without_an_open_request_raises(session):
 
 
 def test_wrong_stage_raises(session):
-    obligation = open_obligation_for_classification(session, "VEN-OPENAI", PERIOD, now=NOW)
+    obligation = open_obligation(session, "VEN-OPENAI", PERIOD, now=NOW)
     with pytest.raises(IllegalTransitionError):
         send_outreach(session, obligation.obligation_id, now=NOW, topic=Topic.USAGE_CONFIRMATION)
     with pytest.raises(IllegalTransitionError):
@@ -572,7 +572,7 @@ def test_polling_processes_a_reply_once_it_has_arrived(sim, session):
 
 
 def test_openai_end_to_end_partial_usage_outreach_reply_estimate_permit(sim, session):
-    obligation = open_obligation_for_classification(session, "VEN-OPENAI", PERIOD, now=NOW)
+    obligation = open_obligation(session, "VEN-OPENAI", PERIOD, now=NOW)
     classify(session, obligation.obligation_id, now=NOW)
     first = estimate(session, obligation.obligation_id, now=NOW)
     assert first.outcome == "NEEDS_OUTREACH" and first.amount is None

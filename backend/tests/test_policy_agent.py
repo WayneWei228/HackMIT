@@ -6,6 +6,7 @@ import pytest
 from sqlalchemy import inspect as sa_inspect
 from sqlalchemy import select
 
+from tests.support import open_obligation
 from trueup.agents import policy_agent
 from trueup.agents.policy_agent import (
     MissingWorkpaperError,
@@ -16,7 +17,6 @@ from trueup.agents.policy_agent import (
 from trueup.learning.testing import activate_escalator_rule
 from trueup.simulator import generator
 from trueup.simulator.simulator import Simulator
-from trueup.simulator.stand_in import open_obligation_for_classification
 from trueup.store import enums as e
 from trueup.store import models as m
 from trueup.store.workflow import IllegalTransitionError, advance
@@ -70,7 +70,7 @@ def ready(
     accounts=("610100", "200100", "CC-100"),
 ):
     """An obligation waiting at (ESTIMATING, VERIFY_POLICY) with a hand-built workpaper."""
-    ob = open_obligation_for_classification(session, vendor_id, period, now=NOW)
+    ob = open_obligation(session, vendor_id, period, now=NOW)
     advance(ob, S.ESTIMATING, A.ESTIMATE, "test", at=NOW)
     advance(ob, S.ESTIMATING, A.VERIFY_POLICY, "test", at=NOW)
     ob.purchase_type = purchase_type
@@ -332,7 +332,7 @@ def test_running_twice_is_refused_and_changes_nothing(session):
 
 
 def test_wrong_stage_and_missing_workpaper_raise(session):
-    ob = open_obligation_for_classification(session, "VEN-MINTLIFY", PERIOD, now=NOW)
+    ob = open_obligation(session, "VEN-MINTLIFY", PERIOD, now=NOW)
     with pytest.raises(IllegalTransitionError):
         enforce(session, ob.obligation_id, now=NOW)
     advance(ob, S.ESTIMATING, A.ESTIMATE, "test", at=NOW)
@@ -470,7 +470,7 @@ def closed(world):
     with sim.session() as s:
         obligations = {}
         for vendor in ("VEN-MINTLIFY", "VEN-OPENAI", "VEN-ASUS", "VEN-META", "VEN-NOTABILITY"):
-            ob = open_obligation_for_classification(s, vendor, PERIOD, now=NOW)
+            ob = open_obligation(s, vendor, PERIOD, now=NOW)
             classify(s, ob.obligation_id, now=NOW)
             estimate(s, ob.obligation_id, now=NOW)
             obligations[vendor] = ob
