@@ -152,11 +152,9 @@ def test_every_screen_payload_carries_real_data_and_no_floats(api):
         assert detail["ingestion"]["selected_count"] >= 1
         assert all(f["preview"]["card"] for f in detail["ingestion"]["files"])
         assert detail["obligation"]["signals"]
-        assert [t["agent"] for t in detail["timeline"]][:3] == [
-            "invoice_lookup",
-            "evidence",
-            "classification",
-        ]
+        turns = [t["agent"] for t in detail["timeline"]]
+        turns = [a for i, a in enumerate(turns) if i == 0 or turns[i - 1] != a]
+        assert turns[:3] == ["invoice_lookup", "evidence", "classification"]
     mintlify = api.get(f"/api/obligations/{MINTLIFY}").json()
     assert mintlify["header"]["chips"][0] == "Recurring fixed"
     assert mintlify["header"]["supported"] == "1400.00"

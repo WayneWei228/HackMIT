@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 
 from trueup.agents.selection_override import AGENT_NAME as OVERRIDE_AGENT
 from trueup.service import models as v
-from trueup.service.runlog import Trace
+from trueup.service.runlog import Trace, run_number
 from trueup.store import enums as e
 from trueup.store import models as m
 
@@ -224,12 +224,18 @@ def _ingestion_checks(trace: Trace, _: Session) -> list[v.StageCheck]:
 
 
 def _evidence_checks(trace: Trace, _: Session) -> list[v.StageCheck]:
-    row = trace.latest("evidence", "extract_facts")
-    if row is None:
+    sel = trace.latest("ingestion", "select_files")
+    reads = [
+        r
+        for r in trace.rows("evidence", "extract_facts")
+        if sel is None or run_number(r.run_id) > run_number(sel.run_id)
+    ]
+    if not reads:
         return []
+    row = reads[-1]
     cards = _live_document_cards(trace)
     files = {c.source_id for c in cards}
-    dropped = [u for u in row.uncertainties_json or [] if str(u).startswith("Dropped")]
+    dropped = [u for r in reads for u in r.uncertainties_json or [] if str(u).startswith("Dropped")]
     extractor = row.decision_summary.rsplit("Extractor: ", 1)[-1].rstrip(".")
     checks = [
         _check(

@@ -254,14 +254,31 @@ def _gated(method: Callable[..., Any]) -> Callable[..., Any]:
 _ONE_SHOT = frozenset({OUTREACH, CONTROLLER, BLOCKED, WAIT})
 
 
+def _files_read(session: Session, obligation_id: str, after_run: str) -> set[str]:
+    """The files Evidence has read since the given Ingestion run."""
+    return {
+        str(file_id)
+        for run in session.scalars(
+            select(m.TrueUpAgentRun).where(
+                m.TrueUpAgentRun.obligation_id == obligation_id,
+                m.TrueUpAgentRun.agent_name == evidence_agent.AGENT_NAME,
+                m.TrueUpAgentRun.run_id > after_run,
+            )
+        )
+        for file_id in run.input_record_ids_json or []
+    }
+
+
 def selection_waiting(session: Session, ob: m.TrueUpObligation) -> ingestion.IngestionResult | None:
-    """Ingestion's effective selection for this obligation, if Evidence has not read it yet."""
+    """Ingestion's effective selection, less the files Evidence has already read.
+
+    Evidence reads one file per turn, so this is what is left for it to read. It is None once
+    Evidence has run and nothing selected remains (an empty selection still gets one turn).
+    """
     last_selection = _latest_run(session, ob.obligation_id, ingestion.AGENT_NAME)
     if last_selection is None:
         return None
-    last_evidence = _latest_run(session, ob.obligation_id, evidence_agent.AGENT_NAME)
-    if last_evidence is not None and last_evidence.run_id > last_selection.run_id:
-        return None
+    read = _files_read(session, ob.obligation_id, last_selection.run_id)
     result = ingestion.IngestionResult(
         case_id=f"CASE-{ob.obligation_id.removeprefix('OBL-')}",
         files_loaded=len(last_selection.facts_used_json or []),
@@ -271,7 +288,21 @@ def selection_waiting(session: Session, ob: m.TrueUpObligation) -> ingestion.Ing
     override = selection_override.latest_override(session, ob.obligation_id)
     if override is not None and override.run_id > last_selection.run_id:
         result = selection_override.apply_exclusions(result, override.excluded)
-    return result
+    last_evidence = _latest_run(session, ob.obligation_id, evidence_agent.AGENT_NAME)
+    evidence_ran = last_evidence is not None and last_evidence.run_id > last_selection.run_id
+    unread = [d for d in result.decisions if d.selected and d.file_id not in read]
+    if evidence_ran and not unread:
+        return None
+    return _only(result, [d.file_id for d in unread])
+
+
+def _only(result: ingestion.IngestionResult, keep: list[str]) -> ingestion.IngestionResult:
+    """The same decisions with every selected file outside `keep` set aside."""
+    decisions = [
+        d if not d.selected or d.file_id in keep else d.model_copy(update={"selected": False})
+        for d in result.decisions
+    ]
+    return result.model_copy(update={"decisions": decisions})
 
 
 def pending_agent(session: Session, ob: m.TrueUpObligation) -> str | None:
@@ -680,6 +711,11 @@ class CloseRun:
         if picked is None:
             self._gather_select(ob, now)
             return True
+        unread = picked.selected
+        if len(unread) > 1:
+            # One file per turn: the screen shows each document's facts as its turn returns.
+            self._gather_extract(ob, now, _only(picked, unread[:1]), hand_off=False)
+            return True
         return self._gather_extract(ob, now, picked)
 
     def _gather_select(
@@ -739,6 +775,8 @@ class CloseRun:
         ob: m.TrueUpObligation,
         now: datetime,
         picked: ingestion.IngestionResult | None,
+        *,
+        hand_off: bool = True,
     ) -> bool:
         if picked is not None:
             evidence = evidence_agent.collect_evidence(
@@ -759,6 +797,8 @@ class CloseRun:
                 now,
                 f"{len(evidence.cards)} new evidence cards ({evidence.extractor})",
             )
+        if not hand_off:
+            return True
         before = _state(ob)
         advance(ob, *CLASSIFY, AGENT_NAME, at=now)
         note = "evidence handed to Classification" if picked else "no evidence gathered"

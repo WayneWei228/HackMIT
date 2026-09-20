@@ -104,11 +104,13 @@ def test_a_case_that_has_not_run_has_an_empty_log_and_no_handoffs(api):
 @pytest.mark.parametrize("obligation_id", [MINTLIFY, ASUS])
 def test_each_advance_runs_one_agent_and_only_that_stage_appears(api, obligation_id):
     agents, seen_logs, seen_handoffs = [], 0, 0
+    reading = False
     while True:
         step = advance(api, obligation_id)
         case, run = step["case"], step["stage_run"]
         header = case["header"]
         if run:
+            reading = run["partial"]
             agents.append(run["agent"])
             assert run["duration_ms"] >= 0
             assert run["log_seqs"] == list(range(seen_logs + 1, header["log_count"] + 1))
@@ -136,13 +138,14 @@ def test_each_advance_runs_one_agent_and_only_that_stage_appears(api, obligation
                 ),
                 strict=True,
             )
-            if need <= ran
+            if need <= ran and not (s == "Evidence" and reading)
         ]
         assert header["stages_completed"] == expected
         if step["done"]:
             break
         assert header["current_agent"]
-    assert agents[:6] == [
+    turns = [agent for i, agent in enumerate(agents) if i == 0 or agents[i - 1] != agent]
+    assert turns[:6] == [
         "invoice_lookup",
         "ingestion",
         "evidence",
@@ -211,13 +214,15 @@ def test_the_log_is_the_run_rows_including_verifier_and_reviewer(api):
     policy = next(e for e in entries if e["agent"] == "policy")
     assert {r["rule_id"] for r in policy["detail"]["rules"]} >= {"POL-01", "POL-08"}
     assert [r["rule_id"] for r in policy["detail"]["rules"] if r["fired"]] == ["POL-01"]
-    evidence = next(e for e in entries if e["agent"] == "evidence")
-    assert evidence["detail"]["sources"] and all(s["quote"] for s in evidence["detail"]["sources"])
-    assert {s["file_name"] for s in evidence["detail"]["sources"]} == {
+    evidence = [e for e in entries if e["agent"] == "evidence"]
+    sources = [s for e in evidence for s in e["detail"]["sources"]]
+    assert sources and all(s["quote"] for s in sources)
+    assert len(evidence) == 2  # Evidence reads one document per turn
+    assert {s["file_name"] for s in sources} == {
         "goods_receipt_use-asus-2026-12-18.pdf",
         "po_asus_laptops.pdf",
     }
-    assert evidence["method"] == "CODE" and "rule_extractor" in evidence["summary"]
+    assert all(e["method"] == "CODE" and "rule_extractor" in e["summary"] for e in evidence)
     assert all(e["detail"]["duration_ms"] is not None for e in entries[1:])
 
 
@@ -510,7 +515,8 @@ def test_a_case_that_has_not_run_lists_the_files_it_will_read_but_judges_none(ap
     assert ingestion["files"] == [] and ingestion["selected_count"] == 0
     offered = ingestion["offered"]
     assert len(offered) == 10
-    assert {"file_id", "name", "kind", "format", "size_label"} == set(offered[0])
+    assert {"file_id", "name", "kind", "format", "size_label", "preview"} == set(offered[0])
+    assert all(f["preview"] for f in offered)
     assert len({f["file_id"] for f in offered}) == 10
 
     advance(api, obligation_id)
@@ -519,3 +525,68 @@ def test_a_case_that_has_not_run_lists_the_files_it_will_read_but_judges_none(ap
     assert after["available"] is True
     assert [f["file_id"] for f in after["files"]] == [f["file_id"] for f in offered]
     assert after["offered"] == offered
+
+
+def test_evidence_reads_one_document_per_turn_and_shows_each_documents_facts_as_it_returns(api):
+    advance(api, ASUS)  # invoice lookup
+    after_ingestion = advance(api, ASUS)["case"]
+    assert after_ingestion["header"]["current_agent"] == "evidence"
+    documents = after_ingestion["evidence"]["documents"]
+    assert len(documents) == 2 and all(any(d["pages"]) for d in documents)
+    assert (
+        after_ingestion["evidence"]["facts"] == []
+        and after_ingestion["evidence"]["read_files"] == []
+    )
+
+    first = advance(api, ASUS)
+    assert first["stage_run"]["agent"] == "evidence" and first["stage_run"]["partial"] is True
+    assert first["done"] is False
+    case = first["case"]
+    assert case["header"]["workflow_stage"] == "GATHERING_EVIDENCE"
+    assert "Evidence" not in case["header"]["stages_completed"]
+    assert case["header"]["current_agent"] == "evidence"
+    read = case["evidence"]["read_files"]
+    assert len(read) == 1 and {f["file_id"] for f in case["evidence"]["facts"]} == set(read)
+
+    second = advance(api, ASUS)
+    assert second["stage_run"]["agent"] == "evidence" and second["stage_run"]["partial"] is False
+    case = second["case"]
+    assert "Evidence" in case["header"]["stages_completed"]
+    assert case["header"]["workflow_stage"] != "GATHERING_EVIDENCE"
+    assert set(case["evidence"]["read_files"]) == {d["file_id"] for d in documents}
+    assert {f["file_id"] for f in case["evidence"]["facts"]} == set(case["evidence"]["read_files"])
+    assert advance(api, ASUS)["stage_run"]["agent"] == "classification"
+
+
+def test_evidence_reads_every_selected_document_before_the_case_moves_on(api_with_facts):
+    api = api_with_facts
+    advance(api, MINTLIFY)
+    advance(api, MINTLIFY)
+    documents = api.get(f"/api/obligations/{MINTLIFY}").json()["evidence"]["documents"]
+    assert documents
+    turns = 0
+    while True:
+        step = advance(api, MINTLIFY)
+        turns += 1
+        if step["stage_run"]["agent"] != "evidence" or not step["stage_run"]["partial"]:
+            break
+    read = api.get(f"/api/obligations/{MINTLIFY}").json()["evidence"]["read_files"]
+    assert set(read) == {d["file_id"] for d in documents} and turns >= 1
+
+
+def test_a_stage_shows_what_it_received_before_its_own_agent_has_run(api):
+    advance(api, MINTLIFY)  # invoice lookup
+    case = advance(api, MINTLIFY)["case"]  # ingestion
+    evidence = case["evidence"]
+    assert evidence["received"]["from_agent"] == "ingestion"
+    assert evidence["received"]["counts"]["files_selected"] == len(evidence["documents"])
+    assert evidence["available"] is False and not evidence["stage_checks"]
+    assert case["obligation"]["received"] is None and case["estimation"]["received"] is None
+
+    while advance(api, MINTLIFY)["stage_run"]["agent"] == "evidence":
+        pass
+    case = api.get(f"/api/obligations/{MINTLIFY}").json()
+    assert case["obligation"]["received"]["from_agent"] == "evidence"
+    assert case["obligation"]["available"] is True
+    assert case["estimation"]["received"]["from_agent"] == "classification"
+    assert case["estimation"]["available"] is False and case["header"]["supported"] is None

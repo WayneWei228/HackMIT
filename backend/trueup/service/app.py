@@ -209,6 +209,7 @@ def create_app() -> FastAPI:
                 duration_ms=outcome.duration_ms,
                 log_seqs=list(range(len(logged) + 1, case.header.log_count + 1)),
                 handoff_seqs=list(range(len(handed) + 1, case.header.handoff_count + 1)),
+                partial=outcome.agent == "evidence" and outcome.stage_from == outcome.stage_to,
             )
         return v.AdvanceResult(
             case=case,

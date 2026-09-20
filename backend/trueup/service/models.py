@@ -149,6 +149,8 @@ class OfferedFile(Strict):
     kind: str
     format: str
     size_label: str
+    # The agent-visible preview of the file, so its card can be laid out before it is judged.
+    preview: dict[str, Any] = Field(default_factory=dict)
 
 
 class IngestionView(StageExtras):
@@ -187,6 +189,8 @@ class EvidenceDocument(Strict):
 class EvidenceView(StageExtras):
     available: bool
     summary: str | None
+    # The selected files Evidence has already read, in the order it read them.
+    read_files: list[str] = Field(default_factory=list)
     documents: list[EvidenceDocument]
     facts: list[EvidenceFact]
     uncertainties: list[str]
@@ -509,6 +513,8 @@ class StageRun(Strict):
     duration_ms: int
     log_seqs: list[int]
     handoff_seqs: list[int]
+    # True while Evidence has read some of its selected files and more remain.
+    partial: bool = False
 
 
 class AdvanceResult(Strict):

@@ -557,6 +557,18 @@ def selection_from(row: m.TrueUpAgentRun, case_id: str) -> IngestionResult:
     )
 
 
-def stages_completed(runs: list[m.TrueUpAgentRun]) -> list[str]:
+def stages_completed(
+    runs: list[m.TrueUpAgentRun], ob: m.TrueUpObligation | None = None
+) -> list[str]:
+    """The stages every one of whose agents has run.
+
+    Evidence reads one file at a time, so it is complete only once the obligation has left the
+    gathering state: having read some of the files is not having read them all.
+    """
     ran = {r.agent_name for r in runs}
-    return [stage for stage in STAGES if STAGE_AGENTS[stage] <= ran]
+    gathering = ob is not None and ob.workflow_stage == e.WorkflowStage.GATHERING_EVIDENCE
+    return [
+        stage
+        for stage in STAGES
+        if STAGE_AGENTS[stage] <= ran and not (stage == "Evidence" and gathering)
+    ]

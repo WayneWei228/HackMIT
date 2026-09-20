@@ -300,7 +300,7 @@ def case_row(
         status=case_status(ob),
         can_start=phase != "JANUARY" and is_pending(ob),
         current_agent=pending_agent(session, ob),
-        stages_completed=runlog.stages_completed(trace.runs),
+        stages_completed=runlog.stages_completed(trace.runs, trace.ob),
         log_count=len(trace.entries),
         handoff_count=len(trace.handoffs),
         workflow_stage=ob.workflow_stage.value,
@@ -361,8 +361,10 @@ def obligation_detail(
         "Verification": "policy",
     }
     for stage, view in views.items():
+        # What a stage received exists as soon as the agent before it has handed it over, so a
+        # screen can show its inputs before its own agent has run. Its checks need its own run.
+        view.received = stagechecks.received_for(stage, trace)
         if trace.latest(main_agent[stage]) is not None:
-            view.received = stagechecks.received_for(stage, trace)
             view.stage_checks = stagechecks.checks_for(stage, trace, session)
     return v.ObligationDetail(
         header=header,
@@ -458,7 +460,7 @@ def _header(
         status=case_status(ob),
         stage=front_stage(session, ob),
         current_agent=pending_agent(session, ob),
-        stages_completed=runlog.stages_completed(trace.runs),
+        stages_completed=runlog.stages_completed(trace.runs, trace.ob),
         log_count=len(trace.entries),
         handoff_count=len(trace.handoffs),
         workflow_stage=ob.workflow_stage.value,
@@ -492,7 +494,12 @@ def _ingestion(
     visible = [f for f in universe.for_case(case.case_id) if _utc(f.available_at) <= _utc(now)]
     offered = [
         v.OfferedFile(
-            file_id=f.file_id, name=f.name, kind=f.kind, format=f.format, size_label=f.size_label
+            file_id=f.file_id,
+            name=f.name,
+            kind=f.kind,
+            format=f.format,
+            size_label=f.size_label,
+            preview=f.preview,
         )
         for f in visible
     ]
@@ -597,7 +604,17 @@ def _evidence(
     facts: list[v.EvidenceFact],
     seed_dir: Path,
 ) -> v.EvidenceView:
-    run = _latest(runs, "evidence", "extract_facts")
+    sel = _latest(runs, "ingestion", "select_files")
+    floor = runlog.run_number(sel.run_id) if sel else 0
+    reads = [
+        r
+        for r in runs
+        if r.agent_name == "evidence"
+        and r.action == "extract_facts"
+        and runlog.run_number(r.run_id) > floor
+    ]
+    run = reads[-1] if reads else None
+    read_files = list(dict.fromkeys(str(i) for r in reads for i in r.input_record_ids_json or []))
     by_id = {f.file_id: f for f in universe.files}
     documents = []
     pages_by_file: dict[str, list[str]] = {}
@@ -621,12 +638,21 @@ def _evidence(
         f.model_copy(update={"page": _page_of(f.excerpt, pages_by_file.get(f.file_id or "", []))})
         for f in facts
     ]
+    summary = run.decision_summary if run else None
+    if len(reads) > 1:
+        summary = (
+            f"Read {len(read_files)} of {len(documents)} selected files and extracted "
+            f"{len(facts)} grounded facts so far."
+        )
     return v.EvidenceView(
         available=run is not None,
-        summary=run.decision_summary if run else None,
+        summary=summary,
+        read_files=read_files,
         documents=documents,
         facts=facts,
-        uncertainties=list(run.uncertainties_json or []) if run else [],
+        uncertainties=list(
+            dict.fromkeys(str(u) for r in reads for u in r.uncertainties_json or [])
+        ),
     )
 
 

@@ -532,6 +532,9 @@ def test_stepping_one_agent_at_a_time_takes_the_same_road_as_running_to_rest():
             if step.done:
                 break
         agents = [agent for agent, _, _ in steps]
+        # Evidence reads one document per turn, so it appears once for each selected file.
+        assert agents.count("evidence") == 2
+        agents = [a for i, a in enumerate(agents) if i == 0 or agents[i - 1] != a]
         assert agents[:7] == [
             "invoice_lookup",
             "ingestion",
