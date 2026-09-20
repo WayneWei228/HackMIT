@@ -140,7 +140,7 @@
         "card": "memo",
         "title": "Invoice TSL-2210",
         "subtitle": "Terrastack Compute",
-        "body": "Invoice TSL-2210 Terrastack Storage Ltd. Bill to: Northstar Analytics, Inc. Invoice date: 20 December 2026 Description Period Quantity Rate (USD) Amount (USD) Object storage, TB-months 1 Nov - 30 Nov 2026 41.2 100.00 4,120.00 Total due: USD"
+        "body": "Invoice TSL-2210 Terrastack Storage Ltd. Bill to: Northstar Analytics, Inc. Invoice date: 20 December 2026 Description Period Quantity Rate (USD) Amount (USD) Object storage, 1 Nov - 30 Nov 2026 41.2 100.00 4,120.00 TB-months Total due: USD"
       }
     },
     {
@@ -412,7 +412,7 @@
         "card": "memo",
         "title": "Invoice LDS-0298",
         "subtitle": "Larkspur Design Studio",
-        "body": "Invoice LDS-0298 Larkspur Design Studio LLC. Bill to: Northstar Analytics, Inc. Date: 8 January 2027 Description Amount (USD) Deliverable D3 - Visual identity system and usage guidelines 27,450.00 Total due: USD 27,450.00."
+        "body": "Invoice LDS-0298 Larkspur Design Studio LLC. Bill to: Northstar Analytics, Inc. Date: 8 January 2027 Description Amount (USD) Deliverable D3 - Visual identity system and usage 27,450.00 guidelines Total due: USD 27,450.00."
       }
     },
     {
@@ -531,7 +531,7 @@
         "card": "memo",
         "title": "Purchase order PO-2026-2103",
         "subtitle": "Corvid Security",
-        "body": "Purchase Order PO-2026-2103 Vendor: Corvid Security, LLC. Buyer: Northstar Analytics, Inc. Cost center CC-ENG-100. Line Description Qty Unit price (USD) Total (USD) 1 Sentinel Business subscription, monthly 12 3,250.00 39,000.00 Approved to"
+        "body": "Purchase Order PO-2026-2103 Vendor: Corvid Security, LLC. Buyer: Northstar Analytics, Inc. Cost center CC-ENG-100. Line Description Qty Unit price (USD) Total (USD) 1 Sentinel Business 12 3,250.00 39,000.00 subscription, monthly Approved to"
       }
     },
     {
@@ -599,7 +599,7 @@
         "card": "memo",
         "title": "Invoice CSEC-2612",
         "subtitle": "Corvid Security",
-        "body": "Invoice CSEC-2612 Corvid Security, LLC. Bill to: Northstar Analytics, Inc. Date: 3 January 2027 Description Days Amount (USD) Sentinel Business at 3,250.00, 1 Dec - 15 Dec 2026 15 of 31 1,572.58 Sentinel Enterprise at 3,900.00, 16 Dec - 31 "
+        "body": "Invoice CSEC-2612 Corvid Security, LLC. Bill to: Northstar Analytics, Inc. Date: 3 January 2027 Description Days Amount (USD) Sentinel Business at 3,250.00, 1 Dec 15 of 31 1,572.58 - 15 Dec 2026 Sentinel Enterprise at 3,900.00, 16 16 of 31 "
       }
     }
   ]

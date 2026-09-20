@@ -216,15 +216,15 @@ def _delivery(case: CaseEntry, text: str) -> list[Fact]:
 def _receipt(case: CaseEntry, text: str) -> list[Fact]:
     flat = _flat(text)
     facts: list[Fact] = []
-    counts = re.search(r"(\d+) (\d+) (\d+) Accepted value of goods received", flat)
-    if counts:
+    row = re.search(r"Ordered Received Backordered (\S+ .*?(\d+) (\d+) (\d+))(?= )", flat)
+    if row:
         facts.append(
             _fact(
                 FactKey.ORDERED_QUANTITY,
                 "Quantity ordered",
-                counts.group(1),
-                counts.group(0),
-                number=Decimal(counts.group(1)),
+                row.group(2),
+                row.group(1),
+                number=Decimal(row.group(2)),
                 unit="units",
             )
         )
@@ -232,9 +232,9 @@ def _receipt(case: CaseEntry, text: str) -> list[Fact]:
             _fact(
                 FactKey.RECEIVED_QUANTITY,
                 "Quantity received",
-                counts.group(2),
-                counts.group(0),
-                number=Decimal(counts.group(2)),
+                row.group(3),
+                row.group(1),
+                number=Decimal(row.group(3)),
                 unit="units",
             )
         )

@@ -3,11 +3,15 @@
 from __future__ import annotations
 
 import email.policy
+import re
 from decimal import Decimal
 from email.parser import BytesParser
 from pathlib import Path
 
 SUPPORTED = (".pdf", ".xlsx", ".docx", ".eml", ".txt")
+
+PDF_CELL_SEPARATOR = "  "
+_PDF_CELL_GAP = re.compile(r"\s{2,}")
 
 
 class UnsupportedFile(ValueError):
@@ -33,8 +37,13 @@ def read_text(path: str | Path) -> str:
 def _read_pdf(path: Path) -> str:
     from pypdf import PdfReader
 
-    reader = PdfReader(str(path))
-    return "\n".join(page.extract_text() or "" for page in reader.pages).strip()
+    lines: list[str] = []
+    for page in PdfReader(str(path)).pages:
+        for line in (page.extract_text(extraction_mode="layout") or "").splitlines():
+            line = _PDF_CELL_GAP.sub(PDF_CELL_SEPARATOR, line.strip())
+            if line:
+                lines.append(line)
+    return "\n".join(lines)
 
 
 def _read_xlsx(path: Path) -> str:
