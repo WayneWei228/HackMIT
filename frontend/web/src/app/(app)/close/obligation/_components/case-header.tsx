@@ -14,6 +14,7 @@ import { MoreIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/cn";
 import { riseIn, staggerParent, transitions } from "@/lib/motion";
 import { CaseStatusValue } from "@/components/close/case-status-value";
+import { WaitingLine } from "@/components/close/outreach-strip";
 import { useCaseHref } from "@/lib/case-context";
 import { formatMoney, formatSigned } from "@/lib/money";
 import { routes } from "@/lib/routes";
@@ -122,6 +123,7 @@ export function CaseHeader() {
           <div className="mt-[9px]">
             <CaseStatusValue status={header.status} />
           </div>
+          <WaitingLine className="mt-2" />
         </motion.div>
       </motion.div>
     </div>

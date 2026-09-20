@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { ClockTimeline } from "@/components/shell/clock-timeline";
+import { ModelStatus } from "@/components/shell/model-status";
 import type { CloseView } from "@/lib/api-types";
 import { cn } from "@/lib/cn";
 import {
@@ -99,7 +99,7 @@ export function Sidebar({
   close = null,
 }: {
   identity?: SidebarIdentity;
-  /** The close as the server read it; the timeline keeps itself fresh after that. */
+  /** The close as the server read it; the model status keeps itself fresh after that. */
   close?: CloseView | null;
 }) {
   const pathname = usePathname();
@@ -171,7 +171,7 @@ export function Sidebar({
 
       <div className="flex-1" />
 
-      <ClockTimeline initial={close} />
+      <ModelStatus initial={close} />
 
       <div className="px-3">
         <div className="mx-2 mb-4 h-px bg-line-warm" />

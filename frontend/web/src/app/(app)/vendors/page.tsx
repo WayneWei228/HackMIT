@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Vendors - TrueUp",
   description:
-    "What the agents know about each vendor. All data is synthetic and every upstream system is simulated.",
+    "What the agents know about each vendor. All data and every upstream system is synthetic.",
 };
 
 export default async function VendorsPage() {

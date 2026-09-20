@@ -22,7 +22,6 @@ export type CaseStatus =
   | "Close-ready"
   | "Complete";
 
-export type Phase = "DAY_ONE" | "CLOSED" | "JANUARY";
 export type Decision = "APPROVE" | "REJECT" | "REQUEST_MORE_EVIDENCE";
 
 export type Row = { label: string; value: string };
@@ -50,35 +49,38 @@ export type CaseRow = {
   handoff_count?: number;
 };
 
-export type ClockState = "DONE" | "CURRENT" | "UPCOMING";
-
-/** One moment on the demo calendar; the current one is the latest the demo has reached. */
-export type ClockStop = {
-  key: "CLOSE_STARTS" | "ACCRUALS_POSTED" | "INVOICES_ARRIVE" | "VENDORS_REPLY";
+/** The one thing the passing of time can do for a case right now, as a button on its own timeline. */
+export type TimeAction = {
+  kind: "DELIVER_REPLY" | "EXPIRE_OUTREACH" | "BRING_IN_INVOICE" | "DELIVER_VENDOR_REPLY";
   label: string;
-  date_label: string;
-  state: ClockState;
-  /** How far the cases have got; empty until the demo reaches the stop. */
   detail: string;
+  /** The demo moment this case moves to when the action is taken. */
+  moves_to: string;
+};
+
+/** What the language model last did; a failing key shows here before it costs a case. */
+export type ModelHealth = {
+  mode: "live" | "offline";
+  status: "unknown" | "ok" | "credentials_rejected" | "unavailable";
+  last_error: string | null;
+  last_ok_at: string | null;
+  /** The latest a Bedrock key can still work; the session inside it can lapse earlier. */
+  expires_at: string | null;
 };
 
 export type CloseView = {
   period: string;
   period_label: string;
-  phase: Phase;
-  clock: string;
   controller_id: string;
   controller_name: string;
   people: Person[];
   cases: CaseRow[];
   queue_count: number;
   pending_rules: number;
+  model?: ModelHealth;
   actions: {
     can_run_close: boolean;
-    can_advance_to_january: boolean;
-    can_advance_to_vendor_reply?: boolean;
   };
-  timeline?: ClockStop[];
 };
 
 export type Header = {
@@ -257,8 +259,26 @@ export type JournalEntry = {
 
 export type InputCard = { label: string; value: string; sub: string | null };
 
+/** An estimate made on incomplete data because nobody answered the email. */
+export type FallbackView = {
+  method: string;
+  method_label: string;
+  definition: string;
+  chosen_by: "LLM" | "CODE";
+  rationale: string;
+  rejected: { method: string; reason: string }[];
+  coverage: string;
+  confidence: string;
+  basis_label: string;
+  review_note: string;
+  deadline: string | null;
+  assumption: string | null;
+  kind: "USAGE" | "RECEIPT";
+};
+
 export type EstimationView = {
   available: boolean;
+  fallback?: FallbackView | null;
   /** What this stage received from the one before it (present once it has run). */
   received?: Received | null;
   /** The checks this stage ran, one row per real check (present once it has run). */
@@ -381,6 +401,40 @@ export type RibbonStep = {
   figures: { label: string; amount: string }[];
 };
 
+/** Someone an email is sent to or comes from. */
+export type OutreachParty = { name: string; role: string };
+
+/** One synthetic email on a thread. `method` says who wrote it: the model, a template, or the synthetic scripted reply. */
+export type ThreadMessage = {
+  direction: "OUT" | "IN";
+  from: OutreachParty;
+  to: OutreachParty;
+  subject: string;
+  body: string;
+  at: string;
+  method: "LLM" | "TEMPLATE" | "SCRIPTED_REPLY";
+  run_id: number | null;
+  evidence_id: string | null;
+};
+
+/** What the Outreach agent read out of the latest reply. */
+export type ThreadParsed = { resolved: boolean; facts: Record<string, string>; note: string };
+
+/** A request and its replies, read back from the case's outreach evidence. Nothing is really sent. */
+export type OutreachThread = {
+  thread_id: string;
+  topic: string;
+  obligation_id: string;
+  simulated: boolean;
+  status: "DRAFTED" | "SENT" | "REPLIED" | "INSUFFICIENT" | "OVERDUE";
+  sent_at: string | null;
+  due_at: string | null;
+  waiting_on: { name: string; role: string; kind: "INTERNAL_OWNER" | "VENDOR_CONTACT" } | null;
+  messages: ThreadMessage[];
+  parsed: ThreadParsed | null;
+  verification: GateResult | null;
+};
+
 export type ObligationDetail = {
   header: Header;
   ingestion: IngestionView;
@@ -393,6 +447,16 @@ export type ObligationDetail = {
   escalation?: Escalation | null;
   /** The case's story over time; a step is filled only once it has happened. */
   ribbon?: RibbonStep[];
+  /** The emails sent on this case and the replies that came back; empty when none was needed. */
+  outreach_threads?: OutreachThread[];
+  /** What time can do for this case now: an owner's reply, the January invoice, a vendor's reply. */
+  next_time_action?: TimeAction | null;
+  /** Other things time can do for the case at this moment, e.g. the deadline passing with no reply. */
+  other_time_actions?: TimeAction[];
+  /** True once the case took a path at its email, so it can be rewound and take the other. */
+  can_rewind?: boolean;
+  /** The scenario the case did not take at its email, for the one-click switch. */
+  other_path?: TimeAction | null;
 };
 
 export type ReplayLine = {

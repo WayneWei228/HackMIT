@@ -107,10 +107,16 @@ export const startObligation = (id: string) =>
 /** Run exactly one stage of the case and return what it produced. */
 export const advanceObligation = (id: string) =>
   post<AdvanceResult>(`/api/obligations/${encodeURIComponent(id)}/advance`);
-export const advanceToJanuary = () =>
-  post<ActionResult>("/api/close/advance-to-january");
-export const advanceToVendorReply = () =>
-  post<ActionResult>("/api/close/advance-to-vendor-reply");
+export const deliverReply = (id: string) =>
+  post<ActionResult>(`/api/obligations/${encodeURIComponent(id)}/deliver-reply`);
+export const expireOutreach = (id: string) =>
+  post<ActionResult>(`/api/obligations/${encodeURIComponent(id)}/expire-outreach`);
+export const rewindOutreach = (id: string) =>
+  post<ActionResult>(`/api/obligations/${encodeURIComponent(id)}/rewind-outreach`);
+export const bringInInvoice = (id: string) =>
+  post<ActionResult>(`/api/obligations/${encodeURIComponent(id)}/bring-in-invoice`);
+export const deliverVendorReply = (id: string) =>
+  post<ActionResult>(`/api/obligations/${encodeURIComponent(id)}/deliver-vendor-reply`);
 export const resetDemo = () => post<ActionResult>("/api/reset");
 
 export const decideObligation = (

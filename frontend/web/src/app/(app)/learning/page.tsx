@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Learning - TrueUp",
   description:
-    "How the agents learn from invoices: graded misses, replay-tested rules and the Controller's approval. All data is synthetic and every upstream system is simulated.",
+    "How the agents learn from invoices: graded misses, replay-tested rules and the Controller's approval. All data and every upstream system is synthetic.",
 };
 
 export default async function LearningPage() {

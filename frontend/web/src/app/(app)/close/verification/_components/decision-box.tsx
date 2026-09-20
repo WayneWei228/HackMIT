@@ -14,8 +14,7 @@ const FIELD =
 
 /**
  * The Controller's three moves on a case that is waiting for them. The buttons
- * only offer what the backend allows: a policy block can never be approved,
- * and only the configured controller's decision is accepted.
+ * only offer what the backend allows, and a disabled Approve says why in words.
  */
 export function DecisionBox() {
   const { controller, controllerId, people, obligationId } = useVerificationScreen();
@@ -24,6 +23,11 @@ export function DecisionBox() {
   const [actor, setActor] = useState(controllerId);
   const allowed = new Set(controller.allowed_decisions);
   const canApprove = allowed.has("APPROVE");
+  const canRequest = allowed.has("REQUEST_MORE_EVIDENCE");
+  const canReject = allowed.has("REJECT");
+  const whyNoApprove = controller.blocked
+    ? `Policy blocked this accrual, so it cannot be approved. ${controller.reason}`.trim()
+    : `Approve is not offered for this case. ${controller.reason}`.trim();
 
   const decide = (decision: Decision) =>
     run(() => decideObligation(obligationId, { decision, notes, decided_by: actor }));
@@ -62,15 +66,20 @@ export function DecisionBox() {
       <Button
         variant="solid"
         disabled={!canApprove || pending}
-        title={canApprove ? undefined : "Policy blocked this accrual, so it cannot be approved."}
+        title={canApprove ? undefined : whyNoApprove}
         onClick={() => decide("APPROVE")}
         className="mt-1 w-full justify-center border border-accent px-3.5 text-[13.5px] leading-none hover:bg-accent-deep disabled:cursor-not-allowed disabled:opacity-45"
       >
         Approve and post journal
       </Button>
+      {!canApprove && (
+        <div className="text-meta leading-[1.5] text-muted-4" role="note">
+          {whyNoApprove}
+        </div>
+      )}
       <Button
         variant="secondary"
-        disabled={pending}
+        disabled={!canRequest || pending}
         onClick={() => decide("REQUEST_MORE_EVIDENCE")}
         className="w-full justify-center px-3.5 text-[13.5px] leading-none"
       >
@@ -78,7 +87,7 @@ export function DecisionBox() {
       </Button>
       <Button
         variant="secondary"
-        disabled={pending}
+        disabled={!canReject || pending}
         onClick={() => decide("REJECT")}
         className="w-full justify-center px-3.5 text-[13.5px] leading-none"
       >

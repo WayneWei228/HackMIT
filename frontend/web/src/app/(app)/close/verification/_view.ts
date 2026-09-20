@@ -26,6 +26,8 @@ export type VerificationScreenView = {
   /** What the run replays: one control per policy rule, one assertion per recorded claim. */
   data: VerificationData;
   amount: string;
+  /** Set when the estimate was built without the owner's reply, from part of the period's data. */
+  fallbackNote: string | null;
   finalRows: Row[];
   journal: JournalLineView[];
   entries: JournalEntry[];
@@ -91,6 +93,9 @@ export function buildVerificationView(
   return {
     obligationId: header.obligation_id,
     header,
+    fallbackNote: estimation.fallback
+      ? `Reply did not arrive by the deadline; estimate built from ${estimation.fallback.coverage}`
+      : null,
     data: {
       controls,
       assertions,

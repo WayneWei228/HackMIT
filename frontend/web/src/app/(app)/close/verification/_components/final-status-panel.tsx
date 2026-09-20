@@ -56,7 +56,7 @@ export function FinalStatusPanel({
   noteTitle: string;
   noteBody: string;
 }) {
-  const { amount, finalRows, journal, controller, header } = useVerificationScreen();
+  const { amount, finalRows, journal, controller, header, fallbackNote } = useVerificationScreen();
   const ready = header.status === "Close-ready" || header.status === "Complete";
   const settled = ready;
   const statusColor = settled ? "#2E8047" : header.status === "Blocked" ? "#A4452F" : "#B9791F";
@@ -139,6 +139,12 @@ export function FinalStatusPanel({
           </motion.div>
         </div>
       </motion.div>
+
+      {fallbackNote && (
+        <div className="mt-3 rounded-lg border border-[#EBD9A8] bg-[#FBF5E6] px-[14px] py-[10px] text-meta leading-[1.55] font-medium text-[#8A6516]">
+          {fallbackNote}
+        </div>
+      )}
 
       {controller.in_queue && <DecisionBox />}
     </section>

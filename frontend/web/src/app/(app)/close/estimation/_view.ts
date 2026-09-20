@@ -1,5 +1,6 @@
 import type {
   Escalation,
+  FallbackView,
   Header,
   ObligationDetail,
   Received,
@@ -40,6 +41,8 @@ export type EstimationScreenView = {
   obligationId: string;
   header: Header;
   hasEstimate: boolean;
+  /** Set when the estimate was projected from incomplete data because nobody replied. */
+  fallback: FallbackView | null;
   inputs: InputCardView[];
   /** One line from the backend about the basis; null when it sent none. */
   footnote: string | null;
@@ -195,6 +198,7 @@ export function buildEstimationView(detail: ObligationDetail): EstimationScreenV
     obligationId: header.obligation_id,
     header,
     hasEstimate: has,
+    fallback: estimation.fallback ?? null,
     inputs:
       estimation.inputs.length > 0
         ? estimation.inputs.map<InputCardView>((input) => ({

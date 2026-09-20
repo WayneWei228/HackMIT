@@ -9,7 +9,8 @@ import { useApiAction } from "@/lib/use-api-action";
 
 /**
  * Start the Pending cases (each one by hand, or all at once, one stage at a
- * time). Time itself moves from the sidebar clock. Reset rebuilds the demo
+ * time). Time is per case: each case's own timeline offers its next step.
+ * Reset rebuilds the demo
  * company from day one, with every case Pending again.
  */
 export function CloseControls({ close }: { close: { cases: CaseRow[] } }) {

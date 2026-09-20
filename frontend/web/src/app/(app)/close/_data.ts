@@ -1,7 +1,7 @@
 /**
  * Close case screen config: glyph names, the rail's labels and geometry. What the
  * agent found - files, figures, names - comes from the backend (see `_view.ts`).
- * All data is synthetic and every upstream system is simulated.
+ * All data and every upstream system is synthetic.
  */
 
 export type SourceGlyph = "page" | "mail" | "chat";

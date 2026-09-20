@@ -24,7 +24,7 @@ import { useObligationRun } from "./use-obligation-run";
  * once the backend has run the agents, and every value on it comes from their
  * output. The rail on the right lists the steps they recorded.
  *
- * All data is synthetic and every upstream system is simulated.
+ * All data and every upstream system is synthetic.
  */
 export function ObligationScreen() {
   const { checks, header } = useObligationScreen();

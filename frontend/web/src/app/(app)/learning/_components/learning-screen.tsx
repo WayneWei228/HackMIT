@@ -29,6 +29,7 @@ const CRITERIA: Record<string, string> = {
 
 const CAUSES: Record<string, string> = {
   MISSED_ESCALATOR: "Missed price step-up",
+  INCOMPLETE_DATA_EXTRAPOLATION: "Estimate projected from incomplete data",
   USAGE_VARIANCE: "Usage variance",
   SOURCE_DATA_ERROR: "Source data error",
   TIMING_DIFFERENCE: "Timing difference",

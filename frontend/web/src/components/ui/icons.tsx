@@ -312,3 +312,20 @@ export function MoreIcon({ className = "", ...props }: { className?: string }) {
     </span>
   );
 }
+
+export function MailIcon({ size = 15, ...props }: IconProps) {
+  return (
+    <Icon size={size} viewBox="0 0 16 16" {...props}>
+      <rect x="1.9" y="3.4" width="12.2" height="9.2" rx="1.6" {...S} />
+      <path d="M2.4 4.7l5.1 3.9a0.8 0.8 0 0 0 1 0l5.1-3.9" {...S} strokeLinecap="round" strokeLinejoin="round" />
+    </Icon>
+  );
+}
+
+export function CloseIcon({ size = 14, ...props }: IconProps) {
+  return (
+    <Icon size={size} viewBox="0 0 14 14" {...props}>
+      <path d="M3.2 3.2l7.6 7.6M10.8 3.2l-7.6 7.6" stroke="currentColor" strokeWidth={1.4} strokeLinecap="round" />
+    </Icon>
+  );
+}

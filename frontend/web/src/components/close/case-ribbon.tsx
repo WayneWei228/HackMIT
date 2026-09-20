@@ -10,6 +10,10 @@ import { cn } from "@/lib/cn";
 import { formatMoney, formatSigned } from "@/lib/money";
 import { formatStamp } from "@/lib/time";
 
+import { OutreachPanel } from "./outreach-panel";
+import { OutreachStrip } from "./outreach-strip";
+import { NextTimeAction } from "./time-action";
+
 const TONE = {
   NEUTRAL: { mark: "#9AA096", text: "text-ink" },
   OK: { mark: "#26503A", text: "text-accent-deep" },
@@ -228,6 +232,11 @@ function Step({ step, index, count }: { step: RibbonStep; index: number; count: 
               {step.detail}
             </div>
           )}
+          {step.at && step.state !== "SKIPPED" && (
+            <div className="mt-[3px] text-meta leading-[1.3] text-faint-2 tabular-nums">
+              {formatStamp(step.at).date}
+            </div>
+          )}
           <Hover step={step} align={index < count / 2 ? "left" : "right"} />
         </>
       )}
@@ -260,6 +269,9 @@ export function CaseRibbon({ className }: { className?: string }) {
           ))}
         </ol>
       )}
+      <OutreachStrip />
+      <NextTimeAction />
+      <OutreachPanel />
     </div>
   );
 }

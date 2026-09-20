@@ -5,6 +5,7 @@ import { cn } from "@/lib/cn";
 import { useStageNarration } from "@/lib/stage-narration";
 import { formatStamp } from "@/lib/time";
 
+import { ViewEmailLink } from "./outreach-strip";
 import { MethodTag } from "./trail-parts";
 
 /**
@@ -40,6 +41,7 @@ export function RunSteps({ screen, className }: { screen: StageKey; className?: 
               <MethodTag method={entry.method} />
               {entry.run_id !== undefined && <span className="font-mono">run #{entry.run_id}</span>}
             </div>
+            {entry.agent === "outreach" && <ViewEmailLink className="mt-1.5" label="View email" />}
           </div>
         </li>
       ))}

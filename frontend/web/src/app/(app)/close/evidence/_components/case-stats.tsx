@@ -8,6 +8,7 @@ import { SectionLabel } from "@/components/ui/primitives";
 import { cn } from "@/lib/cn";
 
 import { CaseStatusValue } from "@/components/close/case-status-value";
+import { WaitingLine } from "@/components/close/outreach-strip";
 import type { Header } from "@/lib/api-types";
 import { formatMoney, formatSigned } from "@/lib/money";
 
@@ -57,6 +58,7 @@ export function CaseStats({ header: backendHeader }: { header: Header }) {
         <div className="mt-[9px]">
           <CaseStatusValue status={header.status} />
         </div>
+        <WaitingLine className="mt-2" />
       </Column>
     </div>
   );

@@ -5,7 +5,7 @@ import { ObligationRoute } from "./_components/obligation-route";
 export const metadata: Metadata = {
   title: "Obligation - TrueUp",
   description:
-    "The obligation agent deciding what is owed for the period. All data is synthetic and every upstream system is simulated.",
+    "The obligation agent deciding what is owed for the period. All data and every upstream system is synthetic.",
 };
 
 /** The screen draws from the browser's copy of the case and its agent starts by itself when it opens. */

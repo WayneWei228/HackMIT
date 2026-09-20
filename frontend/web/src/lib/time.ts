@@ -9,7 +9,7 @@ export type Stamp = {
   ts: number;
 };
 
-/** Formats a simulation timestamp in UTC so the server and the browser agree. */
+/** Formats a synthetic timestamp in UTC so the server and the browser agree. */
 export function formatStamp(iso: string): Stamp {
   const moment = new Date(iso);
   const hours = moment.getUTCHours();

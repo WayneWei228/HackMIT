@@ -63,14 +63,12 @@ export function TrailToggle({ screen, children }: { screen: StageKey; children: 
       className="group flex min-w-0 cursor-pointer items-center gap-[11px] rounded-lg py-1 pr-2 text-left transition-colors duration-[160ms] hover:bg-wash"
     >
       {children}
-      {gates.soFar.total > 0 && (
+      {gates.here && gates.here.total > 0 && (
         <span
-          title="Each handoff between agents runs a gate of controls before the next agent may start. This counts the gates up to this screen only."
+          title="Each handoff between agents runs a gate of controls before the next agent may start. This is the gate this agent's handoff passed."
           className="flex-none rounded-sm bg-accent-tint px-1.5 py-[3px] text-nano leading-none font-semibold whitespace-nowrap text-accent-deep ring-1 ring-accent-line-2 ring-inset"
         >
-          {gates.here
-            ? `${gates.here.passed}/${gates.here.total} checks passed at this handoff, ${gates.soFar.passed}/${gates.soFar.total} so far`
-            : `${gates.soFar.passed}/${gates.soFar.total} checks passed so far`}
+          {`${gates.here.passed}/${gates.here.total} checks passed at this handoff`}
         </span>
       )}
       <ChevronDownIcon

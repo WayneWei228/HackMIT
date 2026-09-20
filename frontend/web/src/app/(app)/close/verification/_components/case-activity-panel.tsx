@@ -37,6 +37,7 @@ const AUDIT_DOT = {
 
 const CAUSES: Record<string, string> = {
   MISSED_ESCALATOR: "The estimate missed a price step-up",
+  INCOMPLETE_DATA_EXTRAPOLATION: "The estimate was projected from incomplete data",
   USAGE_VARIANCE: "Usage differed from the estimate",
   SOURCE_DATA_ERROR: "The invoice does not match what was delivered",
   TIMING_DIFFERENCE: "Timing difference",

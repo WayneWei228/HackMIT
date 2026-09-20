@@ -7,6 +7,7 @@ import { motion } from "motion/react";
 import { cn } from "@/lib/cn";
 import { riseIn, staggerParent } from "@/lib/motion";
 import { CaseStatusValue } from "@/components/close/case-status-value";
+import { WaitingLine } from "@/components/close/outreach-strip";
 import { formatMoney, formatSigned } from "@/lib/money";
 import { useEstimationScreen } from "./screen-context";
 
@@ -54,6 +55,7 @@ export function SummaryStrip() {
         <div className="mt-[9px]">
           <CaseStatusValue status={header.status} />
         </div>
+        <WaitingLine className="mt-2" />
       </motion.div>
     </motion.div>
   );

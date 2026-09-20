@@ -21,7 +21,7 @@ const newsreader = Newsreader({
 export const metadata: Metadata = {
   title: "TrueUp",
   description:
-    "Month-end service accrual, closed by an agent and graded by the invoice. All data shown is synthetic and every system is simulated.",
+    "Month-end service accrual, closed by an agent and graded by the invoice. All data shown and every system behind it is synthetic.",
 };
 
 export default function RootLayout({

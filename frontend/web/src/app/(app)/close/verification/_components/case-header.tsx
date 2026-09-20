@@ -7,6 +7,7 @@ import { motion } from "motion/react";
 import { Breadcrumb, Button } from "@/components/ui/primitives";
 import { MoreIcon } from "@/components/ui/icons";
 import { CaseStatusValue } from "@/components/close/case-status-value";
+import { WaitingLine } from "@/components/close/outreach-strip";
 import { useCaseHref } from "@/lib/case-context";
 import { formatMoney, formatSigned } from "@/lib/money";
 import { routes } from "@/lib/routes";
@@ -139,6 +140,7 @@ export function CaseHeader() {
           <div className="mt-[9px]">
             <CaseStatusValue status={header.status} />
           </div>
+          <WaitingLine className="mt-2" />
         </motion.div>
       </motion.div>
     </div>
