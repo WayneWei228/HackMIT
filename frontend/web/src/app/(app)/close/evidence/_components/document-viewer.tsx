@@ -5,11 +5,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { crossFade, easeOutSoft } from "@/lib/motion";
 
 import { MATCH_STEP } from "../_data";
-import {
-  AgreementDocument,
-  ApHistoryDocument,
-  PriorCloseDocument,
-} from "./documents";
+import { LiveDocument } from "./documents";
 import { ThumbnailRail } from "./thumbnail-rail";
 import type { DocumentViewer as ViewerState } from "./use-document-viewer";
 import { ViewerToolbar } from "./viewer-toolbar";
@@ -27,7 +23,10 @@ export function DocumentViewer({
   viewer: ViewerState;
   onToggleRail: () => void;
 }) {
-  const highlighted = step >= MATCH_STEP;
+  /* The highlight marks the passage the backend cited. With nothing cited -
+     or with another document on screen - there is nothing to mark, and the
+     sweep is skipped rather than aimed at whatever is in front of it. */
+  const highlighted = step >= MATCH_STEP && viewer.onMatch;
 
   return (
     <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-divider bg-panel shadow-[var(--shadow-tile)]">
@@ -50,7 +49,7 @@ export function DocumentViewer({
           open={viewer.thumbs}
           page={viewer.page}
           maxPage={viewer.maxPage}
-          highlighted={highlighted && viewer.doc === "agreement"}
+          highlighted={highlighted}
           onPrev={viewer.prevPage}
           onNext={viewer.nextPage}
         />
@@ -70,14 +69,7 @@ export function DocumentViewer({
                 animate="visible"
                 exit="exit"
               >
-                {viewer.doc === "agreement" && (
-                  <AgreementDocument
-                    page={viewer.page}
-                    highlighted={highlighted}
-                  />
-                )}
-                {viewer.doc === "ap" && <ApHistoryDocument />}
-                {viewer.doc === "prior" && <PriorCloseDocument />}
+                <LiveDocument docId={viewer.hasDoc ? viewer.doc : null} />
               </motion.div>
             </AnimatePresence>
           </motion.div>

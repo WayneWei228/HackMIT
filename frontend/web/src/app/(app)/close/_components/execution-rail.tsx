@@ -6,9 +6,11 @@ import { cn } from "@/lib/cn";
 import { CaretLeftIcon, CaretRightIcon } from "@/components/ui/icons";
 import { railIn } from "@/lib/motion";
 
+import { agentChain } from "@/lib/routes";
 import type { CloseRun } from "./use-close-run";
 import { ExecutionStages } from "./execution-stages";
 import { RailHandoff } from "./rail-handoff";
+import { AutoRunToggle } from "@/components/ui/auto-run-toggle";
 import { RailLabel } from "./rail-label";
 import { useRailResize, type RailResize } from "./use-rail-resize";
 
@@ -68,7 +70,7 @@ function MiniRail({ onToggle }: { onToggle: () => void }) {
         LIVE EXECUTION
       </div>
       <div className="[writing-mode:vertical-rl] rotate-180 font-display text-md whitespace-nowrap text-ink-deep">
-        Ingestion
+        {agentChain[0].label}
       </div>
     </motion.aside>
   );
@@ -125,6 +127,8 @@ function FullRail({
           </div>
           <div className="text-sm text-faint tabular-nums">{run.clock}</div>
         </div>
+
+        <AutoRunToggle className="-mx-2 mt-2.5 w-[calc(100%+16px)]" />
 
         <ExecutionStages complete={run.complete} taskStates={run.taskStates} />
 

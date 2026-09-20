@@ -1,52 +1,133 @@
 /**
- * Evidence screen dataset.
+ * Evidence screen - shapes, chrome and playback mechanics.
  *
- * Every constant here is lifted verbatim from the comp's script block
- * (`TrueUp Evidence.dc.html`): the document set, the zoom ladder, the scripted
- * step sequence and its delays, the status line per step, and the facts the run
- * reveals. All of it is synthetic - every upstream system is simulated.
+ * No content lives here. Every vendor, amount, date, sentence and document on
+ * this screen comes from the close backend; what is left in this file is the
+ * three things that are the app's own: the types the payload is read through,
+ * the labels that name the agent chain rather than any case, and the comp's
+ * animation script - the step sequence, its delays, the zoom ladder and the
+ * thresholds the figures resolve at.
+ *
+ * The narration below is the one borderline case, and it is deliberately
+ * generic: it says what the agent is doing, never what it found.
  */
 
 /* -------------------------------------------------------------------------- */
-/* Case                                                                        */
+/* Shapes                                                                      */
 /* -------------------------------------------------------------------------- */
 
-export const CASE = {
-  vendor: "Mintlify",
-  title: "December accrual",
-  meta: ["Recurring fixed", "Vendor VND-0412", "GL 6042 - Subscriptions"],
-  previousAccrual: "$1,200",
-  supported: "$1,400",
-  difference: "+$200",
-  status: "Running",
-} as const;
+/** The figures above the viewer. */
+export type CaseSummary = {
+  vendor: string;
+  title: string;
+  meta: readonly string[];
+  previousAccrual: string;
+  supported: string;
+  difference: string;
+  status: string;
+};
 
-/* -------------------------------------------------------------------------- */
-/* Documents                                                                   */
-/* -------------------------------------------------------------------------- */
-
-export type DocId = "agreement" | "ap" | "prior";
+/**
+ * The identity of a tab in the strip: the `doc_id` of one of the case's real
+ * documents, which is also what the viewer asks `/api/documents/{doc_id}` for.
+ */
+export type DocId = string;
 
 export type DocTab = {
   id: DocId;
   label: string;
   /** The grey suffix in the tab strip. */
   meta: string;
-  /** Page count the pager clamps to - `maxPageFor` in the comp. */
+  /** Page count the pager clamps to. */
   pages: number;
   /** Page the tab opens on. */
   openAt: number;
+  /** The document's `doc_type`, which picks the tab's icon. */
+  docType?: string;
 };
 
-export const DOC_TABS: readonly DocTab[] = [
-  { id: "agreement", label: "Mintlify agreement", meta: "PDF · 14 pages", pages: 14, openAt: 6 },
-  { id: "ap", label: "AP history", meta: "XLSX · 432 rows", pages: 9, openAt: 1 },
-  { id: "prior", label: "Prior close", meta: "PDF · 28 pages", pages: 28, openAt: 1 },
-];
+/**
+ * The passage the run highlights, if the backend found one.
+ *
+ * The comp sweeps a highlight across the clause that moves the accrual. That
+ * only means anything if something names a real document and page, so with no
+ * target the sweep, the flag and the "Jump to match" button are all skipped
+ * rather than aimed at whichever document happens to be first.
+ */
+export type MatchTarget = { docId: DocId; page: number };
 
-/** The agreement page the pricing clause lives on - "Jump to match" lands here. */
-export const MATCH_DOC: DocId = "agreement";
-export const MATCH_PAGE = 6;
+export type Fact = {
+  label: string;
+  value: string;
+  /** Step at which this fact lands. Optional - see `FACT_STEPS`. */
+  at?: number;
+};
+
+/** Everything the close API serves for screen `evidence`. */
+export type EvidenceData = {
+  CASE: CaseSummary;
+  FACTS: readonly Fact[];
+  MATCH: MatchTarget | null;
+};
+
+/**
+ * A payload-shaped nothing.
+ *
+ * The screen renders its ready state only when the backend has answered, so
+ * this is never on screen as content; it is the shape a component falls back
+ * to when it is rendered outside the provider - a story, a test, a future
+ * embed - so that nothing on this screen can crash for want of data.
+ */
+export const EMPTY: EvidenceData = {
+  CASE: {
+    vendor: "",
+    title: "",
+    meta: [],
+    previousAccrual: "",
+    supported: "",
+    difference: "",
+    status: "",
+  },
+  FACTS: [],
+  MATCH: null,
+};
+
+/**
+ * Whether an answer is worth drawing.
+ *
+ * Module-level and stable, because `useLiveData` takes it as an option. A
+ * payload that names no case and carries no facts is nothing to show, and the
+ * screen says so rather than drawing empty furniture.
+ */
+export function isEmptyEvidence(data: EvidenceData): boolean {
+  return !data?.CASE?.vendor && asList(data?.FACTS).length === 0;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Chrome                                                                      */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The rail's furniture.
+ *
+ * Every string here names the product's own structure - the agent chain runs
+ * evidence -> detection -> ... -> settlement on every case there has ever
+ * been - so none of it is case content and none of it comes from the backend.
+ */
+export const RAIL = {
+  eyebrow: "LIVE EXECUTION",
+  running: "Running",
+  factsLabel: "EXTRACTED FACTS",
+  handoffLabel: "NEXT HANDOFF",
+  handoffFrom: "Evidence",
+  handoffTo: "Detection",
+  handoffNote: "Pass the extracted facts to the detection agent.",
+  ctaIdle: "Hand off to Detection",
+  ctaAuto: "Opening Detection...",
+} as const;
+
+/** Stage 01 of the chain, by name. */
+export const AGENT_LABEL = "Evidence agent";
 
 export const ZOOMS = ["100%", "125%", "75%"] as const;
 export type Zoom = (typeof ZOOMS)[number];
@@ -61,7 +142,12 @@ export const ZOOM_SCALES: Record<Zoom, number> = {
 /* Scripted run                                                                */
 /* -------------------------------------------------------------------------- */
 
-/** step -> [completed checklist items, active checklist index]. */
+/**
+ * step -> [completed checklist items, active checklist index].
+ *
+ * Written against `CHECKLIST` below: it counts that list's completed items
+ * and names an active one by index, so the two are the same length.
+ */
 export const SEQ: readonly (readonly [done: number, active: number])[] = [
   [0, -1],
   [1, -1],
@@ -80,18 +166,6 @@ export const DELAYS: readonly number[] = [500, 700, 700, 800, 900, 700, 700, 900
 /** Delay between the run finishing and the auto-advance handoff. */
 export const HANDOFF_DELAY = 1600;
 
-export const STATUS: readonly string[] = [
-  "Extracting supporting evidence...",
-  "Extracting supporting evidence...",
-  "Matching vendor record...",
-  "Reading pricing terms...",
-  "Reading pricing terms...",
-  "Extracting effective rate...",
-  "Extracting effective date...",
-  "Building fact set...",
-  "Evidence complete · 3 facts extracted",
-];
-
 /** The last step in the sequence - the finished state. */
 export const FINAL_STEP = SEQ.length - 1;
 
@@ -101,161 +175,102 @@ export const MATCH_STEP = 4;
 /** Step at which the supported / difference figures resolve. */
 export const TOTALS_STEP = 7;
 
+/** Seconds on the clock when the screen mounts. */
+export const START_SECONDS = 0;
+
+/**
+ * The agent's working checklist.
+ *
+ * What stage 01 does, in the order it does it, on any case: find the
+ * documents, tie them to the vendor, read them, pull the numbers out, hand a
+ * fact set on. It names no vendor, no amount and no document, so it is chrome
+ * rather than content.
+ */
 export const CHECKLIST: readonly string[] = [
-  "Contract selected",
+  "Documents collected",
   "Vendor matched",
-  "Reading pricing terms",
-  "Extract effective rate",
+  "Reading documents",
+  "Extracting fields",
   "Build fact set",
 ];
 
-export type Fact = {
-  label: string;
-  value: string;
-  /** Step at which this fact lands. */
-  at: number;
-};
+/** The steps at which facts land, in order, for a fact that names none. */
+export const FACT_STEPS: readonly number[] = [5, 6, 7];
 
-export const FACTS: readonly Fact[] = [
-  { label: "Effective rate", value: "$1,400 / mo", at: 5 },
-  { label: "Effective date", value: "Dec 1, 2026", at: 6 },
-  { label: "Citation", value: "§4.2 · p. 6", at: 7 },
+/**
+ * The narration strip, one line per step of `SEQ`.
+ *
+ * It describes the agent's progress and nothing about the case. Where the
+ * live fact set gives the middle of the run something to name, `liveStatus`
+ * swaps that fact's own label in.
+ */
+const STATUS_BASE: readonly string[] = [
+  "Collecting the case documents...",
+  "Reading the source documents...",
+  "Matching the vendor record...",
+  "Extracting fields...",
+  "Extracting fields...",
+  "Extracting fields...",
+  "Checking the extracted values...",
+  "Building the fact set...",
+  "Evidence complete",
 ];
 
-/** Seconds on the clock when the screen mounts. */
-export const START_SECONDS = 42;
+/**
+ * The narration for the case on screen.
+ *
+ * Same beats as `STATUS_BASE`, but the three extraction steps name the fact
+ * the agent is working on and the last line counts the facts it found - both
+ * read off the live payload, so the strip says something true about this case
+ * rather than reciting a fixed script.
+ */
+export function liveStatus(data: EvidenceData): readonly string[] {
+  const facts = asList(data?.FACTS);
+  const naming = (i: number) => {
+    const label = facts[i]?.label;
+    return label ? `Extracting ${label}...` : STATUS_BASE[3 + i];
+  };
+  const n = facts.length;
+
+  return [
+    STATUS_BASE[0],
+    STATUS_BASE[1],
+    STATUS_BASE[2],
+    naming(0),
+    naming(0),
+    naming(1),
+    facts[2] ? `Extracting ${facts[2].label}...` : STATUS_BASE[6],
+    STATUS_BASE[7],
+    n === 0
+      ? STATUS_BASE[8]
+      : `${STATUS_BASE[8]} · ${n} ${n === 1 ? "fact" : "facts"} extracted`,
+  ];
+}
 
 /* -------------------------------------------------------------------------- */
-/* Document bodies                                                             */
+/* Playback mechanics                                                          */
 /* -------------------------------------------------------------------------- */
 
-export type Clause = { n: string; text: string };
+/**
+ * The scripted slot for item `i` of a list of `n`, out of `m` slots.
+ *
+ * The script counts slots, not items, so a live list of any length is spread
+ * over the same timeline rather than running off its end. Returns `-1` when
+ * there are no slots to pick from, which reads as "never reached" everywhere
+ * it is used.
+ */
+export function scriptSlot(m: number, i: number, n: number): number {
+  if (m <= 0) return -1;
+  if (n <= 0) return 0;
+  return Math.min(Math.floor((i * m) / n), m - 1);
+}
 
-export const AGREEMENT_HEADER = {
-  wordmark: "mintlify",
-  title: "Master Subscription Agreement",
-  executed: "EXECUTED OCT 14, 2026",
-} as const;
-
-export const PAGE_5 = {
-  number: "3.",
-  heading: "Services",
-  clauses: [
-    {
-      n: "3.1",
-      text: "Provider shall make the Standard Workspace plan available to Customer on a subscription basis for the duration of the Term.",
-    },
-    {
-      n: "3.2",
-      text: "Customer may add Authorized Users at any time; additional seats are billed at the then-current list rate and pro-rated to the next invoice date.",
-    },
-    {
-      n: "3.3",
-      text: "Provider will use commercially reasonable efforts to maintain 99.9% monthly availability, excluding scheduled maintenance.",
-    },
-  ] as readonly Clause[],
-} as const;
-
-export const PAGE_6 = {
-  number: "4.",
-  heading: "Fees and Payment",
-  lead: [
-    {
-      n: "4.1",
-      text: "Customer shall pay the subscription fees set out in the applicable Order Form. Fees are billed monthly in arrears and are due within thirty (30) days of the invoice date.",
-    },
-  ] as readonly Clause[],
-  /** 4.2 is rendered bespoke - it carries the highlight sweep and the match flag. */
-  match: {
-    n: "4.2",
-    before: "Commencing December 1, 2026, the monthly subscription fee for the Standard Workspace plan shall increase from ",
-    emphasis: "$1,200 to $1,400",
-    after: " per month for the remainder of the Term.",
-    flagLabel: "MATCH FOUND",
-    flagCitation: "§4.2",
-  },
-  tail: [
-    {
-      n: "4.3",
-      text: "Fees are exclusive of taxes. Customer is responsible for all applicable sales, use and withholding taxes arising from the Services.",
-    },
-    {
-      n: "4.4",
-      text: "Either party may terminate for convenience on sixty (60) days written notice prior to the end of the then-current Term.",
-    },
-  ] as readonly Clause[],
-} as const;
-
-export const PAGE_7 = {
-  number: "5.",
-  heading: "Term and Termination",
-  clauses: [
-    {
-      n: "5.1",
-      text: "The initial Term begins on the Order Form effective date and continues for twelve (12) months unless terminated in accordance with this Section.",
-    },
-    {
-      n: "5.2",
-      text: "The Term renews automatically for successive twelve (12) month periods at the then-current rate set out in Section 4.2.",
-    },
-    {
-      n: "5.3",
-      text: "Fees accrued prior to the effective date of termination remain payable in full.",
-    },
-  ] as readonly Clause[],
-} as const;
-
-export type ApRow = {
-  date: string;
-  description: string;
-  amount: string;
-  status: string;
-};
-
-export const AP_DOC = {
-  title: "Accounts Payable — Vendor History",
-  vendor: "VND-0412",
-  columns: ["DATE", "DESCRIPTION", "AMOUNT", "STATUS"] as const,
-  note: "12 consecutive months at $1,200 — no rate change recorded in AP",
-} as const;
-
-export const AP_ROWS: readonly ApRow[] = [
-  { date: "12/01/2026", description: "Mintlify subscription", amount: "$1,200", status: "Paid" },
-  { date: "11/01/2026", description: "Mintlify subscription", amount: "$1,200", status: "Paid" },
-  { date: "10/01/2026", description: "Mintlify subscription", amount: "$1,200", status: "Paid" },
-  { date: "09/01/2026", description: "Mintlify subscription", amount: "$1,200", status: "Paid" },
-  { date: "08/01/2026", description: "Mintlify subscription", amount: "$1,200", status: "Paid" },
-];
-
-export const PRIOR_DOC = {
-  eyebrow: "CLOSE MEMO · NOVEMBER 2026",
-  title: "Mintlify subscription accrual",
-  fields: [
-    { label: "To", value: "Controller" },
-    { label: "From", value: "Finance Operations" },
-    { label: "Date", value: "Dec 3, 2026" },
-  ],
-  paragraphs: [
-    "Mintlify was accrued at $1,200 for November 2026 on the basis of the prior Order Form. The vendor notified Finance of a rate change effective December 1, 2026; the amended agreement was countersigned on October 14, 2026 and supersedes the prior schedule.",
-    "No adjustment was required in the November close. December should reflect the revised monthly rate for the remainder of the Term.",
-  ],
-} as const;
-
-/* -------------------------------------------------------------------------- */
-/* Execution rail                                                              */
-/* -------------------------------------------------------------------------- */
-
-export const RAIL = {
-  eyebrow: "LIVE EXECUTION",
-  running: "Running",
-  factsLabel: "EXTRACTED FACTS",
-  handoffLabel: "NEXT HANDOFF",
-  handoffFrom: "Evidence",
-  handoffTo: "Obligation",
-  handoffNote: "Prepare structured evidence for the obligation agent.",
-  ctaIdle: "Hand off to Obligation",
-  ctaAuto: "Opening Obligation...",
-} as const;
-
-export const SOURCES_LABEL = "3 sources";
-export const AGENT_LABEL = "Evidence agent";
+/**
+ * A live array, or the empty list when the API sent something that is not one.
+ *
+ * Every list this screen maps over goes through here: a malformed payload
+ * renders nothing rather than throwing.
+ */
+export function asList<T>(value: readonly T[] | undefined | null): readonly T[] {
+  return Array.isArray(value) ? value : [];
+}

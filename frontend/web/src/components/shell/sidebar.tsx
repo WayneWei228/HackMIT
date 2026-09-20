@@ -1,16 +1,17 @@
 "use client";
 
+import { Suspense } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { cn } from "@/lib/cn";
+import { useHealth } from "@/lib/use-health";
+import { PeriodMenu } from "./period-menu";
 import {
   ChevronDownIcon,
-  ChevronRightIcon,
   DocIcon,
   HomeIcon,
   InsightsIcon,
-  MoreIcon,
   SearchIcon,
   SettingsIcon,
   VendorsIcon,
@@ -18,6 +19,12 @@ import {
 
 type NavLeaf = { label: string; href?: string };
 
+/**
+ * A leaf with no `href` has no screen behind it yet.
+ *
+ * The product holds no content of its own, so a nav item that would open an
+ * invented screen is shown as unavailable rather than wired to a fixture.
+ */
 const CLOSE_CHILDREN: NavLeaf[] = [
   { label: "Active cases", href: "/close" },
   { label: "All cases", href: "/cases" },
@@ -41,10 +48,15 @@ function TopRow({
   active?: boolean;
   trailing?: React.ReactNode;
 }) {
+  const unavailable = !href && !trailing;
   const className = cn(
     rowBase,
-    "gap-3 px-2.5 py-2 text-nav cursor-pointer",
-    active ? "text-ink" : "text-ink-2 hover:bg-hover hover:text-ink",
+    "gap-3 px-2.5 py-2 text-nav",
+    unavailable
+      ? "cursor-default text-ghost-2"
+      : active
+        ? "cursor-pointer text-ink"
+        : "cursor-pointer text-ink-2 hover:bg-hover hover:text-ink",
   );
   const body = (
     <>
@@ -58,7 +70,9 @@ function TopRow({
       {body}
     </Link>
   ) : (
-    <div className={className}>{body}</div>
+    <div className={className} aria-disabled={unavailable || undefined}>
+      {body}
+    </div>
   );
 }
 
@@ -67,20 +81,28 @@ function LeafRow({ item, active }: { item: NavLeaf; active: boolean }) {
   // text indent as its siblings, so switching rows never shifts the label.
   const className = cn(
     rowBase,
-    "py-[7px] pr-2.5 pl-[42px] text-body cursor-pointer",
-    active ? "bg-accent-soft text-ink" : "text-muted hover:bg-hover hover:text-ink",
+    "py-[7px] pr-2.5 pl-[42px] text-body",
+    item.href
+      ? active
+        ? "cursor-pointer bg-accent-soft text-ink"
+        : "cursor-pointer text-muted hover:bg-hover hover:text-ink"
+      : "cursor-default text-ghost-2",
   );
   return item.href ? (
     <Link href={item.href} className={className}>
       {item.label}
     </Link>
   ) : (
-    <div className={className}>{item.label}</div>
+    <div className={className} aria-disabled="true">
+      {item.label}
+    </div>
   );
 }
 
 export function Sidebar() {
   const pathname = usePathname();
+  /* Whose books these are, and whether the backend is answering at all. */
+  const health = useHealth();
   const isCloseSection =
     pathname.startsWith("/close") ||
     pathname.startsWith("/cases") ||
@@ -142,24 +164,67 @@ export function Sidebar() {
 
       <div className="px-3">
         <div className="mx-2 mb-4 h-px bg-line-warm" />
-        <div className="flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-1.5 transition-colors duration-[160ms] hover:bg-hover">
-          <div className="flex-1">
-            <div className="text-body text-ink">December 2026</div>
-            <div className="mt-0.5 text-meta text-faint-2">Controller</div>
-          </div>
-          <ChevronRightIcon className="text-faint-2" />
-        </div>
-        <div className="flex items-center gap-[11px] px-2.5 pt-2.5 pb-1">
-          <div className="flex h-[34px] w-[34px] flex-none items-center justify-center rounded-full bg-accent-forest text-micro font-semibold tracking-[0.03em] text-accent-on-2">
-            TS
-          </div>
+
+        {/* The menu reads the month out of the URL, which suspends during
+            the static prerender - and the sidebar sits above every page's
+            own boundary, so it carries one of its own. */}
+        <Suspense fallback={<PeriodMenuPlaceholder />}>
+          <PeriodMenu />
+        </Suspense>
+
+        {/* No user block: the backend has no user concept, and a name here
+            would be the one piece of content this product invented. What it
+            does know is which company's books these are, and whether it can
+            reach them at all. */}
+        <div className="mt-1 flex items-center gap-2.5 px-2.5 pt-2.5 pb-1">
+          <ConnectionDot state={health.state} />
           <div className="min-w-0 flex-1">
-            <div className="text-body text-ink">Taylor Smith</div>
-            <div className="mt-0.5 text-meta text-faint-2">Mintlify</div>
+            <div className="truncate text-body text-ink">
+              {health.company ?? "Close workspace"}
+            </div>
+            <div className="mt-0.5 truncate text-meta text-faint-2">
+              {health.state === "connected"
+                ? "Connected"
+                : health.state === "offline"
+                  ? "Backend not reachable"
+                  : "Connecting..."}
+            </div>
           </div>
-          <MoreIcon className="cursor-pointer text-lead text-faint-3" />
         </div>
       </div>
     </aside>
+  );
+}
+
+/** Whether the close API is answering: the app's only always-on indicator. */
+function ConnectionDot({ state }: { state: "connecting" | "connected" | "offline" }) {
+  return (
+    <span className="relative h-2 w-2 flex-none" aria-hidden="true">
+      <span
+        className={cn(
+          "absolute inset-0 rounded-full transition-colors duration-[400ms] ease-[var(--ease-out-soft)]",
+          state === "connected"
+            ? "bg-accent"
+            : state === "offline"
+              ? "bg-[#C08A5A]"
+              : "bg-rule",
+        )}
+      />
+      {state === "connected" ? (
+        <span className="animate-pulse-ring absolute -inset-1 rounded-full border-[1.2px] border-[rgba(46,128,71,0.5)] [animation-duration:2.6s]" />
+      ) : null}
+    </span>
+  );
+}
+
+/** The period chip's own footprint, held while the URL is still unknown. */
+function PeriodMenuPlaceholder() {
+  return (
+    <div className="flex items-center gap-2.5 rounded-lg px-2.5 py-1.5">
+      <div className="min-w-0 flex-1">
+        <div className="h-[15px] w-[108px] rounded-md bg-wash-cool" />
+        <div className="mt-1.5 h-[11px] w-[74px] rounded-md bg-wash-cool" />
+      </div>
+    </div>
   );
 }

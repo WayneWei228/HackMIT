@@ -4,13 +4,8 @@ import { motion } from "motion/react";
 
 import { MoreIcon } from "@/components/ui/icons";
 import { stagger, timing } from "../_motion";
-import {
-  ACCRUAL_AMOUNT,
-  JOURNAL,
-  RECOMMENDATION_NOTE,
-  RECOMMENDATION_ROWS,
-} from "../_data";
 import { ConfirmIcon } from "./icons";
+import { useEstimationData } from "./data-context";
 
 /** Right column: the number the agent lands on and the entry it implies. */
 export function RecommendationPanel({
@@ -20,6 +15,12 @@ export function RecommendationPanel({
   step: number;
   complete: boolean;
 }) {
+  const {
+    ACCRUAL_AMOUNT,
+    JOURNAL,
+    RECOMMENDATION_NOTE,
+    RECOMMENDATION_ROWS,
+  } = useEstimationData().data;
   const settled = step >= 12;
   const rowsIn = step >= 13;
 
@@ -59,7 +60,7 @@ export function RecommendationPanel({
       <div className="mt-[18px] flex flex-col">
         {RECOMMENDATION_ROWS.map((row, i) => (
           <motion.div
-            key={row.label}
+            key={`${row.label}-${i}`}
             animate={{ opacity: rowsIn ? 1 : 0, y: rowsIn ? 0 : 5 }}
             transition={stagger(timing.fact, i * 0.06)}
             className="flex items-center justify-between gap-3.5 border-t border-wash-deep py-[11px]"
@@ -94,8 +95,8 @@ export function RecommendationPanel({
       >
         <div className="text-ui leading-[normal] text-ink-2">Journal preview</div>
         <div className="mt-3 grid grid-cols-[22px_1fr_auto] gap-2.5 text-sm leading-[normal] text-ink">
-          {JOURNAL.map((line) => (
-            <div key={line.side} className="contents">
+          {JOURNAL.map((line, i) => (
+            <div key={`${line.side}-${line.account}-${i}`} className="contents">
               <span className="text-faint-2">{line.side}</span>
               <span>{line.account}</span>
               <span className="text-right tabular-nums">{line.amount}</span>

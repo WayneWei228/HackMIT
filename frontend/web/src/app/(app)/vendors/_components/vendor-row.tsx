@@ -5,13 +5,16 @@ import { motion } from "motion/react";
 import { MoreIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/cn";
 import { rowIn, transitions } from "@/lib/motion";
-import { STATE_TONES, WORKFLOW_TONES, type Vendor } from "../_data";
+import { STATE_TONES, workflowTone, type Vendor } from "../_data";
 import { VENDOR_GRID } from "./grid";
 import { VendorMark } from "./vendor-mark";
 
 /** Agent-state indicator: a dot, with a breathing ring while autonomous. */
 function StateDot({ vendor }: { vendor: Vendor }) {
-  const tone = STATE_TONES[vendor.state];
+  const tone = STATE_TONES[vendor.state] ?? {
+    dot: "var(--color-rule)",
+    pulse: false,
+  };
   return (
     <span className="relative h-2 w-2 flex-none">
       <span
@@ -36,7 +39,7 @@ export function VendorRow({
   animateLayout: boolean;
   onSelect: () => void;
 }) {
-  const workflow = WORKFLOW_TONES[vendor.workflow];
+  const workflow = workflowTone(vendor.workflow);
 
   return (
     <motion.div
@@ -76,9 +79,13 @@ export function VendorRow({
         </div>
       </div>
 
-      <div>
+      {/* A workflow name can be longer than its column ("December usage
+          accrual"); the pill keeps it on one line and clips rather than
+          letting the phrase break in half. */}
+      <div className="min-w-0">
         <span
-          className="inline-block rounded-md px-[11px] py-1.5 text-meta whitespace-nowrap"
+          title={vendor.workflow}
+          className="inline-block max-w-full truncate rounded-md px-[11px] py-1.5 align-middle text-meta whitespace-nowrap"
           style={{ background: workflow.bg, color: workflow.fg }}
         >
           {vendor.workflow}
@@ -89,9 +96,12 @@ export function VendorRow({
         {vendor.amount}
       </div>
 
-      <div className="flex items-center gap-2.5">
+      <div className="flex min-w-0 items-center gap-2.5">
         <StateDot vendor={vendor} />
-        <span className="text-body whitespace-nowrap text-ink-2">
+        <span
+          title={vendor.state}
+          className="truncate text-body whitespace-nowrap text-ink-2"
+        >
           {vendor.state}
         </span>
       </div>

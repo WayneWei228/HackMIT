@@ -7,7 +7,8 @@ import { cn } from "@/lib/cn";
 import { ChevronDownIcon, SearchIcon } from "@/components/ui/icons";
 import { transitions } from "@/lib/motion";
 
-import { SOURCE_TABS, type TabId } from "../_data";
+import type { TabId } from "../_data";
+import { useIngestionData } from "./data-context";
 import { TabGlyphIcon } from "./close-icons";
 
 /**
@@ -24,6 +25,8 @@ export function SourceTabs({
   value: TabId;
   onChange: (id: TabId) => void;
 }) {
+  const { data } = useIngestionData();
+  const { SOURCE_TABS } = data;
   const scroller = useRef<HTMLDivElement>(null);
   const [overflowing, setOverflowing] = useState(false);
 

@@ -23,7 +23,8 @@ export function VendorMark({
   variant?: keyof typeof VARIANTS;
   className?: string;
 }) {
-  const mark = MARKS[vendor.mark];
+  // A live vendor may carry a mark index the palette does not reach.
+  const mark = MARKS[vendor.mark] ?? MARKS[0];
   return (
     <span
       aria-hidden="true"

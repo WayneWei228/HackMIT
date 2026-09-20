@@ -3,10 +3,15 @@
 import { motion } from "motion/react";
 
 import { stagger, timing } from "../_motion";
-import { CALC_AT, CALC_ROWS, CALC_TOTAL, calcText } from "../_data";
+import { CALC_AT } from "../_data";
+import { useEstimationData } from "./data-context";
 
-/** Body of build step 3: the arithmetic behind the base accrual. */
-export function CalcTable({ step }: { step: number }) {
+/**
+ * Body of build step 3: the arithmetic behind the base accrual. The lead
+ * sentence is the step's own copy, handed down by the panel.
+ */
+export function CalcTable({ step, text }: { step: number; text: string }) {
+  const { CALC_ROWS, CALC_TOTAL } = useEstimationData().data;
   const shown = step >= CALC_AT;
   const reveal = (delay: number) => ({
     animate: { opacity: shown ? 1 : 0, y: shown ? 0 : 4 },
@@ -15,13 +20,15 @@ export function CalcTable({ step }: { step: number }) {
 
   return (
     <div className="pt-[7px] pr-1 pl-[27px]">
-      <div className="text-sm leading-[1.65] text-pretty text-muted-4">
-        {calcText(step)}
-      </div>
+      {text ? (
+        <div className="text-sm leading-[1.65] text-pretty text-muted-4">
+          {text}
+        </div>
+      ) : null}
       <div className="mt-3 rounded-lg bg-rail-alt px-[15px] py-[13px]">
         {CALC_ROWS.map((row, i) => (
           <motion.div
-            key={row.label}
+            key={`${row.label}-${i}`}
             {...reveal(i * 0.08)}
             className="flex items-center justify-between gap-3.5 py-[5px]"
           >

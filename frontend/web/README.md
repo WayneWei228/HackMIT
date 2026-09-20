@@ -24,20 +24,74 @@ npm run lint
 
 ## Screens
 
-| Route | Comp |
+| Route | Agent |
 | --- | --- |
 | `/cases` | All cases - case management list |
 | `/vendors` | Vendor intelligence, with detail rail |
-| `/close` | Close case detail, entry point of the agent chain |
-| `/close/evidence` | Evidence agent |
-| `/close/obligation` | Obligation agent |
-| `/close/estimation` | Estimation agent |
-| `/close/verification` | Verification agent |
+| `/close` | Evidence agent, intake view - the documents read this month |
+| `/close/evidence` | Evidence agent, reader - document viewer and extracted facts |
+| `/close/detection` | Detection agent - which PO lines are owed for the period |
+| `/close/invoice-lookup` | Invoice Lookup agent - is it already invoiced? |
+| `/close/classification` | Classification agent - recurring/one-time, fixed/variable |
+| `/close/estimation` | Estimation agent - the accrual amount |
+| `/close/outreach` | Outreach agent - tickets, deadlines, fallbacks |
+| `/close/settlement` | Settlement agent - true-up against what actually arrived |
 
-The four agent screens form a chain - evidence hands off to obligation, and so
-on to verification. In the comps each screen auto-navigated to the next on a
-timer; here that handoff sits behind an `autoAdvance` prop defaulting to `false`
-so the app stays navigable, and the visible affordance does the navigation.
+The seven agent screens mirror the backend's chain and hand off in that order.
+In the comps each screen auto-navigated to the next on a timer; here that
+handoff sits behind an `autoAdvance` prop defaulting to `false` so the app
+stays navigable, and the visible affordance does the navigation.
+
+Three of the screens share one comp and three another: Detection, Invoice
+Lookup and Classification all render `close/_analysis`, and Outreach and
+Settlement render `close/_controls`. What makes each of them that agent is its
+route folder's `_data.ts`.
+
+## Live data
+
+Every screen ships with a synthetic dataset in its route folder (`_data.ts`)
+and runs on it by default. Point it at the close API and the same screens fill
+with real case data instead.
+
+```bash
+# 1. start the API (from the repo root)
+cd startup && ../.venv/bin/python -m uvicorn close.api:app --port 8000
+
+# 2. point the web app at it
+cd frontend/web
+cp .env.example .env.local        # NEXT_PUBLIC_API_URL=http://localhost:8000
+npm run dev
+
+# 3. open http://localhost:3000/cases and click a case
+```
+
+`NEXT_PUBLIC_API_URL` defaults to `http://localhost:8000`, so `.env.local` is
+only needed when the API lives somewhere else.
+
+**How it works.** Each endpoint returns a JSON object whose keys are the
+exported *data* constant names of the matching `_data.ts`, carrying that
+constant's type. `useLiveData` (`src/lib/use-live-data.ts`) starts on the mock,
+fetches once, and merges `{ ...mock, ...api }` over it - restricted to keys the
+mock already declares, ignoring unknown keys and null values. Anything the API
+omits keeps its synthetic value, and a failed or absent API leaves the screen
+on the mock without an error. Timings, step thresholds and agent narration are
+never served: they are the scripted run, not data.
+
+| Endpoint | Fills |
+| --- | --- |
+| `GET /api/cases` | `{ CASES }` - each `href` is `/close?case=<period>/<case_key>` |
+| `GET /api/vendors` | `{ VENDORS, VENDOR_KPIS }` |
+| `GET /api/cases/{period}/{case_key}/screens/{screen}` | one screen's constants |
+| `GET /api/health` | liveness |
+
+`{screen}` is one of `ingestion`, `evidence`, `detection`, `invoice-lookup`,
+`classification`, `estimation`, `outreach`, `settlement`.
+
+The five close screens read the case from `?case=<period>/<case_key>` and every
+link between them carries it (`withCase` in `src/lib/routes.ts`). With no
+`case` param a close screen is a demo and makes no request at all. A small
+"Live data" / "Demo data" pill in each screen's header says which it is, with
+the case id beside it.
 
 ## Layout
 

@@ -4,17 +4,17 @@ import Link from "next/link";
 import { motion } from "motion/react";
 
 import { cn } from "@/lib/cn";
+import { safeHref } from "@/lib/routes";
 import { timing } from "../_motion";
-import {
-  INPUTS,
-  INPUTS_FOOTNOTE,
-  INPUTS_FOOTNOTE_AT,
-  type EstimationInput,
-} from "../_data";
+import { INPUTS_FOOTNOTE_AT, type EstimationInput } from "../_data";
 import { ConfirmIcon, InputCalendarIcon, InputDocIcon } from "./icons";
+import { useEstimationData } from "./data-context";
 
 /** Left column: the facts the estimate is built from, revealed as they load. */
 export function InputsPanel({ step }: { step: number }) {
+  const { data, caseParam } = useEstimationData();
+  const { INPUTS, INPUTS_FOOTNOTE } = data;
+
   return (
     <section className="flex min-h-full flex-col rounded-xl border border-divider bg-panel px-5 pt-5 pb-[18px] shadow-[var(--shadow-tile)]">
       <div className="font-display border-b border-divider-3 pb-3.5 text-2xl leading-[normal] text-ink-deep">
@@ -23,8 +23,9 @@ export function InputsPanel({ step }: { step: number }) {
 
       {INPUTS.map((input, i) => (
         <InputCard
-          key={input.label}
+          key={`${input.label}-${i}`}
           input={input}
+          caseParam={caseParam}
           shown={step >= input.revealAt}
           last={i === INPUTS.length - 1}
         />
@@ -49,14 +50,21 @@ export function InputsPanel({ step }: { step: number }) {
 
 function InputCard({
   input,
+  caseParam,
   shown,
   last,
 }: {
   input: EstimationInput;
+  caseParam: string | null;
   shown: boolean;
   last: boolean;
 }) {
   const Glyph = input.icon === "calendar" ? InputCalendarIcon : InputDocIcon;
+  /* The payload cites screens by name, including a couple this app retired;
+     anything that would 404 comes back null and the caption stays plain text. */
+  const href = safeHref(input.href, caseParam);
+  const captionClass =
+    "mt-[5px] inline-block text-micro leading-[normal] text-faint-2";
   return (
     <motion.div
       animate={{ opacity: shown ? 1 : 0, y: shown ? 0 : 6 }}
@@ -78,15 +86,18 @@ function InputCard({
             {input.value}
           </div>
           {input.sub &&
-            (input.href ? (
+            (href ? (
               <Link
-                href={input.href}
-                className="mt-[5px] inline-block text-micro leading-[normal] text-faint-2 transition-colors duration-[160ms] ease-[var(--ease-out-soft)] hover:text-accent-link"
+                href={href}
+                className={cn(
+                  captionClass,
+                  "transition-colors duration-[160ms] ease-[var(--ease-out-soft)] hover:text-accent-link",
+                )}
               >
                 {input.sub}
               </Link>
             ) : (
-              <div className="mt-[5px] text-micro leading-[normal] text-faint-2">{input.sub}</div>
+              <div className={captionClass}>{input.sub}</div>
             ))}
         </div>
       </div>

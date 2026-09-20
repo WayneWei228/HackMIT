@@ -105,12 +105,6 @@ MONTHS = ["January", "February", "March", "April", "May", "June",
 
 EVIDENCE_HREF = "/close/evidence"
 
-# The UI's seven-agent chain: (stage number, name, route). Used for the rails, the chain and the handoffs.
-AGENT_CHAIN = [("01", "Evidence", "/close/evidence"), ("02", "Detection", "/close/detection"),
-               ("03", "Invoice Lookup", "/close/invoice-lookup"), ("04", "Classification", "/close/classification"),
-               ("05", "Estimation", "/close/estimation"), ("06", "Outreach", "/close/outreach"),
-               ("07", "Settlement", "/close/settlement")]
-
 # The company the documents are addressed to. Read off the PDFs' text, not from any structured field.
 COMPANY = "Orbit Labs"
 
@@ -705,7 +699,8 @@ def screen_evidence(case: dict, cases: list[dict]) -> dict:
 
 def analysis_shell(case: dict, cases: list[dict], *, header_stats: list[dict], facts: list[dict],
                    attributes: list[dict], intro: str, checks: list[dict], conclusion: dict, rows: list[dict],
-                   rail_tasks: list[dict], inputs_label: str, attributes_from: str) -> dict:
+                   rail_tasks: list[dict], inputs_label: str, attributes_from: str,
+                   handoff_blurb: str) -> dict:
     """close/_analysis/types.ts `AnalysisData` - shared by Detection, Invoice Lookup and Classification."""
     return {
         "caseMeta": {"vendor": vendor_of(case), "period": case_title(case),
@@ -721,6 +716,7 @@ def analysis_shell(case: dict, cases: list[dict], *, header_stats: list[dict], f
         "conclusion": conclusion,
         "conclusionRows": rows,
         "railTasks": rail_tasks,
+        "handoffBlurb": handoff_blurb,
     }
 
 
@@ -813,7 +809,9 @@ def screen_detection(case: dict, cases: list[dict]) -> dict:
                     {"label": "Check period coverage"},
                     {"label": f"Test each line against {month}", "multiline": True},
                     {"label": "Resolve owed lines"}, {"label": "Prepare handoff"}],
-        inputs_label=f"{len(facts)} evidence inputs", attributes_from=basis)
+        inputs_label=f"{len(facts)} evidence inputs", attributes_from=basis,
+        handoff_blurb=f"Invoice Lookup receives {case['case_key']}, owed on {basis.lower()} for {month}, and "
+                      "searches the AP ledger and queue for it.")
 
 
 def screen_invoice_lookup(case: dict, cases: list[dict]) -> dict:
@@ -886,8 +884,8 @@ def screen_invoice_lookup(case: dict, cases: list[dict]) -> dict:
                     {"label": "Search posted invoices"},
                     {"label": "Search the AP queue", "multiline": True},
                     {"label": "Resolve the outcome"}, {"label": "Prepare handoff"}],
-        inputs_label=f"{len(facts)} evidence inputs",
-        attributes_from="AP ledger + queue")
+        inputs_label=f"{len(facts)} evidence inputs", attributes_from="AP ledger + queue",
+        handoff_blurb=f"Classification receives the {result} outcome, with {money(still)} still to accrue.")
 
 
 def screen_classification(case: dict, cases: list[dict]) -> dict:
@@ -965,8 +963,12 @@ def screen_classification(case: dict, cases: list[dict]) -> dict:
                     {"label": "Walk the rule tree"},
                     {"label": "Cross-check the description", "multiline": True},
                     {"label": "Settle the classification"}, {"label": "Prepare handoff"}],
-        inputs_label=f"{len(facts)} evidence inputs",
-        attributes_from=f"{frequency} · {rate_type}")
+        inputs_label=f"{len(facts)} evidence inputs", attributes_from=f"{frequency} · {rate_type}",
+        handoff_blurb=(f"Estimation receives {final} and prices the line with {basis_label(case).lower()}."
+                       if final and (case.get("estimate") or {}).get("estimator") else
+                       f"Estimation receives {final}, but {why_no_estimate(case)[0].lower()}"
+                       f"{why_no_estimate(case)[1:]}" if final else
+                       "No category, so the case goes to a human rather than to Estimation."))
 
 
 def calc_rows(case: dict) -> list[dict]:
@@ -1212,9 +1214,7 @@ def screen_estimation(case: dict, cases: list[dict]) -> dict:
         "RECOMMENDATION_NOTE": estimation_note(case),
         "ACCRUAL_AMOUNT": money(estimate.get("amount")),
         "JOURNAL": journal_lines(estimate, long_names=True),
-        "HANDOFF": {"from": "Estimation", "to": "Outreach", "blurb": handoff_blurb, "href": "/close/outreach"},
-        "RAIL_STAGES_BEFORE": [{"n": number, "label": name, "href": href, "status": "Complete"}
-                               for number, name, href in AGENT_CHAIN[:4]],
+        "HANDOFF_BLURB": handoff_blurb,
         "RAIL_TASKS": ["Load the classified line", f"Apply {estimator.lower()}", "Compute the base amount",
                        "Check for adjustments", "Finalize the amount"],
     }
@@ -1237,7 +1237,7 @@ def estimation_note(case: dict) -> str:
 
 def controls_shell(case: dict, cases: list[dict], *, head_stats: list[dict], controls: list[dict],
                    assertions: list[dict], extras: list[str], scans: list[str], final_rows: list[dict],
-                   tasks: list[str]) -> dict:
+                   tasks: list[str], handoff_blurb: str) -> dict:
     """close/_controls/types.ts `ControlsData` - shared by Outreach and Settlement."""
     estimate = case.get("estimate") or {}
     account = expense_account(case)
@@ -1250,6 +1250,7 @@ def controls_shell(case: dict, cases: list[dict], *, head_stats: list[dict], con
         "SCAN_ITEMS": scans,
         "FINAL_ROWS": final_rows,
         "TASKS": tasks,
+        "HANDOFF_BLURB": handoff_blurb,
         "ACCRUAL_AMOUNT": money(estimate.get("amount")),
         "JOURNAL_LINES": journal_lines(estimate),
     }
@@ -1349,7 +1350,11 @@ def screen_outreach(case: dict, cases: list[dict]) -> dict:
                                                    f"{'(used)' if forced else '(unused)'}" if fallback else "None"}],
         tasks=["Identify the question", "Open the ticket", "Set the deadline", "Record the fallback",
                "Log the answer", "Prepare handoff"],
-        )
+        handoff_blurb=(f"Settlement waits for the actual on {case['case_key']}: the accrual of "
+                       f"{money(estimate.get('amount'))} is trued up when the invoice or the final report arrives."
+                       if estimate.get("amount") is not None else
+                       f"Nothing for Settlement to true up: "
+                       f"{invoice_summary(case) or why_no_estimate(case).rstrip('.')}."))
 
 
 def screen_settlement(case: dict, cases: list[dict]) -> dict:
@@ -1437,7 +1442,7 @@ def screen_settlement(case: dict, cases: list[dict]) -> dict:
                      settlement.get("within_tolerance") else "None required" if settlement else "Not settled"}],
         tasks=["Read the settling document", "Compute the true-up", "Test against tolerance",
                "Re-check close-time data", "Determine the cause", "Record the settlement"],
-        )
+        handoff_blurb=description)
 
 
 SCREEN_BUILDERS = {
@@ -1704,29 +1709,8 @@ def vendors_endpoint(period: str | None = None) -> dict:
     """`period` tells the vendor what it knew at the end of that month: later cases are left out."""
     cases = [c for c in all_cases() if period is None or (c.get("period") or "") <= period]
     marks = marks_by_vendor()
-    vendors = [vendor_record(v, cases, marks, period) for v in vendor_rows()
-               if any(c.get("vendor_id") == v.get("vendor_id") for c in cases)]
-    return {"VENDORS": vendors, "VENDOR_KPIS": vendor_kpis(vendors, cases, period)}
-
-
-def vendor_kpis(vendors: list[dict], cases: list[dict], period: str | None) -> list[dict]:
-    """The four numerals above the vendor table. Every one is counted, none is a target."""
-    scope = [c for c in cases if period is None or c.get("period") == period]
-    ids = {c.get("case_id") for c in scope}
-    open_questions = [t for t in all_tickets() if t.get("case_id") in ids and t.get("state") == "OPEN"]
-    accrued = sum((c.get("estimate") or {}).get("amount") or 0 for c in scope)
-    return [
-        {"value": str(len(vendors)), "label": "vendors"},
-        {"value": str(len([v for v in vendors if v["state"] == "Autonomous"])), "label": "autonomous"},
-        {"value": str(len([v for v in vendors if v["state"] == "Waiting for evidence"])),
-         "label": "waiting for evidence"},
-        {"value": money(accrued, "$0"),
-         "label": f"accrued in {fmt_month(period)}" if period else "accrued to date"},
-    ] if vendors else [
-        {"value": "0", "label": "vendors"}, {"value": "0", "label": "autonomous"},
-        {"value": "0", "label": "waiting for evidence"},
-        {"value": str(len(open_questions)), "label": "open questions"},
-    ]
+    return {"VENDORS": [vendor_record(v, cases, marks, period) for v in vendor_rows()
+                        if any(c.get("vendor_id") == v.get("vendor_id") for c in cases)]}
 
 
 @app.get("/api/cases/{period}/{case_key:path}/screens/{screen}")

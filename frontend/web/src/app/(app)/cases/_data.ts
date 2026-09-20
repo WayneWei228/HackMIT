@@ -1,8 +1,11 @@
-import { routes } from "@/lib/routes";
-
 /**
- * The case-management dataset, lifted verbatim from the comp's script block.
- * All data is synthetic and every upstream system is simulated.
+ * The case-management screen's vocabulary - and nothing else.
+ *
+ * The product holds no content of its own: every case, vendor, amount and
+ * timestamp comes from `GET /api/cases`, which starts empty and is filled by
+ * running a month. So this file carries only what the *renderer* needs to be
+ * able to draw a row it has never seen: the row's type, the palettes, the
+ * filter vocabularies, and one empty initial value.
  */
 
 export type CaseCategory =
@@ -11,8 +14,15 @@ export type CaseCategory =
 export type CaseStatus =
   "Running" | "In progress" | "Queued" | "Close-ready" | "Complete";
 
+/** The seven agents of the close chain, in the order they run. */
 export type CaseStage =
-  "Ingestion" | "Evidence" | "Obligation" | "Estimation" | "Verification";
+  | "Evidence"
+  | "Detection"
+  | "Invoice Lookup"
+  | "Classification"
+  | "Estimation"
+  | "Outreach"
+  | "Settlement";
 
 /** The columns a reader can sort the table by. */
 export type SortKey =
@@ -25,7 +35,7 @@ export type CaseRecord = {
   mark: number;
   item: string;
   category: CaseCategory;
-  /** Whole dollars; the comp formats with a thousands separator at render. */
+  /** Whole dollars; formatted with a thousands separator at render. */
   amount: number;
   stage: CaseStage;
   status: CaseStatus;
@@ -33,6 +43,7 @@ export type CaseRecord = {
   time: string;
   /** Sortable stamp, YYYYMMDD.HHMM. */
   ts: number;
+  /** `"/close?case=<period>/<case_key>"`, URL-encoded, as the API emits it. */
   href: string;
 };
 
@@ -65,121 +76,6 @@ export const MARKS: readonly { bg: string; fg: string }[] = [
   { bg: "#E6EBF0", fg: "#3A5465" },
   { bg: "#EDEBF2", fg: "#4A4660" },
   { bg: "#E9F0E5", fg: "#3C5840" },
-];
-
-export const CASES: readonly CaseRecord[] = [
-  {
-    vendor: "Mintlify",
-    initials: "M",
-    mark: 0,
-    item: "December accrual",
-    category: "Accruals",
-    amount: 1400,
-    stage: "Verification",
-    status: "Running",
-    date: "Dec 1, 2026",
-    time: "10:24 AM",
-    ts: 20261201.1024,
-    href: routes.verification,
-  },
-  {
-    vendor: "OpenAI",
-    initials: "OA",
-    mark: 1,
-    item: "API usage accrual",
-    category: "Accruals",
-    amount: 18600,
-    stage: "Evidence",
-    status: "Running",
-    date: "Dec 1, 2026",
-    time: "9:18 AM",
-    ts: 20261201.0918,
-    href: routes.evidence,
-  },
-  {
-    vendor: "ASUS",
-    initials: "AS",
-    mark: 2,
-    item: "Equipment purchase",
-    category: "Fixed Assets",
-    amount: 40000,
-    stage: "Obligation",
-    status: "In progress",
-    date: "Dec 1, 2026",
-    time: "8:45 AM",
-    ts: 20261201.0845,
-    href: routes.obligation,
-  },
-  {
-    vendor: "Meta",
-    initials: "ME",
-    mark: 3,
-    item: "Campaign spend",
-    category: "Accounts Payable",
-    amount: 12800,
-    stage: "Estimation",
-    status: "Running",
-    date: "Nov 30, 2026",
-    time: "4:32 PM",
-    ts: 20261130.1632,
-    href: routes.estimation,
-  },
-  {
-    vendor: "Notability",
-    initials: "NO",
-    mark: 4,
-    item: "Prepaid subscription",
-    category: "Prepaids",
-    amount: 2400,
-    stage: "Ingestion",
-    status: "Queued",
-    date: "Nov 30, 2026",
-    time: "2:17 PM",
-    ts: 20261130.1417,
-    href: routes.closeCase,
-  },
-  {
-    vendor: "Slack",
-    initials: "SL",
-    mark: 5,
-    item: "Workspace subscription",
-    category: "Prepaids",
-    amount: 7200,
-    stage: "Verification",
-    status: "Close-ready",
-    date: "Nov 30, 2026",
-    time: "11:06 AM",
-    ts: 20261130.1106,
-    href: routes.verification,
-  },
-  {
-    vendor: "AWS",
-    initials: "AW",
-    mark: 2,
-    item: "Infrastructure spend",
-    category: "Accounts Payable",
-    amount: 25300,
-    stage: "Evidence",
-    status: "Complete",
-    date: "Nov 29, 2026",
-    time: "6:14 PM",
-    ts: 20261129.1814,
-    href: routes.evidence,
-  },
-  {
-    vendor: "Deel",
-    initials: "DE",
-    mark: 1,
-    item: "Contractor services",
-    category: "Accounts Payable",
-    amount: 9100,
-    stage: "Estimation",
-    status: "Complete",
-    date: "Nov 29, 2026",
-    time: "3:22 PM",
-    ts: 20261129.1522,
-    href: routes.estimation,
-  },
 ];
 
 export type CategoryTab = "All" | CaseCategory;
@@ -215,21 +111,36 @@ export const COLUMNS: readonly { key: SortKey; label: string }[] = [
 ];
 
 /**
- * Tab counts are taken from the whole dataset - they ignore the search box and
- * the status filter, so the row of tabs never reshuffles while you type.
+ * Tab counts are taken from the rows the API returned - they ignore the search
+ * box and the status filter, so the row of tabs never reshuffles while you
+ * type. A month with no cases counts zeroes, which is the truth.
  */
-export const TAB_COUNTS: Record<CategoryTab, number> = CATEGORY_TABS.reduce(
-  (acc, tab) => {
-    acc[tab] = CASES.filter(
-      (item) => tab === "All" || item.category === tab,
-    ).length;
-    return acc;
-  },
-  {} as Record<CategoryTab, number>,
-);
+export function countByCategory(
+  cases: readonly CaseRecord[],
+): Record<CategoryTab, number> {
+  return CATEGORY_TABS.reduce(
+    (acc, tab) => {
+      acc[tab] = cases.filter(
+        (item) => tab === "All" || item.category === tab,
+      ).length;
+      return acc;
+    },
+    {} as Record<CategoryTab, number>,
+  );
+}
 
 const dollars = new Intl.NumberFormat("en-US");
 
 export function formatAmount(amount: number): string {
   return `$${dollars.format(amount)}`;
 }
+
+/* -------------------------------------------------------------------------- */
+/* What the close API answers with                                             */
+/* -------------------------------------------------------------------------- */
+
+/** `GET /api/cases[?period=YYYY-MM]` -> `{ CASES }`. */
+export type CasesData = { CASES: readonly CaseRecord[] };
+
+/** The starting point: nothing, until a month has been run. */
+export const EMPTY: CasesData = { CASES: [] };

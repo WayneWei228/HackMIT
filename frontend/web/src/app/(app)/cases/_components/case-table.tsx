@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useReducedMotion } from "motion/react";
 
 import { cn } from "@/lib/cn";
@@ -23,6 +23,7 @@ export function CaseTable({
   onSort,
   onClearFilters,
   animateRows = true,
+  emptySlot,
 }: {
   rows: CaseRecord[];
   sortKey: SortKey;
@@ -30,6 +31,13 @@ export function CaseTable({
   onSort: (key: SortKey) => void;
   onClearFilters: () => void;
   animateRows?: boolean;
+  /**
+   * What to render instead of rows when there are none. Omitted, the table
+   * shows its own "no cases match" state, which is only ever the right answer
+   * when the filters are what emptied it. `null` renders nothing at all -
+   * what a month still in flight should show.
+   */
+  emptySlot?: ReactNode;
 }) {
   const reduceMotion = useReducedMotion();
 
@@ -62,7 +70,7 @@ export function CaseTable({
 
       {rows.map((row, index) => (
         <CaseRow
-          key={`${row.vendor}-${row.item}`}
+          key={`${row.href}-${row.vendor}-${row.item}`}
           row={row}
           entrance={
             settled
@@ -75,9 +83,12 @@ export function CaseTable({
         />
       ))}
 
-      {rows.length === 0 && (
-        <CasesEmptyState onClear={onClearFilters} instant={!!reduceMotion} />
-      )}
+      {rows.length === 0 &&
+        (emptySlot === undefined ? (
+          <CasesEmptyState onClear={onClearFilters} />
+        ) : (
+          emptySlot
+        ))}
     </div>
   );
 }

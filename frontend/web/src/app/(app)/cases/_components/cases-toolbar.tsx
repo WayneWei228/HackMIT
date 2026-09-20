@@ -1,8 +1,9 @@
 "use client";
 
-import { SearchField, StatStrip, Button } from "@/components/ui/primitives";
-import { CalendarIcon, ChevronDownIcon } from "@/components/ui/icons";
+import { SearchField, StatStrip } from "@/components/ui/primitives";
+import type { PeriodInfo } from "@/lib/period";
 
+import { PeriodMenu } from "./period-menu";
 import { StatusFilterMenu } from "./status-filter-menu";
 import type { StatusFilter } from "../_data";
 
@@ -17,6 +18,11 @@ export type CaseTotals = {
 export function CasesToolbar({
   query,
   onQueryChange,
+  period,
+  periods,
+  periodMenuOpen,
+  onPeriodMenuOpenChange,
+  onPeriodChange,
   status,
   statusCounts,
   statusMenuOpen,
@@ -26,6 +32,11 @@ export function CasesToolbar({
 }: {
   query: string;
   onQueryChange: (query: string) => void;
+  period: string | null;
+  periods: readonly PeriodInfo[];
+  periodMenuOpen: boolean;
+  onPeriodMenuOpenChange: (open: boolean) => void;
+  onPeriodChange: (period: string) => void;
   status: StatusFilter;
   statusCounts: Record<StatusFilter, number>;
   statusMenuOpen: boolean;
@@ -42,15 +53,13 @@ export function CasesToolbar({
           placeholder="Search vendors or close items..."
           aria-label="Search vendors or close items"
         />
-        <Button className="text-[13.5px]/[1]">
-          <span className="text-muted-3">
-            <CalendarIcon />
-          </span>
-          December 2026
-          <span className="flex text-faint-2">
-            <ChevronDownIcon size={11} />
-          </span>
-        </Button>
+        <PeriodMenu
+          value={period}
+          periods={periods}
+          open={periodMenuOpen}
+          onOpenChange={onPeriodMenuOpenChange}
+          onChange={onPeriodChange}
+        />
         <StatusFilterMenu
           value={status}
           counts={statusCounts}

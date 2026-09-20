@@ -5,17 +5,22 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useReducedMotion } from "motion/react";
 
-import { routes } from "@/lib/routes";
+import { chainStages } from "@/lib/routes";
 import { CLOCK_START, DELAYS, FINAL_STEP } from "./_data";
+import { useEstimationData } from "./_components/data-context";
 
 const pad = (n: number) => (n < 10 ? `0${n}` : `${n}`);
+
+/** The beat the finished run waits before it opens the next agent. */
+const HANDOFF_DELAY = 1600;
 
 export type EstimationRunOptions = {
   /** Play the scripted step sequence on mount. */
   autoplay?: boolean;
   /**
-   * Navigate to Verification once the run finishes. Off by default in this
-   * port so the app stays navigable - the handoff button does the moving.
+   * Navigate to Outreach once the run finishes. Off by default so the app
+   * stays navigable - the handoff button does the moving - and turned on by
+   * the "Auto-run agents" switch in the rail.
    */
   autoAdvance?: boolean;
   /** Tick the elapsed-time readout in the rail. */
@@ -42,12 +47,20 @@ export function useEstimationRun({
 }: EstimationRunOptions = {}): EstimationRun {
   const reduced = useReducedMotion();
   const router = useRouter();
+  const { caseParam } = useEstimationData();
   const [rawStep, setStep] = useState(0);
   const [seconds, setSeconds] = useState(CLOCK_START);
   const [runId, setRunId] = useState(0);
+  // Where auto-advance goes when the run ends. The chain's own shape decides
+  // it - the agent after Estimation is Outreach - and the href already
+  // carries `?case=`, so the next screen opens on the same case.
+  const target =
+    chainStages("estimation", caseParam).find((s) => s.state === "next")
+      ?.href ?? null;
   // With reduced motion on we never run the ladder - the finished state is
   // simply what this screen renders.
   const step = reduced ? FINAL_STEP : rawStep;
+  const complete = step >= FINAL_STEP;
 
   useEffect(() => {
     if (!liveTimer) return;
@@ -64,13 +77,24 @@ export function useEstimationRun({
       elapsed += delay;
       timers.push(setTimeout(() => setStep(i + 1), elapsed));
     });
-    if (autoAdvance) {
-      timers.push(
-        setTimeout(() => router.push(routes.verification), elapsed + 1600),
-      );
-    }
     return () => timers.forEach(clearTimeout);
-  }, [autoplay, autoAdvance, reduced, router, runId]);
+  }, [autoplay, reduced, runId]);
+
+  /*
+   * The hand-off is its own timer, not the tail of the ladder above: turning
+   * "Auto-run agents" off mid-run tears this effect down - the navigation is
+   * cancelled - while the scripted steps above keep their place, where one
+   * shared effect would restart the ladder and walk the run backwards.
+   *
+   * Reduced motion never chains. The ladder does not run there at all - the
+   * screen mounts finished - so an automatic hand-off would strobe through
+   * the rest of the chain in one breath.
+   */
+  useEffect(() => {
+    if (!autoAdvance || reduced || !complete || !target) return;
+    const id = setTimeout(() => router.push(target), HANDOFF_DELAY);
+    return () => clearTimeout(id);
+  }, [autoAdvance, complete, reduced, router, target]);
 
   const replay = useCallback(() => {
     setStep(0);
@@ -79,7 +103,7 @@ export function useEstimationRun({
 
   return {
     step,
-    complete: step >= FINAL_STEP,
+    complete,
     clock: `${pad(Math.floor(seconds / 60))}:${pad(seconds % 60)}`,
     runId,
     replay,

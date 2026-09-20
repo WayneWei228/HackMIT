@@ -7,12 +7,13 @@ import { PageIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/cn";
 import { SectionLabel } from "@/components/ui/primitives";
 import { easeOutSoft } from "@/lib/motion";
-import { routes } from "@/lib/routes";
+import { routes, withCase } from "@/lib/routes";
 
 import { RAIL } from "../_data";
+import { useEvidenceData } from "./data-context";
 
 /**
- * The handoff to the obligation agent. The button stays inert until the run
+ * The handoff to the detection agent. The button stays inert until the run
  * finishes; with `autoAdvance` on it also fills as the navigation timer runs.
  */
 export function NextHandoff({
@@ -22,7 +23,13 @@ export function NextHandoff({
   complete: boolean;
   autoAdvance: boolean;
 }) {
+  const { caseParam } = useEvidenceData();
   const filling = complete && autoAdvance;
+
+  /* Where the handoff goes is the chain's own shape, not this case's data:
+     evidence is always followed by detection. The only thing carried across
+     is which case is being looked at. */
+  const href = withCase(routes.detection, caseParam);
 
   return (
     <>
@@ -51,7 +58,7 @@ export function NextHandoff({
         className="mt-4"
       >
         <Link
-          href={routes.obligation}
+          href={href}
           tabIndex={complete ? 0 : -1}
           className={cn(
             "relative block w-full overflow-hidden rounded-xl border border-accent bg-accent px-[14px] py-[11px] text-center text-accent-on transition-colors duration-[160ms] ease-[var(--ease-out-soft)] hover:bg-accent-deep hover:text-accent-on",

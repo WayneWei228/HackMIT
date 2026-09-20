@@ -7,7 +7,10 @@ import { STATUS_STYLES, type CaseStatus } from "../_data";
  * per-status colours - so this screen carries its own.
  */
 export function CaseStatusDot({ status }: { status: CaseStatus }) {
-  const { dot, pulse } = STATUS_STYLES[status];
+  const { dot, pulse } = STATUS_STYLES[status] ?? {
+    dot: "var(--color-rule)",
+    pulse: false,
+  };
 
   return (
     <span className="relative h-2 w-2 flex-none">

@@ -1,78 +1,32 @@
 "use client";
 
-import { AgentBar } from "./_components/agent-bar";
-import { CaseHeader } from "./_components/case-header";
-import { CaseStats } from "./_components/case-stats";
-import { CollapsedRail } from "./_components/rail-collapsed";
-import { DocumentTabs } from "./_components/document-tabs";
-import { DocumentViewer } from "./_components/document-viewer";
-import { ExecutionRail } from "./_components/execution-rail";
-import { useDocumentViewer } from "./_components/use-document-viewer";
-import { useEvidenceRun } from "./_components/use-evidence-run";
-import { useRailResize } from "./_components/use-rail-resize";
+import { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+
+import { EvidenceScreen } from "./_components/evidence-screen";
 
 /**
- * Evidence agent - step 02 of the close.
+ * Evidence agent - stage 01 of the close.
  *
- * The agent reads the source documents, finds the clause that moves the
- * accrual, and builds the fact set the obligation agent works from. All data is
- * synthetic and every upstream system is simulated.
+ * The agent reads the source documents, finds the passage that moves the
+ * accrual, and builds the fact set the detection agent works from. Every
+ * figure, name and document on the screen comes from the close API for the
+ * case named by `?case=`; with none named the screen says so.
  *
- * Auto-advance is off in this port: the run finishes and waits on the visible
- * handoff button rather than navigating on its own. Flip this to `true` for the
- * comp's unattended behaviour.
+ * `useSearchParams` opts the route out of static prerendering unless it sits
+ * under a `Suspense` boundary, so the fallback renders the same screen with no
+ * case - the prerendered HTML is the "no case selected" state, and the
+ * case-aware render swaps in on the client.
  */
-const AUTO_ADVANCE = false;
-
 export default function EvidencePage() {
-  const run = useEvidenceRun({ autoAdvance: AUTO_ADVANCE });
-  const viewer = useDocumentViewer();
-  const rail = useRailResize();
-
   return (
-    <>
-      <main className="flex min-w-[760px] flex-1 flex-col overflow-hidden">
-        <div className="flex-none px-[34px] pt-[26px]">
-          <CaseHeader />
-          <CaseStats step={run.step} complete={run.complete} />
-          <DocumentTabs
-            doc={viewer.doc}
-            onSelect={viewer.selectDoc}
-            onToggleSearch={viewer.toggleSearch}
-            onJumpToMatch={viewer.jumpToMatch}
-          />
-        </div>
-
-        <div className="h-px flex-none bg-line" />
-
-        <AgentBar
-          step={run.step}
-          status={run.status}
-          complete={run.complete}
-          onReplay={run.replay}
-        />
-
-        <div className="flex min-h-0 flex-1 px-[34px] pb-[26px]">
-          <DocumentViewer
-            step={run.step}
-            viewer={viewer}
-            onToggleRail={rail.toggle}
-          />
-        </div>
-      </main>
-
-      {rail.open ? (
-        <ExecutionRail
-          run={run}
-          width={rail.width}
-          dragging={rail.dragging}
-          autoAdvance={AUTO_ADVANCE}
-          onResizeStart={rail.startResize}
-          onCollapse={rail.toggle}
-        />
-      ) : (
-        <CollapsedRail onExpand={rail.toggle} />
-      )}
-    </>
+    <Suspense fallback={<EvidenceScreen caseParam={null} />}>
+      <EvidenceScreenWithCase />
+    </Suspense>
   );
+}
+
+function EvidenceScreenWithCase() {
+  const caseParam = useSearchParams().get("case");
+  return <EvidenceScreen caseParam={caseParam} />;
 }

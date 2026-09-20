@@ -3,17 +3,17 @@
 import Link from "next/link";
 
 import { cn } from "@/lib/cn";
-import { routes } from "@/lib/routes";
+import { chainStages, routes, withCase } from "@/lib/routes";
 
-import { WAITING_STAGES } from "../_data";
+import { useIngestionData } from "./data-context";
 import { StepChecklist } from "./step-checklist";
 import type { TaskState } from "./use-close-run";
 
 /**
- * The five stages of a close, top to bottom.
+ * The seven agents of a close, top to bottom.
  *
- * Only Ingestion is running here; Evidence flips from "Waiting" to "Queued"
- * and warms its rule the moment ingestion finishes, which is also the point at
+ * Only Evidence is running here; Detection flips from "Waiting" to "Queued"
+ * and warms its rule the moment intake finishes, which is also the point at
  * which the row becomes a sensible thing to click.
  */
 export function ExecutionStages({
@@ -23,11 +23,17 @@ export function ExecutionStages({
   complete: boolean;
   taskStates: TaskState[];
 }) {
+  const { caseParam } = useIngestionData();
+  /* `/close` is stage 01, the Evidence agent's intake view. The rest of the
+     chain is navigation, so it comes from the route table. */
+  const stages = chainStages("evidence", caseParam);
+  const [, second, ...rest] = stages;
+
   return (
     <div className="mt-[26px]">
       <StageRow
-        index="01"
-        label="Ingestion"
+        index={stages[0]?.number ?? "01"}
+        label={stages[0]?.name ?? ""}
         bar="bg-accent"
         status={complete ? "Complete" : "Active"}
         statusClassName={cn(
@@ -39,12 +45,12 @@ export function ExecutionStages({
       <StepChecklist states={taskStates} />
 
       <Link
-        href={routes.evidence}
+        href={second?.href ?? withCase(routes.cases, caseParam)}
         className="-mx-2 mt-[22px] flex items-center gap-3.5 rounded-lg px-2 py-1.5 text-ink transition-colors duration-[160ms] ease-[var(--ease-out-soft)] hover:bg-[#F1F1EB] hover:text-ink"
       >
         <StageRowBody
-          index="02"
-          label="Evidence"
+          index={second?.number ?? "02"}
+          label={second?.name ?? ""}
           bar={cn(
             "transition-colors duration-[400ms] ease-[var(--ease-out-soft)]",
             complete ? "bg-accent-line" : "bg-line-cool",
@@ -54,11 +60,11 @@ export function ExecutionStages({
         />
       </Link>
 
-      {WAITING_STAGES.map((stage) => (
+      {rest.map((stage) => (
         <StageRow
-          key={stage.index}
-          index={stage.index}
-          label={stage.label}
+          key={stage.number}
+          index={stage.number}
+          label={stage.name}
           bar="bg-line-cool"
           status="Waiting"
           statusClassName="text-faint-3"

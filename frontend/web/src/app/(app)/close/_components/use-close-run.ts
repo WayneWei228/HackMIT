@@ -4,19 +4,16 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useReducedMotion } from "motion/react";
 
-import { routes } from "@/lib/routes";
+import { routes, withCase } from "@/lib/routes";
 import {
   DELAYS,
   HANDOFF_DELAY_MS,
-  SELECT_AT,
-  SOURCE_NAMES,
-  SOURCE_ORDER,
-  STATUS,
   STEPS,
   TASK_DONE,
-  TOTAL_RUN_MS,
   type SourceId,
 } from "../_data";
+import { ingestionStatus } from "../_data";
+import { useIngestionData } from "./data-context";
 
 export type TaskState = "done" | "active" | "pending";
 
@@ -39,9 +36,6 @@ function pad(n: number) {
   return n < 10 ? `0${n}` : `${n}`;
 }
 
-/** What the run has picked by the time it finishes: the first three sources. */
-const FINISHED_SELECTION: readonly SourceId[] = SOURCE_ORDER.slice(0, 3);
-
 /**
  * The scripted ingestion run.
  *
@@ -60,6 +54,20 @@ export function useCloseRun({
   autoAdvance?: boolean;
   liveTimer?: boolean;
 }): CloseRun {
+  const { data, caseParam } = useIngestionData();
+  const { SOURCE_ORDER, SOURCE_NAMES } = data;
+
+  /* Three of the eight steps pin a source into the selection - whichever
+     three the case actually has, by position. */
+  const pickAt = useMemo<Readonly<Record<number, SourceId>>>(() => {
+    const picks: Record<number, SourceId> = {};
+    SOURCE_ORDER.slice(0, 3).forEach((id, i) => {
+      picks[i + 3] = id;
+    });
+    return picks;
+  }, [SOURCE_ORDER]);
+
+  const narration = useMemo(() => ingestionStatus(data), [data]);
   const router = useRouter();
   const reduced = useReducedMotion();
   const skipTimeline = autoplay === false || reduced === true;
@@ -70,9 +78,11 @@ export function useCloseRun({
   const [seconds, setSeconds] = useState(3);
 
   const step = skipTimeline ? STEPS : timelineStep;
+  /* What the run has picked by the time it finishes: the first three
+     sources of whatever order the dataset gives. */
   const baseline = useMemo<SourceId[]>(
-    () => (skipTimeline ? [...FINISHED_SELECTION] : []),
-    [skipTimeline],
+    () => (skipTimeline ? SOURCE_ORDER.slice(0, 3) : []),
+    [SOURCE_ORDER, skipTimeline],
   );
   const selected = picked ?? baseline;
 
@@ -95,7 +105,7 @@ export function useCloseRun({
       timers.push(
         setTimeout(() => {
           setTimelineStep(next);
-          const add = SELECT_AT[next];
+          const add = pickAt[next];
           if (!add) return;
           setPicked((current) => {
             const base = current ?? [];
@@ -106,17 +116,8 @@ export function useCloseRun({
     });
 
     return () => timers.forEach(clearTimeout);
-  }, [skipTimeline]);
+  }, [pickAt, skipTimeline]);
 
-  /* Handoff to the evidence agent - opt-in, so the app stays navigable. */
-  useEffect(() => {
-    if (!autoAdvance || skipTimeline) return;
-    const id = setTimeout(
-      () => router.push(routes.evidence),
-      TOTAL_RUN_MS + HANDOFF_DELAY_MS,
-    );
-    return () => clearTimeout(id);
-  }, [autoAdvance, skipTimeline, router]);
 
   const toggle = useCallback(
     (id: SourceId) => {
@@ -137,6 +138,16 @@ export function useCloseRun({
 
   const complete = step >= STEPS;
 
+  /* Handoff to the evidence agent - opt-in, so the app stays navigable. */
+  useEffect(() => {
+    if (!autoAdvance || !complete || reduced) return;
+    const id = setTimeout(
+      () => router.push(withCase(routes.evidence, caseParam)),
+      HANDOFF_DELAY_MS,
+    );
+    return () => clearTimeout(id);
+  }, [autoAdvance, complete, caseParam, reduced, router]);
+
   /**
    * `renderVals()` derives marker state from how many done-thresholds the run
    * has already crossed: everything at or below the current step reads done,
@@ -155,15 +166,17 @@ export function useCloseRun({
     () =>
       SOURCE_ORDER.filter((id) => selected.includes(id)).map((id) => ({
         id,
-        name: SOURCE_NAMES[id],
+        name: SOURCE_NAMES[id] ?? id,
       })),
-    [selected],
+    [SOURCE_NAMES, SOURCE_ORDER, selected],
   );
 
   return {
     step,
     complete,
-    statusText: STATUS[Math.min(step, STATUS.length - 1)],
+    statusText: narration.length
+      ? narration[Math.min(step, narration.length - 1)]
+      : "",
     clock: `${pad(Math.floor(seconds / 60))}:${pad(seconds % 60)}`,
     taskStates,
     selected,

@@ -23,22 +23,35 @@ export const MARKS: readonly Swatch[] = [
 
 export type MarkIndex = 0 | 1 | 2 | 3 | 4;
 
-export type WorkflowName =
-  | "December accrual"
-  | "December usage accrual"
-  | "Asset recognition"
-  | "Prepaid amortization"
-  | "Campaign spend"
-  | "Infrastructure spend";
+/**
+ * The close workflow a vendor is in this month.
+ *
+ * Not a union: the backend derives the label from the period it is serving,
+ * so a fixed list of names would be wrong in eleven months out of twelve.
+ */
+export type WorkflowName = string;
 
-export const WORKFLOW_TONES: Record<WorkflowName, Swatch> = {
-  "December accrual": { bg: "#E9F0E5", fg: "#3C5840" },
-  "December usage accrual": { bg: "#E7EDF2", fg: "#3A5465" },
-  "Asset recognition": { bg: "#E7EDF2", fg: "#3A5465" },
-  "Prepaid amortization": { bg: "#EDEBF2", fg: "#4A4660" },
-  "Campaign spend": { bg: "#F2EDE4", fg: "#5E5140" },
-  "Infrastructure spend": { bg: "#F2EDE4", fg: "#5E5140" },
-};
+/**
+ * Pill colours, keyed by what the workflow is *about* rather than by its
+ * label. The month moves; "accrual", "asset", "campaign" do not.
+ */
+const WORKFLOW_KINDS: readonly { match: RegExp; swatch: Swatch }[] = [
+  { match: /usage|metered/i, swatch: { bg: "#E7EDF2", fg: "#3A5465" } },
+  { match: /accrual/i, swatch: { bg: "#E9F0E5", fg: "#3C5840" } },
+  { match: /asset|equipment|capitali/i, swatch: { bg: "#E7EDF2", fg: "#3A5465" } },
+  { match: /prepaid|amorti/i, swatch: { bg: "#EDEBF2", fg: "#4A4660" } },
+  { match: /campaign|spend|infrastructure/i, swatch: { bg: "#F2EDE4", fg: "#5E5140" } },
+];
+
+const WORKFLOW_NEUTRAL: Swatch = { bg: "#EFEFEA", fg: "#4A4E46" };
+
+/** The swatch for a workflow label, whatever the backend chose to call it. */
+export function workflowTone(workflow: string): Swatch {
+  for (const { match, swatch } of WORKFLOW_KINDS) {
+    if (match.test(workflow)) return swatch;
+  }
+  return WORKFLOW_NEUTRAL;
+}
 
 export type VendorState = "Autonomous" | "Waiting for evidence" | "Verified";
 
@@ -48,18 +61,25 @@ export const STATE_TONES: Record<VendorState, { dot: string; pulse: boolean }> =
   Verified: { dot: "#2E8047", pulse: false },
 };
 
+/** The backend's seven agents, in the order the close chain runs them. */
 export type AgentName =
   | "Evidence agent"
-  | "Obligation agent"
+  | "Detection agent"
+  | "Invoice Lookup agent"
+  | "Classification agent"
   | "Estimation agent"
-  | "Verification agent";
+  | "Outreach agent"
+  | "Settlement agent";
 
 /** The comp links each agent row at its screen; these are the app-router paths. */
 export const AGENT_HREFS: Record<AgentName, string> = {
   "Evidence agent": routes.evidence,
-  "Obligation agent": routes.obligation,
+  "Detection agent": routes.detection,
+  "Invoice Lookup agent": routes.invoiceLookup,
+  "Classification agent": routes.classification,
   "Estimation agent": routes.estimation,
-  "Verification agent": routes.verification,
+  "Outreach agent": routes.outreach,
+  "Settlement agent": routes.settlement,
 };
 
 /* -------------------------------------------------------------------------- */
@@ -100,219 +120,6 @@ export type Vendor = {
   agents: AgentUse[];
 };
 
-export const VENDORS: Vendor[] = [
-  {
-    name: "Mintlify",
-    id: "VND-0412",
-    mark: 0,
-    initials: "M",
-    profile: "Software subscription",
-    treatment: "Recurring fixed",
-    workflow: "December accrual",
-    amount: "$1,400",
-    sort: 1400,
-    state: "Autonomous",
-    category: "Recurring software subscription",
-    accTreatment: "Monthly accrual",
-    confidence: "High",
-    history: [
-      { period: "December 2026", amount: "$1,400", tag: "Verified" },
-      { period: "November 2026", amount: "$1,200", tag: "Verified" },
-      { period: "October 2026", amount: "$1,200", tag: "Verified" },
-    ],
-    sources: ["Contract", "Invoices", "Pricing amendment", "Usage records"],
-    memory:
-      "Contract price updated effective December 1, 2026. Future accruals should reference the updated subscription amount.",
-    relationship: [
-      { when: "Jan 2026", what: "Vendor added" },
-      { when: "Oct 2026", what: "Recurring accrual established" },
-      { when: "Dec 2026", what: "Contract amendment detected" },
-      { when: "Future closes", what: "Use updated pricing basis" },
-    ],
-    agents: [
-      { agent: "Evidence agent", uses: "Contract source" },
-      { agent: "Obligation agent", uses: "Pricing terms" },
-      { agent: "Estimation agent", uses: "Historical amount" },
-      { agent: "Verification agent", uses: "Prior close comparison" },
-    ],
-  },
-  {
-    name: "OpenAI",
-    id: "VND-0192",
-    mark: 1,
-    initials: "OA",
-    profile: "API infrastructure",
-    treatment: "Recurring variable",
-    workflow: "December usage accrual",
-    amount: "$18,600",
-    sort: 18600,
-    state: "Waiting for evidence",
-    category: "Usage-based infrastructure",
-    accTreatment: "Variable accrual",
-    confidence: "Medium",
-    history: [
-      { period: "December 2026", amount: "$18,600", tag: "In review" },
-      { period: "November 2026", amount: "$16,900", tag: "Verified" },
-      { period: "October 2026", amount: "$15,400", tag: "Verified" },
-    ],
-    sources: ["Usage records", "Invoices", "Rate card", "Order form"],
-    memory:
-      "Usage varies month to month. Estimation should wait for the metered usage export before finalizing the accrual.",
-    relationship: [
-      { when: "Mar 2026", what: "Vendor added" },
-      { when: "Jun 2026", what: "Usage-based accrual established" },
-      { when: "Dec 2026", what: "Awaiting usage export" },
-      { when: "Future closes", what: "Confirm metered totals" },
-    ],
-    agents: [
-      { agent: "Evidence agent", uses: "Usage export" },
-      { agent: "Obligation agent", uses: "Rate card" },
-      { agent: "Estimation agent", uses: "Trailing average" },
-      { agent: "Verification agent", uses: "Variance check" },
-    ],
-  },
-  {
-    name: "ASUS",
-    id: "VND-8831",
-    mark: 2,
-    initials: "AS",
-    profile: "Engineering hardware",
-    treatment: "Fixed asset",
-    workflow: "Asset recognition",
-    amount: "$32,000",
-    sort: 32000,
-    state: "Verified",
-    category: "Capitalized hardware",
-    accTreatment: "Asset capitalization",
-    confidence: "High",
-    history: [
-      { period: "December 2026", amount: "$32,000", tag: "Verified" },
-      { period: "August 2026", amount: "$11,500", tag: "Verified" },
-      { period: "April 2026", amount: "$8,200", tag: "Verified" },
-    ],
-    sources: ["Purchase order", "Invoices", "Asset register", "Delivery receipt"],
-    memory:
-      "Hardware over $5,000 is capitalized and depreciated over 36 months. Confirm receipt date before recognition.",
-    relationship: [
-      { when: "Feb 2026", what: "Vendor added" },
-      { when: "Apr 2026", what: "Capitalization policy applied" },
-      { when: "Dec 2026", what: "Equipment purchase recognized" },
-      { when: "Future closes", what: "Track depreciation schedule" },
-    ],
-    agents: [
-      { agent: "Evidence agent", uses: "Purchase order" },
-      { agent: "Obligation agent", uses: "Delivery terms" },
-      { agent: "Estimation agent", uses: "Capitalized value" },
-      { agent: "Verification agent", uses: "Asset register match" },
-    ],
-  },
-  {
-    name: "Notability",
-    id: "VND-5512",
-    mark: 4,
-    initials: "NO",
-    profile: "Team software subscription",
-    treatment: "Prepaid expense",
-    workflow: "Prepaid amortization",
-    amount: "$1,800/month",
-    sort: 1800,
-    state: "Autonomous",
-    category: "Prepaid software subscription",
-    accTreatment: "Straight-line amortization",
-    confidence: "High",
-    history: [
-      { period: "December 2026", amount: "$1,800", tag: "Verified" },
-      { period: "November 2026", amount: "$1,800", tag: "Verified" },
-      { period: "October 2026", amount: "$1,800", tag: "Verified" },
-    ],
-    sources: ["Contract", "Invoices", "Amortization schedule", "Renewal notice"],
-    memory:
-      "Annual prepayment amortized straight-line across 12 months. No proration expected mid-term.",
-    relationship: [
-      { when: "May 2026", what: "Vendor added" },
-      { when: "May 2026", what: "Annual prepayment recorded" },
-      { when: "Dec 2026", what: "Amortization on schedule" },
-      { when: "Future closes", what: "Renew or release balance" },
-    ],
-    agents: [
-      { agent: "Evidence agent", uses: "Prepayment invoice" },
-      { agent: "Obligation agent", uses: "Coverage window" },
-      { agent: "Estimation agent", uses: "Monthly amortization" },
-      { agent: "Verification agent", uses: "Balance rollforward" },
-    ],
-  },
-  {
-    name: "Meta",
-    id: "VND-2748",
-    mark: 3,
-    initials: "ME",
-    profile: "Advertising platform",
-    treatment: "Accounts payable",
-    workflow: "Campaign spend",
-    amount: "$12,800",
-    sort: 12800,
-    state: "Autonomous",
-    category: "Marketing and advertising",
-    accTreatment: "Expense as incurred",
-    confidence: "High",
-    history: [
-      { period: "December 2026", amount: "$12,800", tag: "In review" },
-      { period: "November 2026", amount: "$14,200", tag: "Verified" },
-      { period: "October 2026", amount: "$9,600", tag: "Verified" },
-    ],
-    sources: ["Platform statement", "Invoices", "Campaign report", "Spend export"],
-    memory:
-      "Campaign spend is billed in arrears. Accrue the platform statement total when the invoice lands after cutoff.",
-    relationship: [
-      { when: "Jan 2026", what: "Vendor added" },
-      { when: "Feb 2026", what: "Monthly spend accrual established" },
-      { when: "Dec 2026", what: "Campaign spend detected" },
-      { when: "Future closes", what: "Match to platform statement" },
-    ],
-    agents: [
-      { agent: "Evidence agent", uses: "Platform statement" },
-      { agent: "Obligation agent", uses: "Billing terms" },
-      { agent: "Estimation agent", uses: "Period spend" },
-      { agent: "Verification agent", uses: "Invoice reconciliation" },
-    ],
-  },
-  {
-    name: "AWS",
-    id: "VND-3004",
-    mark: 2,
-    initials: "AW",
-    profile: "Cloud infrastructure",
-    treatment: "Accounts payable",
-    workflow: "Infrastructure spend",
-    amount: "$25,300",
-    sort: 25300,
-    state: "Verified",
-    category: "Cloud infrastructure",
-    accTreatment: "Usage accrual",
-    confidence: "High",
-    history: [
-      { period: "December 2026", amount: "$25,300", tag: "Verified" },
-      { period: "November 2026", amount: "$24,100", tag: "Verified" },
-      { period: "October 2026", amount: "$22,800", tag: "Verified" },
-    ],
-    sources: ["Billing export", "Invoices", "Savings plan", "Usage records"],
-    memory:
-      "Committed-use discounts apply. Use the billing export net of credits rather than the list-rate usage total.",
-    relationship: [
-      { when: "Jan 2026", what: "Vendor added" },
-      { when: "Mar 2026", what: "Savings plan applied" },
-      { when: "Dec 2026", what: "Spend within committed range" },
-      { when: "Future closes", what: "Apply net-of-credit basis" },
-    ],
-    agents: [
-      { agent: "Evidence agent", uses: "Billing export" },
-      { agent: "Obligation agent", uses: "Committed use" },
-      { agent: "Estimation agent", uses: "Net spend" },
-      { agent: "Verification agent", uses: "Credit reconciliation" },
-    ],
-  },
-];
-
 /* -------------------------------------------------------------------------- */
 /* Table + filter configuration                                                */
 /* -------------------------------------------------------------------------- */
@@ -339,13 +146,48 @@ export const COLUMNS: { key: SortKey; label: string }[] = [
   { key: "state", label: "AGENT STATE" },
 ];
 
-/** The four headline numerals above the table. Static in the comp. */
-export const VENDOR_KPIS: { value: string; label: string }[] = [
-  { value: "24", label: "vendors" },
-  { value: "18", label: "autonomous workflows" },
-  { value: "6", label: "requiring review" },
-  { value: "94%", label: "evidence coverage" },
-];
 
-/** The default selection the comp boots with. */
-export const DEFAULT_VENDOR_ID = "VND-0412";
+/* -------------------------------------------------------------------------- */
+/* What the close API may replace                                              */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * `GET /api/vendors` answers with a subset of these keys, each carrying
+ * exactly the type declared above. Anything it omits keeps the value below.
+ */
+export type Kpi = { value: string; label: string };
+
+/** The key set of `GET /api/vendors`. */
+export type VendorsData = { VENDORS: Vendor[] };
+
+/** The shape of a screen with no answer in it. */
+export const EMPTY: VendorsData = { VENDORS: [] };
+
+/** Nothing worth drawing a screen for. */
+export function vendorsIsEmpty(data: VendorsData): boolean {
+  return data.VENDORS.length === 0;
+}
+
+/**
+ * The headline numerals, counted from the vendors actually loaded.
+ *
+ * `GET /api/vendors` serves `VENDORS` and nothing else, so the headline
+ * figures are counted from that list. A figure that cannot be counted from
+ * it - the comps' "evidence coverage" percentage - is not shown rather than
+ * guessed.
+ */
+export function deriveKpis(
+  vendors: readonly Vendor[],
+): Kpi[] {
+  const count = (state: VendorState) =>
+    vendors.filter((vendor) => vendor.state === state).length;
+  const autonomous = count("Autonomous");
+  const waiting = count("Waiting for evidence");
+  const verified = count("Verified");
+  return [
+    { value: String(vendors.length), label: vendors.length === 1 ? "vendor" : "vendors" },
+    { value: String(autonomous), label: "autonomous workflows" },
+    { value: String(waiting), label: "requiring evidence" },
+    { value: String(verified), label: "verified this period" },
+  ];
+}

@@ -1,0 +1,183 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useReducedMotion } from "motion/react";
+
+import { chainStages } from "@/lib/routes";
+
+import {
+  DELAYS,
+  FINAL_STEP,
+  RAIL_DEFAULT_WIDTH,
+  RAIL_MAX_WIDTH,
+  RAIL_MIN_WIDTH,
+  START_SECONDS,
+  deriveView,
+  formatClock,
+  type ControlsData,
+  type ControlsView,
+} from "./types";
+
+/** How long a finished screen is left on screen before the chain moves on. */
+const HANDOFF_DWELL = 1600;
+
+type Options = {
+  /** The screen's dataset - the view model is derived from it each step. */
+  data: ControlsData;
+  /** Which agent's screen this is; the chain says where the hand-off goes. */
+  agentId: string;
+  caseParam: string | null;
+  /** Play the whole chain without clicks. */
+  autoAdvance?: boolean;
+  /** This agent's scripted narration, one line per step. */
+  narration: readonly string[];
+  /** Play the scripted step sequence on mount. */
+  autoplay?: boolean;
+  /** Tick the elapsed-time readout in the rail. */
+  liveTimer?: boolean;
+};
+
+export type ControlsRun = {
+  view: ControlsView;
+  clock: string;
+  openControl: number;
+  toggleControl: (index: number) => void;
+  replay: () => void;
+  railOpen: boolean;
+  toggleRail: () => void;
+  railWidth: number;
+  dragging: boolean;
+  startResize: (event: React.MouseEvent<HTMLElement>) => void;
+};
+
+/**
+ * The comp's `Component` class: the scripted timeline, the live clock, the
+ * accordion, and the resizable execution rail.
+ *
+ * With reduced motion on, the timeline never runs and the finished state is
+ * rendered straight away.
+ */
+export function useControlsRun({
+  data,
+  agentId,
+  caseParam,
+  narration,
+  autoAdvance = false,
+  autoplay = true,
+  liveTimer = true,
+}: Options): ControlsRun {
+  const reduced = useReducedMotion();
+  const router = useRouter();
+
+  const [step, setStep] = useState(0);
+  const [runToken, setRunToken] = useState(0);
+  const [seconds, setSeconds] = useState(START_SECONDS);
+
+  // The accordion follows the running check until the reader takes it over.
+  const [accordion, setAccordion] = useState<{
+    open: number;
+    userOpened: boolean;
+  }>({ open: -1, userOpened: false });
+
+  const [railOpen, setRailOpen] = useState(true);
+  const [railWidth, setRailWidth] = useState(RAIL_DEFAULT_WIDTH);
+  const [dragging, setDragging] = useState(false);
+
+  const railWidthRef = useRef(railWidth);
+  useEffect(() => {
+    railWidthRef.current = railWidth;
+  }, [railWidth]);
+
+  useEffect(() => {
+    if (!liveTimer) return;
+    const interval = setInterval(() => setSeconds((s) => s + 1), 1000);
+    return () => clearInterval(interval);
+  }, [liveTimer]);
+
+  useEffect(() => {
+    if (!autoplay || reduced) return;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    let acc = 0;
+    DELAYS.forEach((delay, i) => {
+      acc += delay;
+      timers.push(setTimeout(() => setStep(i + 1), acc));
+    });
+    return () => timers.forEach(clearTimeout);
+  }, [autoplay, reduced, runToken]);
+
+  const view = useMemo(
+    () => deriveView(reduced ? FINAL_STEP : step, data, narration),
+    [data, narration, reduced, step],
+  );
+
+  /* Settlement ends the chain, so `next` is undefined there and nothing
+     moves. Reduced motion does not chain at all - see the note in
+     `_analysis/use-analysis-run.ts`. */
+  useEffect(() => {
+    if (!autoAdvance || !view.complete || reduced) return;
+    const next = chainStages(agentId, caseParam).find(
+      (stage) => stage.state === "next",
+    );
+    if (!next?.href) return;
+    const href = next.href;
+    const id = setTimeout(() => router.push(href), HANDOFF_DWELL);
+    return () => clearTimeout(id);
+  }, [autoAdvance, view.complete, agentId, caseParam, reduced, router]);
+
+  const replay = useCallback(() => {
+    setAccordion({ open: -1, userOpened: false });
+    setStep(0);
+    setRunToken((token) => token + 1);
+  }, []);
+
+  const toggleControl = useCallback((index: number) => {
+    setAccordion((current) => ({
+      userOpened: true,
+      open: current.userOpened && current.open === index ? -1 : index,
+    }));
+  }, []);
+
+  const toggleRail = useCallback(() => setRailOpen((value) => !value), []);
+
+  const startResize = useCallback((event: React.MouseEvent<HTMLElement>) => {
+    event.preventDefault();
+    const startX = event.clientX;
+    const startWidth = railWidthRef.current;
+
+    const move = (moveEvent: MouseEvent) => {
+      setRailWidth(
+        Math.max(
+          RAIL_MIN_WIDTH,
+          Math.min(RAIL_MAX_WIDTH, startWidth - (moveEvent.clientX - startX)),
+        ),
+      );
+    };
+    const up = () => {
+      document.removeEventListener("mousemove", move);
+      document.removeEventListener("mouseup", up);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      setDragging(false);
+    };
+
+    document.addEventListener("mousemove", move);
+    document.addEventListener("mouseup", up);
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    setDragging(true);
+  }, []);
+
+  return {
+    view,
+    clock: formatClock(seconds),
+    openControl: accordion.userOpened ? accordion.open : view.autoOpen,
+    toggleControl,
+    replay,
+    railOpen,
+    toggleRail,
+    railWidth,
+    dragging,
+    startResize,
+  };
+}

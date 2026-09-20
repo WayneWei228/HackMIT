@@ -3,21 +3,27 @@
 import { motion } from "motion/react";
 
 import { MoreIcon } from "@/components/ui/icons";
+import { CaseMetaLine } from "@/components/ui/meta-line";
 import { Breadcrumb, Button, PageTitle } from "@/components/ui/primitives";
 import { transitions } from "@/lib/motion";
-import { routes } from "@/lib/routes";
+import { routes, withCase } from "@/lib/routes";
 
-import { CASE } from "../_data";
+import { asList } from "../_data";
+import { useEvidenceData } from "./data-context";
 import { CaseNotesIcon } from "./evidence-icons";
 
 /** Breadcrumb, case title and the two header actions. */
 export function CaseHeader() {
+  const { data, caseParam } = useEvidenceData();
+  const { CASE } = data;
+  const closeHref = withCase(routes.closeCase, caseParam);
+
   return (
     <header>
       <Breadcrumb
         items={[
-          { label: "CLOSE", href: routes.closeCase },
-          { label: "ACTIVE CASE", href: routes.closeCase },
+          { label: "CLOSE", href: closeHref },
+          { label: "ACTIVE CASE", href: closeHref },
           { label: "EVIDENCE" },
         ]}
       />
@@ -42,18 +48,7 @@ export function CaseHeader() {
             {CASE.title}
           </motion.div>
 
-          <div className="mt-[15px] flex items-center gap-[15px] text-lead text-muted-4">
-            {CASE.meta.map((item, i) => (
-              <span key={item} className="flex items-center gap-[15px]">
-                {i > 0 && (
-                  <span className="text-line-dark" aria-hidden="true">
-                    |
-                  </span>
-                )}
-                {item}
-              </span>
-            ))}
-          </div>
+          <CaseMetaLine items={asList(CASE.meta)} className="mt-[15px]" />
         </div>
 
         <div className="flex flex-none items-center gap-2.5 pt-1.5">

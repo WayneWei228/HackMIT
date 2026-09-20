@@ -21,7 +21,7 @@ export function CaseNotesIcon(props: Props) {
   );
 }
 
-/** Tab glyph: the signed agreement. */
+/** Tab glyph: a signed document - a contract, amendment or order. */
 export function AgreementIcon(props: Props) {
   return (
     <svg width="14" height="15" viewBox="0 0 14 15" fill="none" aria-hidden="true" {...props}>
@@ -31,7 +31,7 @@ export function AgreementIcon(props: Props) {
   );
 }
 
-/** Tab glyph: the AP history workbook. */
+/** Tab glyph: a tabular document - a usage or delivery report. */
 export function SpreadsheetIcon(props: Props) {
   return (
     <svg width="14" height="15" viewBox="0 0 14 15" fill="none" aria-hidden="true" {...props}>
@@ -41,7 +41,7 @@ export function SpreadsheetIcon(props: Props) {
   );
 }
 
-/** Tab glyph: the prior close memo. */
+/** Tab glyph: a written record - an invoice or a receipt. */
 export function MemoIcon(props: Props) {
   return (
     <svg width="14" height="15" viewBox="0 0 14 15" fill="none" aria-hidden="true" {...props}>

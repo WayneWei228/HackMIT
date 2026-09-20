@@ -3,6 +3,7 @@
 import { motion } from "motion/react";
 import type { MouseEvent as ReactMouseEvent } from "react";
 
+import { AutoRunToggle } from "@/components/ui/auto-run-toggle";
 import { CaretRightIcon } from "@/components/ui/icons";
 import { SectionLabel } from "@/components/ui/primitives";
 import { cn } from "@/lib/cn";
@@ -73,6 +74,11 @@ export function ExecutionRail({
           </div>
           <div className="text-sm text-faint tabular-nums">{run.clock}</div>
         </div>
+
+        {/* Under the clock, in the rail's own header: the switch belongs with
+            the run it plays, and the negative margin lets its hover state
+            bleed to the rail's padding while its label stays on the column. */}
+        <AutoRunToggle className="-mx-2 mt-2.5 w-[calc(100%+16px)]" />
 
         <ExecutionSteps
           done={run.done}

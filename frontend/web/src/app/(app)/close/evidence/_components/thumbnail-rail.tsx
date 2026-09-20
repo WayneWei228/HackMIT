@@ -31,20 +31,24 @@ export function ThumbnailRail({
       animate={{ width: open ? 114 : 0, opacity: open ? 1 : 0 }}
       transition={{ duration: 0.32, ease: easeOutSoft }}
     >
+      {/* Only the pages that exist. A single-page document would otherwise be
+          flanked by two neighbours that are also page 1. */}
       <div className="flex w-[114px] flex-col gap-2.5 px-3 py-[14px]">
-        <button
-          type="button"
-          onClick={onPrev}
-          className="flex h-[116px] cursor-pointer flex-col rounded-[4px] border border-[#E6E6DF] bg-panel px-[9px] py-2.5 text-left transition-colors duration-[180ms] ease-[var(--ease-out-soft)] hover:border-[#C9CFC4]"
-        >
-          <div className={cn(LINE, "bg-wash-deep")} />
-          <div className={cn(LINE, "mt-1.5 w-4/5 bg-wash-deep")} />
-          <div className={cn(LINE, "mt-1.5 bg-wash-deep")} />
-          <div className={cn(LINE, "mt-1.5 w-[64%] bg-wash-deep")} />
-          <div className="mt-3 text-center text-[9px] text-ghost-2 tabular-nums">
-            {Math.max(1, page - 1)}
-          </div>
-        </button>
+        {page > 1 && (
+          <button
+            type="button"
+            onClick={onPrev}
+            className="flex h-[116px] cursor-pointer flex-col rounded-[4px] border border-[#E6E6DF] bg-panel px-[9px] py-2.5 text-left transition-colors duration-[180ms] ease-[var(--ease-out-soft)] hover:border-[#C9CFC4]"
+          >
+            <div className={cn(LINE, "bg-wash-deep")} />
+            <div className={cn(LINE, "mt-1.5 w-4/5 bg-wash-deep")} />
+            <div className={cn(LINE, "mt-1.5 bg-wash-deep")} />
+            <div className={cn(LINE, "mt-1.5 w-[64%] bg-wash-deep")} />
+            <div className="mt-3 text-center text-[9px] text-ghost-2 tabular-nums">
+              {page - 1}
+            </div>
+          </button>
+        )}
 
         <div className="h-[116px] cursor-pointer rounded-[4px] border-[1.5px] border-accent bg-panel px-[9px] py-2.5">
           <div className={cn(LINE, "bg-[#E7E7E0]")} />
@@ -61,18 +65,20 @@ export function ThumbnailRail({
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={onNext}
-          className="flex h-[116px] cursor-pointer flex-col rounded-[4px] border border-[#E6E6DF] bg-panel px-[9px] py-2.5 text-left transition-colors duration-[180ms] ease-[var(--ease-out-soft)] hover:border-[#C9CFC4]"
-        >
-          <div className={cn(LINE, "bg-wash-deep")} />
-          <div className={cn(LINE, "mt-1.5 w-[72%] bg-wash-deep")} />
-          <div className={cn(LINE, "mt-1.5 bg-wash-deep")} />
-          <div className="mt-5 text-center text-[9px] text-ghost-2 tabular-nums">
-            {Math.min(maxPage, page + 1)}
-          </div>
-        </button>
+        {page < maxPage && (
+          <button
+            type="button"
+            onClick={onNext}
+            className="flex h-[116px] cursor-pointer flex-col rounded-[4px] border border-[#E6E6DF] bg-panel px-[9px] py-2.5 text-left transition-colors duration-[180ms] ease-[var(--ease-out-soft)] hover:border-[#C9CFC4]"
+          >
+            <div className={cn(LINE, "bg-wash-deep")} />
+            <div className={cn(LINE, "mt-1.5 w-[72%] bg-wash-deep")} />
+            <div className={cn(LINE, "mt-1.5 bg-wash-deep")} />
+            <div className="mt-5 text-center text-[9px] text-ghost-2 tabular-nums">
+              {page + 1}
+            </div>
+          </button>
+        )}
       </div>
     </motion.div>
   );

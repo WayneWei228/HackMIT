@@ -2,7 +2,15 @@
 
 import { useState } from "react";
 
-import type { TabId } from "../_data";
+import { BackendUnreachable, ScreenState } from "@/components/ui/screen-state";
+import { casePath } from "@/lib/api";
+import { routes } from "@/lib/routes";
+import { useAutoRun } from "@/lib/use-auto-run";
+import { useLiveData } from "@/lib/use-live-data";
+
+import { ScreenShell } from "../_analysis/screen-shell";
+import { ingestionIsEmpty, type IngestionData, type TabId } from "../_data";
+import { IngestionDataProvider } from "./data-context";
 import { AgentStatusBar } from "./agent-status-bar";
 import { CaseHeader } from "./case-header";
 import { CaseStats } from "./case-stats";
@@ -12,11 +20,13 @@ import { SourceTabs } from "./source-tabs";
 import { useCloseRun } from "./use-close-run";
 
 export type CloseCaseScreenProps = {
-  /** Run the scripted ingestion timeline on mount. */
+  /** `"<period>/<case_key>"` from `?case=`, or null for the demo dataset. */
+  caseParam?: string | null;
+  /** Run the scripted intake timeline on mount. */
   autoplay?: boolean;
   /**
-   * Navigate to the evidence agent once ingestion lands. Off in this port -
-   * the handoff button in the rail is what moves the close forward.
+   * Open the evidence reader once intake lands. Off in this port - the
+   * handoff button in the rail is what moves the close forward.
    */
   autoAdvance?: boolean;
   /** Render the live execution rail beside the grid. */
@@ -28,22 +38,87 @@ export type CloseCaseScreenProps = {
 };
 
 /**
- * Mintlify's December accrual: the case the ingestion agent is working, and
- * the entry point of the agent chain.
+ * The Evidence agent's intake view: every document it read for this case
+ * this month, and which of them it kept. The entry point of the agent chain.
  *
  * The rail is a sibling of `<main>` rather than a child, because the whole
  * desktop frame is one horizontal flex row - sidebar, case, rail - and the
  * rail has to be able to take width away from the grid when it is dragged.
  */
 export function CloseCaseScreen({
+  caseParam = null,
   autoplay = true,
-  autoAdvance = false,
   showExecutionPanel = true,
   compactCards = false,
   liveTimer = true,
 }: CloseCaseScreenProps) {
+  const live = useLiveData<IngestionData>(casePath(caseParam, "ingestion"), {
+    isEmpty: ingestionIsEmpty,
+  });
+
+  if (live.status === "error") {
+    return (
+      <ScreenShell>
+        <BackendUnreachable
+          url={live.url}
+          error={live.error}
+          onRetry={live.retry}
+        />
+      </ScreenShell>
+    );
+  }
+
+  if (live.status === "loading") return <ScreenShell loading />;
+
+  if (live.status === "empty" || !live.data) {
+    return (
+      <ScreenShell>
+        <ScreenState
+          title={
+            !caseParam
+              ? "No case selected"
+              : live.httpStatus === 404
+                ? "No such case"
+                : "No documents on this case"
+          }
+          body={
+            !caseParam
+              ? "Pick a case from the case list to see the documents its close read."
+              : live.httpStatus === 404
+                ? "The close API does not know this case. It may belong to a month that has not been run."
+                : "The close API has read no documents for this case. Run the month's close and come back."
+          }
+          detail={caseParam}
+          actions={[{ label: "All cases", href: routes.cases }]}
+        />
+      </ScreenShell>
+    );
+  }
+
+  return (
+    <IngestionDataProvider data={live.data} caseParam={caseParam}>
+      <IntakeBody
+        autoplay={autoplay}
+        showExecutionPanel={showExecutionPanel}
+        compactCards={compactCards}
+        liveTimer={liveTimer}
+      />
+    </IngestionDataProvider>
+  );
+}
+
+/** Sits inside the provider, so the run hook can read the dataset. */
+function IntakeBody({
+  autoplay,
+  showExecutionPanel,
+  compactCards,
+  liveTimer,
+}: Required<Omit<CloseCaseScreenProps, "caseParam" | "autoAdvance">>) {
   const [tab, setTab] = useState<TabId>("all");
   const [railOpen, setRailOpen] = useState(true);
+  /* `/close` is the chain's first screen, so this is where a run that was
+     started from the case list picks itself up. */
+  const { auto: autoAdvance } = useAutoRun();
   const run = useCloseRun({ autoplay, autoAdvance, liveTimer });
 
   return (

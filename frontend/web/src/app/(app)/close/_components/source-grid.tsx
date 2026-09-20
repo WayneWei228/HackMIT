@@ -5,14 +5,11 @@ import { AnimatePresence, motion } from "motion/react";
 import { cn } from "@/lib/cn";
 import { popIn, riseIn, staggerParent, transitions } from "@/lib/motion";
 
-import {
-  SOURCE_FOOTERS,
-  SOURCE_ORDER,
-  type SourceId,
-  type TabId,
-} from "../_data";
+import { useCaseDocuments, type CaseDocument } from "@/lib/use-case-documents";
+import type { SourceId, TabId } from "../_data";
+import { useIngestionData } from "./data-context";
 import { SourceGlyphIcon } from "./close-icons";
-import { SOURCE_CARD_BODIES } from "./source-cards";
+import { SourceBody } from "./source-body";
 
 /**
  * The document grid.
@@ -33,7 +30,12 @@ export function SourceGrid({
   onToggle: (id: SourceId) => void;
   compactCards?: boolean;
 }) {
-  const visible = SOURCE_ORDER.filter((id) => tab === "all" || tab === id);
+  const { data, caseParam } = useIngestionData();
+  /* The cards are the documents this case was actually decided on. */
+  const { documents } = useCaseDocuments(caseParam);
+  const visible = data.SOURCE_ORDER.filter(
+    (id) => tab === "all" || tab === id,
+  );
 
   return (
     <div className="flex-1 overflow-y-auto px-[34px] pb-[34px]">
@@ -51,6 +53,7 @@ export function SourceGrid({
               selected={isSelected(id)}
               onToggle={onToggle}
               compact={compactCards}
+              documents={documents}
             />
           ))}
         </AnimatePresence>
@@ -64,14 +67,21 @@ function SourceCard({
   selected,
   onToggle,
   compact,
+  documents,
 }: {
   id: SourceId;
   selected: boolean;
   onToggle: (id: SourceId) => void;
   compact: boolean;
+  /** The case's real documents; the card draws the one of this kind. */
+  documents: readonly CaseDocument[];
 }) {
-  const footer = SOURCE_FOOTERS[id];
-  const Body = SOURCE_CARD_BODIES[id];
+  const { data } = useIngestionData();
+  const footer = data.SOURCE_FOOTERS[id];
+
+  /* A source the payload named but did not describe is dropped rather than
+     rendered half-drawn. */
+  if (!footer) return null;
 
   return (
     <motion.button
@@ -108,7 +118,7 @@ function SourceCard({
       </AnimatePresence>
 
       <div className="px-3.5 pt-[29px]">
-        <Body />
+        <SourceBody id={id} documents={documents} />
       </div>
 
       <div className="absolute right-0 bottom-0 left-0 flex items-center gap-[9px] bg-[linear-gradient(to_bottom,rgba(255,255,255,0),#FFFFFF_26%)] px-3.5 pt-5 pb-[13px]">

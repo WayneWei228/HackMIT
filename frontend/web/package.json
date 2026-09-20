@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "check:no-mock": "node scripts/check-no-mock.mjs",
+    "verify": "npm run check:no-mock && npm run lint && npm run build"
   },
   "dependencies": {
     "clsx": "^2.1.1",

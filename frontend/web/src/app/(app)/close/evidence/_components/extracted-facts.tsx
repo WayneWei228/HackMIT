@@ -6,13 +6,17 @@ import { SectionLabel } from "@/components/ui/primitives";
 import { cn } from "@/lib/cn";
 import { easeOutSoft } from "@/lib/motion";
 
-import { FACTS, RAIL } from "../_data";
+import { FACT_STEPS, RAIL, asList, scriptSlot } from "../_data";
+import { useEvidenceData } from "./data-context";
 
 /**
  * The fact set the evidence agent hands on. Each row sits as an em dash until
  * its step lands, then the value rises in and the row flashes once.
  */
 export function ExtractedFacts({ step }: { step: number }) {
+  const { FACTS } = useEvidenceData().data;
+  const facts = asList(FACTS);
+
   return (
     <>
       <div className="mt-8 h-px bg-sunk" />
@@ -21,14 +25,20 @@ export function ExtractedFacts({ step }: { step: number }) {
       </SectionLabel>
 
       <div className="mt-3 flex flex-col gap-px">
-        {FACTS.map((fact) => {
-          const landed = step >= fact.at;
+        {facts.map((fact, i) => {
+          // A fact carries its own reveal step; a live set that does not is
+          // spread over the scripted reveal instead of landing all at once.
+          const at = Number.isFinite(fact.at)
+            ? (fact.at as number)
+            : (FACT_STEPS[scriptSlot(FACT_STEPS.length, i, facts.length)] ??
+              step);
+          const landed = step >= at;
           return (
             <div
-              key={fact.label}
+              key={`${fact.label}-${i}`}
               className={cn(
                 "-mx-2 flex items-center justify-between gap-4 rounded-md p-2 transition-colors duration-[450ms] ease-[var(--ease-out-soft)]",
-                step === fact.at ? "bg-[#F1F6EC]" : "bg-transparent",
+                step === at ? "bg-[#F1F6EC]" : "bg-transparent",
               )}
             >
               <span className="text-ui text-ink-2">{fact.label}</span>

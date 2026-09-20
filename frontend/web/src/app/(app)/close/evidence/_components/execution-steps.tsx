@@ -6,9 +6,10 @@ import type { ReactNode } from "react";
 
 import { cn } from "@/lib/cn";
 import { easeOutSoft } from "@/lib/motion";
-import { routes } from "@/lib/routes";
+import { routes, withCase } from "@/lib/routes";
 
 import { CHECKLIST } from "../_data";
+import { useEvidenceData } from "./data-context";
 import { ChecklistTickIcon } from "./evidence-icons";
 
 const ROW = "flex items-center gap-[14px]";
@@ -102,7 +103,16 @@ function ChecklistItem({
   );
 }
 
-/** The five close stages, with the evidence checklist nested under stage 02. */
+/** The agents queued behind Evidence, in chain order after the handoff. */
+const QUEUED = [
+  { index: "03", label: "Invoice Lookup" },
+  { index: "04", label: "Classification" },
+  { index: "05", label: "Estimation" },
+  { index: "06", label: "Outreach" },
+  { index: "07", label: "Settlement" },
+];
+
+/** The seven close stages, with the evidence checklist nested under stage 01. */
 export function ExecutionSteps({
   done,
   active,
@@ -112,19 +122,12 @@ export function ExecutionSteps({
   active: number;
   complete: boolean;
 }) {
+  const { caseParam } = useEvidenceData();
+
   return (
     <div className="mt-[26px]">
       <Stage
         index="01"
-        label="Ingestion"
-        status="Complete"
-        barClassName="bg-accent-line"
-        statusClassName="text-faint-2"
-        href={routes.closeCase}
-      />
-
-      <Stage
-        index="02"
         label="Evidence"
         status={complete ? "Complete" : "Active"}
         barClassName="bg-accent"
@@ -132,13 +135,12 @@ export function ExecutionSteps({
           "font-medium transition-colors duration-300",
           complete ? "text-faint-2" : "text-accent",
         )}
-        className="mt-5"
       />
 
       <div className="mt-[14px] ml-[33px] flex flex-col gap-[13px] border-l border-line pl-5">
         {CHECKLIST.map((label, i) => (
           <ChecklistItem
-            key={label}
+            key={`${label}-${i}`}
             label={label}
             done={i < done}
             active={i === active}
@@ -147,8 +149,8 @@ export function ExecutionSteps({
       </div>
 
       <Stage
-        index="03"
-        label="Obligation"
+        index="02"
+        label="Detection"
         status={complete ? "Queued" : "Waiting"}
         barClassName={cn(
           "transition-colors duration-[400ms]",
@@ -158,27 +160,21 @@ export function ExecutionSteps({
           "transition-colors duration-300",
           complete ? "text-ink-2" : "text-faint-3",
         )}
-        href={routes.obligation}
+        href={withCase(routes.detection, caseParam)}
         className="mt-[22px]"
       />
 
-      <Stage
-        index="04"
-        label="Estimation"
-        status="Waiting"
-        barClassName="bg-line-cool"
-        statusClassName="text-faint-3"
-        className="mt-[22px]"
-      />
-
-      <Stage
-        index="05"
-        label="Verification"
-        status="Waiting"
-        barClassName="bg-line-cool"
-        statusClassName="text-faint-3"
-        className="mt-[22px]"
-      />
+      {QUEUED.map((stage) => (
+        <Stage
+          key={stage.index}
+          index={stage.index}
+          label={stage.label}
+          status="Waiting"
+          barClassName="bg-line-cool"
+          statusClassName="text-faint-3"
+          className="mt-[22px]"
+        />
+      ))}
     </div>
   );
 }

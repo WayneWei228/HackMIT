@@ -15,12 +15,15 @@ export function VendorsHeader({
   filter,
   filterOptions,
   onFilterChange,
+  subtitle,
 }: {
   query: string;
   onQueryChange: (next: string) => void;
   filter: FilterValue;
   filterOptions: FilterOption[];
   onFilterChange: (next: FilterValue) => void;
+  /** Names the month on screen; the backend decides which that is. */
+  subtitle: string;
 }) {
   return (
     <div className="flex flex-wrap items-end justify-between gap-6">
@@ -34,9 +37,7 @@ export function VendorsHeader({
         {/* text-[46px] / leading-[1.05] restore the 46px/1.05 that `cn` strips
             out of `PageTitle`. Same underlying values as text-display. */}
         <PageTitle className="text-[46px] leading-[1.05]">Vendors</PageTitle>
-        <PageSubtitle>
-          Vendor context, accounting behavior, and close history.
-        </PageSubtitle>
+        <PageSubtitle>{subtitle}</PageSubtitle>
       </div>
 
       <div className="flex flex-none items-center gap-2.5 pb-1">

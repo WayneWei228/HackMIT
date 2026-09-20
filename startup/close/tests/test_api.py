@@ -254,12 +254,12 @@ INGESTION_KEYS = {"CASE_VENDOR", "CASE_TITLE", "CASE_META", "CASE_STATS", "CASE_
 EVIDENCE_KEYS = {"CASE", "FACTS", "MATCH"}
 ANALYSIS_KEYS = {"caseMeta", "headerStats", "evidenceInputsLabel", "sourceFacts", "factAttributes",
                  "sourceDocumentsLabel", "analysisIntro", "analysisChecks", "conclusion", "conclusionRows",
-                 "railTasks"}
+                 "railTasks", "handoffBlurb"}
 ESTIMATION_KEYS = {"CASE", "SUMMARY", "SUMMARY_STATUS", "INPUTS", "INPUTS_FOOTNOTE", "BUILD_STEPS", "BUILD_BLURB",
                    "CALC_ROWS", "CALC_TOTAL", "ADJUSTMENTS", "ACCRUAL_AMOUNT", "RECOMMENDATION_ROWS",
-                   "RECOMMENDATION_NOTE", "JOURNAL", "RAIL_STAGES_BEFORE", "RAIL_TASKS", "HANDOFF"}
+                   "RECOMMENDATION_NOTE", "JOURNAL", "RAIL_TASKS", "HANDOFF_BLURB"}
 CONTROLS_KEYS = {"HEAD_STATS", "CASE_META", "ASSERTIONS", "EXTRA_CHECKS", "CONTROLS", "SCAN_ITEMS", "FINAL_ROWS",
-                 "JOURNAL_LINES", "ACCRUAL_AMOUNT", "TASKS"}
+                 "JOURNAL_LINES", "ACCRUAL_AMOUNT", "TASKS", "HANDOFF_BLURB"}
 SCREEN_KEYS = {"ingestion": INGESTION_KEYS, "evidence": EVIDENCE_KEYS, "detection": ANALYSIS_KEYS,
                "invoice-lookup": ANALYSIS_KEYS, "classification": ANALYSIS_KEYS, "estimation": ESTIMATION_KEYS,
                "outreach": CONTROLS_KEYS, "settlement": CONTROLS_KEYS}
@@ -442,9 +442,7 @@ def test_estimation_build_steps_describe_this_case(client):
     assert steps[2]["text"] == "30000 = $30,000." and steps[2]["pendingText"] and steps[2]["resolvesAt"] == 8
     assert steps[4]["text"] == body["RECOMMENDATION_NOTE"]     # the final step is the real recommendation
     assert "CAMPAIGN-004-001" in body["BUILD_BLURB"] and body["INPUTS_FOOTNOTE"].startswith("Obligation basis")
-    assert body["HANDOFF"] == {"from": "Estimation", "to": "Outreach", "href": "/close/outreach",
-                               "blurb": body["HANDOFF"]["blurb"]}
-    assert "PO budget" in body["HANDOFF"]["blurb"]
+    assert "PO budget" in body["HANDOFF_BLURB"]
 
 
 @pytest.mark.parametrize("screen", ["outreach", "settlement"])
@@ -619,14 +617,31 @@ def test_documents_and_journals_lists(client):
     assert client.get("/api/journals", params={"period": "2020-01"}).json()["journals"] == []
 
 
-def test_vendor_kpis_are_counted_not_invented(client):
-    body = client.get("/api/vendors").json()
-    kpis = body["VENDOR_KPIS"]
-    assert len(kpis) == 4 and all(set(k) == {"value", "label"} for k in kpis)
-    assert kpis[0] == {"value": str(len(body["VENDORS"])), "label": "vendors"}
-    assert kpis[3]["label"] == "accrued to date"
-    scoped = client.get("/api/vendors", params={"period": P}).json()["VENDOR_KPIS"]
-    assert scoped[3] == {"value": "$31,200", "label": "accrued in December 2026"}
+def test_vendors_answers_with_vendors_and_nothing_else(client):
+    """The headline numerals are counted in the frontend from this very list."""
+    assert set(client.get("/api/vendors").json()) == {"VENDORS"}
+    assert set(client.get("/api/vendors", params={"period": P}).json()) == {"VENDORS"}
+
+
+@pytest.mark.parametrize("screen,expected", [
+    ("detection", "Invoice Lookup receives"),
+    ("invoice-lookup", "Classification receives"),
+    ("classification", "Estimation receives"),
+])
+def test_analysis_screens_say_what_the_next_agent_receives(client, screen, expected):
+    blurb = client.get(f"/api/cases/{P}/PO-001-001/screens/{screen}").json()["handoffBlurb"]
+    assert blurb.startswith(expected) and blurb.endswith(".")
+
+
+def test_control_screens_say_what_is_being_handed_on(client):
+    outreach = client.get(f"/api/cases/{P}/PO-001-001/screens/outreach").json()["HANDOFF_BLURB"]
+    assert "Settlement waits for the actual on PO-001-001" in outreach and "$1,200" in outreach
+    settled = client.get(f"/api/cases/{P}/PO-001-001/screens/settlement").json()["HANDOFF_BLURB"]
+    assert "settled at $1,400" in settled and "EXTERNAL_CHANGE" in settled
+    waiting = client.get(f"/api/cases/{P}/CAMPAIGN-004-001/screens/settlement").json()["HANDOFF_BLURB"]
+    assert "waiting for the actual invoice" in waiting
+    invoiced = client.get(f"/api/cases/{P}/PO-003-001/screens/outreach").json()["HANDOFF_BLURB"]
+    assert invoiced.startswith("Nothing for Settlement to true up") and "INV-ASUS-DEC" in invoiced
 
 
 def test_the_app_payload_invents_no_user(client, pdfs):
@@ -698,8 +713,7 @@ def test_events_since(client):
 
 def test_an_empty_root_is_a_normal_state(empty_client):
     assert empty_client.get("/api/cases").json() == {"CASES": []}
-    assert empty_client.get("/api/vendors").json()["VENDORS"] == []
-    assert [k["label"] for k in empty_client.get("/api/vendors").json()["VENDOR_KPIS"]]
+    assert empty_client.get("/api/vendors").json() == {"VENDORS": []}
     assert empty_client.get("/api/documents").json() == {"documents": []}
     assert empty_client.get("/api/journals").json()["journals"] == []
     assert empty_client.get("/api/events").json() == {"events": [], "next": 0}

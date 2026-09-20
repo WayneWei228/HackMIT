@@ -4,7 +4,8 @@ import { motion } from "motion/react";
 
 import { crossFade, transitions } from "@/lib/motion";
 
-import { AGENT_NAME, FILES_LOADED_LABEL } from "../_data";
+import { agentChain } from "@/lib/routes";
+import { useIngestionData } from "./data-context";
 
 /**
  * The single line of agent narration between the filters and the card grid.
@@ -23,6 +24,12 @@ export function AgentStatusBar({
   complete: boolean;
   selectedCount: number;
 }) {
+  const { data } = useIngestionData();
+  const { FILES_LOADED_LABEL } = data;
+  /* Stage 01 of the chain is the Evidence agent; `/close` is its intake
+     view. The name is navigation, not content. */
+  const AGENT_NAME = `${agentChain[0].label} agent`;
+
   return (
     <div className="flex flex-none items-center justify-between gap-5 px-[34px] py-[13px]">
       <div className="flex min-w-0 items-center gap-[11px]">

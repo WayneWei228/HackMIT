@@ -5,7 +5,8 @@ import { motion } from "motion/react";
 import { cn } from "@/lib/cn";
 import { riseIn, staggerParent } from "@/lib/motion";
 
-import { CASE_STATS, CASE_STATUS_LABEL, CASE_STATUS_VALUE } from "../_data";
+import { CASE_STATUS_LABEL } from "../_data";
+import { useIngestionData } from "./data-context";
 
 function StatLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -21,16 +22,22 @@ function StatLabel({ children }: { children: React.ReactNode }) {
  * difference stay em-dashes until the estimation agent fills them in.
  */
 export function CaseStats() {
+  const { data } = useIngestionData();
+  const { CASE_STATS, CASE_STATUS_VALUE } = data;
+
   return (
     <motion.div
       variants={staggerParent(0.05, 0.08)}
       initial="hidden"
       animate="visible"
-      className="mt-[26px] grid grid-cols-[repeat(4,minmax(0,1fr))] pb-[22px]"
+      style={{
+        gridTemplateColumns: `repeat(${CASE_STATS.length}, minmax(0, 1fr))`,
+      }}
+      className="mt-[26px] grid pb-[22px]"
     >
       {CASE_STATS.map((stat, i) => (
         <motion.div
-          key={stat.label}
+          key={`${stat.label}-${i}`}
           variants={riseIn}
           className={cn(
             i === 0 ? "pr-6" : "border-l border-line px-6",

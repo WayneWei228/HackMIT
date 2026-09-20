@@ -4,7 +4,7 @@ import { motion, useReducedMotion } from "motion/react";
 
 import { transitions } from "@/lib/motion";
 
-import { CATEGORY_TABS, TAB_COUNTS, type CategoryTab } from "../_data";
+import { CATEGORY_TABS, type CategoryTab } from "../_data";
 
 /**
  * Category filter pills.
@@ -15,9 +15,12 @@ import { CATEGORY_TABS, TAB_COUNTS, type CategoryTab } from "../_data";
  */
 export function CategoryTabs({
   value,
+  counts,
   onChange,
 }: {
   value: CategoryTab;
+  /** Counted from the rows on screen, live or synthetic. */
+  counts: Record<CategoryTab, number>;
   onChange: (tab: CategoryTab) => void;
 }) {
   const reduceMotion = useReducedMotion();
@@ -48,7 +51,7 @@ export function CategoryTabs({
                 active ? "text-[#5C7A59]" : "text-ghost"
               }`}
             >
-              {TAB_COUNTS[tab]}
+              {counts[tab] ?? 0}
             </span>
           </button>
         );

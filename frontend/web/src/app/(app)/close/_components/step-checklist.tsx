@@ -23,9 +23,9 @@ export function StepChecklist({ states }: { states: TaskState[] }) {
   return (
     <div className="mt-3.5 ml-[33px] flex flex-col gap-[13px] border-l border-line pl-5">
       {CHECKLIST.map((label, i) => {
-        const state = states[i];
+        const state = states[i] ?? "pending";
         return (
-          <div key={label} className="flex items-center gap-3">
+          <div key={`${label}-${i}`} className="flex items-center gap-3">
             <span className="relative mx-px h-[13px] w-[13px] flex-none">
               <motion.span
                 animate={{ opacity: state === "pending" ? 1 : 0 }}

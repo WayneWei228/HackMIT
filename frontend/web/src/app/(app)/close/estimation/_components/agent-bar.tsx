@@ -4,25 +4,35 @@ import { motion, useReducedMotion } from "motion/react";
 
 import { RefreshIcon } from "@/components/ui/icons";
 import { easeOutSoft } from "@/lib/motion";
-import { CHK_DONE, STATUS, completedChecks } from "../_data";
+import { completedChecks } from "../_data";
 import { LiveDot } from "./markers";
+import { useEstimationData } from "./data-context";
 
 /**
  * The narration strip between the case header and the working columns: who is
  * running, what it is doing right now, and how far through its checks it is.
+ *
+ * The narration itself arrives as a prop: the screen decides whether this run
+ * is the comp's script or a real case, and this component just reads the line
+ * for the current step.
  */
 export function AgentBar({
   step,
+  status,
   complete,
   onReplay,
 }: {
   step: number;
+  status: readonly string[];
   complete: boolean;
   onReplay: () => void;
 }) {
   const reduced = useReducedMotion();
-  const done = completedChecks(step);
-  const pct = (done / CHK_DONE.length) * 100;
+  const { BUILD_STEPS, INPUTS } = useEstimationData().data;
+  const total = BUILD_STEPS.length;
+  const done = completedChecks(step, total);
+  const pct = total === 0 ? 100 : (done / total) * 100;
+  const inputs = INPUTS.length;
 
   return (
     <>
@@ -34,17 +44,19 @@ export function AgentBar({
             Estimation agent
           </span>
           <span className="truncate text-ui leading-[normal] whitespace-nowrap text-faint-3">
-            {STATUS[step]}
+            {status[Math.min(step, status.length - 1)]}
           </span>
         </div>
 
         <div className="flex flex-none items-center gap-3.5 text-sm leading-[normal]">
-          <span className="whitespace-nowrap text-faint-2">4 inputs</span>
+          <span className="whitespace-nowrap text-faint-2">
+            {inputs} {inputs === 1 ? "input" : "inputs"}
+          </span>
           <span aria-hidden="true" className="text-line-mute">
             |
           </span>
           <span className="font-medium whitespace-nowrap text-ink tabular-nums">
-            {done} / {CHK_DONE.length} checks complete
+            {done} / {total} checks complete
           </span>
 
           <div className="relative h-[5px] w-[104px] overflow-hidden rounded-sm bg-divider-2">

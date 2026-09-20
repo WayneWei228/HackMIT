@@ -5,7 +5,8 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { RefreshIcon } from "@/components/ui/icons";
 import { easeOutSoft, transitions } from "@/lib/motion";
 
-import { AGENT_LABEL, MATCH_STEP, SOURCES_LABEL, TOTALS_STEP } from "../_data";
+import { AGENT_LABEL, MATCH_STEP, TOTALS_STEP } from "../_data";
+import { useEvidenceData } from "./data-context";
 import { PulseDot } from "./pulse-dot";
 
 function progressFor(step: number) {
@@ -26,8 +27,15 @@ export function AgentBar({
   complete: boolean;
   onReplay: () => void;
 }) {
+  const { tabs } = useEvidenceData();
   const reduced = useReducedMotion();
-  const reviewed = step >= TOTALS_STEP ? "3 / 3 reviewed" : "2 / 3 reviewed";
+
+  /* Both counters are the case's own document count - nothing here is a
+     literal. Six documents read as "6 sources" and "5 / 6 reviewed", then
+     "6 / 6" once the run has been through all of them. */
+  const total = tabs.length;
+  const seen = step >= TOTALS_STEP ? total : Math.max(0, total - 1);
+  const sources = `${total} ${total === 1 ? "source" : "sources"}`;
 
   return (
     <div className="flex flex-none items-center justify-between gap-5 px-[34px] py-[13px]">
@@ -51,13 +59,19 @@ export function AgentBar({
       </div>
 
       <div className="flex flex-none items-center gap-[14px] text-sm">
-        <span className="whitespace-nowrap text-faint-2">{SOURCES_LABEL}</span>
-        <span className="text-line-mute" aria-hidden="true">
-          |
-        </span>
-        <span className="font-medium whitespace-nowrap text-ink tabular-nums">
-          {reviewed}
-        </span>
+        {/* Until the case's documents arrive there is no count to state, and
+            the strip carries the narration alone rather than "0 sources". */}
+        {total > 0 && (
+          <>
+            <span className="whitespace-nowrap text-faint-2">{sources}</span>
+            <span className="text-line-mute" aria-hidden="true">
+              |
+            </span>
+            <span className="font-medium whitespace-nowrap text-ink tabular-nums">
+              {`${seen} / ${total} reviewed`}
+            </span>
+          </>
+        )}
 
         <div className="relative h-[5px] w-[104px] overflow-hidden rounded-sm bg-divider-2">
           <motion.div

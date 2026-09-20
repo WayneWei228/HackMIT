@@ -7,14 +7,29 @@ import { ChevronRightIcon, SearchIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/cn";
 import { transitions } from "@/lib/motion";
 
-import { DOC_TABS, type DocId } from "../_data";
+import { asList, type DocId, type DocTab } from "../_data";
+import { useEvidenceData } from "./data-context";
 import { AgreementIcon, MemoIcon, SpreadsheetIcon } from "./evidence-icons";
 
-const TAB_ICONS: Record<DocId, (props: { className?: string }) => React.ReactElement> = {
-  agreement: AgreementIcon,
-  ap: SpreadsheetIcon,
-  prior: MemoIcon,
+type TabIcon = (props: { className?: string }) => React.ReactElement;
+
+/**
+ * A document's `doc_type` drawn with one of the three marks the comp has.
+ * Partial on purpose: an unfamiliar type gets the neutral one rather than
+ * keeping the strip from rendering.
+ */
+const TYPE_ICONS: Readonly<Record<string, TabIcon>> = {
+  CONTRACT: AgreementIcon,
+  AMENDMENT: AgreementIcon,
+  PURCHASE_ORDER: AgreementIcon,
+  INVOICE: MemoIcon,
+  GOODS_RECEIPT: MemoIcon,
+  USAGE_REPORT: SpreadsheetIcon,
+  DELIVERY_REPORT: SpreadsheetIcon,
 };
+
+const iconFor = (tab: DocTab): TabIcon =>
+  (tab.docType ? TYPE_ICONS[tab.docType] : undefined) ?? AgreementIcon;
 
 const MASK = "linear-gradient(to right,#000 calc(100% - 36px),rgba(0,0,0,0))";
 
@@ -25,15 +40,19 @@ const MASK = "linear-gradient(to right,#000 calc(100% - 36px),rgba(0,0,0,0))";
  */
 export function DocumentTabs({
   doc,
+  hasMatch,
   onSelect,
   onToggleSearch,
   onJumpToMatch,
 }: {
   doc: DocId;
+  /** Whether the backend cited a passage to jump to - see `useDocumentViewer`. */
+  hasMatch: boolean;
   onSelect: (id: DocId) => void;
   onToggleSearch: () => void;
   onJumpToMatch: () => void;
 }) {
+  const tabs = useEvidenceData().tabs;
   const stripRef = useRef<HTMLDivElement>(null);
   const [overflowing, setOverflowing] = useState(false);
 
@@ -49,7 +68,9 @@ export function DocumentTabs({
       observer.disconnect();
       window.removeEventListener("resize", measure);
     };
-  }, []);
+    // Re-measures when the live tab strip replaces the mock one: the box keeps
+    // its width, so the ResizeObserver alone would not notice.
+  }, [tabs]);
 
   return (
     <div className="flex items-center gap-2.5 pb-3 text-muted">
@@ -62,12 +83,12 @@ export function DocumentTabs({
             : undefined
         }
       >
-        {DOC_TABS.map((tab) => {
+        {asList(tabs).map((tab, i) => {
           const active = tab.id === doc;
-          const Icon = TAB_ICONS[tab.id];
+          const Icon = iconFor(tab);
           return (
             <button
-              key={tab.id}
+              key={`${tab.id}-${i}`}
               type="button"
               onClick={() => onSelect(tab.id)}
               aria-pressed={active}
@@ -105,14 +126,19 @@ export function DocumentTabs({
         >
           <SearchIcon size={16} />
         </button>
-        <button
-          type="button"
-          onClick={onJumpToMatch}
-          className="flex cursor-pointer items-center gap-[7px] rounded-xl border border-transparent bg-transparent px-2.5 py-2 text-sm leading-none whitespace-nowrap text-muted transition-colors duration-[160ms] ease-[var(--ease-out-soft)] hover:bg-wash"
-        >
-          Jump to match
-          <ChevronRightIcon size={11} className="text-faint-2" />
-        </button>
+        {/* Only offered when the backend named a document and page to jump
+            to. With nothing cited the affordance is simply absent rather than
+            a button that goes nowhere. */}
+        {hasMatch && (
+          <button
+            type="button"
+            onClick={onJumpToMatch}
+            className="flex cursor-pointer items-center gap-[7px] rounded-xl border border-transparent bg-transparent px-2.5 py-2 text-sm leading-none whitespace-nowrap text-muted transition-colors duration-[160ms] ease-[var(--ease-out-soft)] hover:bg-wash"
+          >
+            Jump to match
+            <ChevronRightIcon size={11} className="text-faint-2" />
+          </button>
+        )}
       </div>
     </div>
   );

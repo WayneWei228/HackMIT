@@ -1,6 +1,17 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { Suspense, useCallback, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+
+import {
+  BackendUnreachable,
+  LoadingRows,
+  ScreenState,
+} from "@/components/ui/screen-state";
+import { vendorsPath, withPeriod } from "@/lib/api";
+import { ALL_PERIODS, periodLabel } from "@/lib/period";
+import { usePeriods } from "@/lib/use-periods";
+import { useLiveData } from "@/lib/use-live-data";
 
 import { VendorKpis } from "./_components/vendor-kpis";
 import { VendorRail } from "./_components/vendor-rail";
@@ -8,23 +19,53 @@ import { VendorTable } from "./_components/vendor-table";
 import { VendorsHeader } from "./_components/vendors-header";
 import {
   ALL_STATES,
-  DEFAULT_VENDOR_ID,
   FILTERS,
   STATE_TONES,
-  VENDORS,
+  deriveKpis,
+  vendorsIsEmpty,
   type FilterValue,
   type SortDir,
   type SortKey,
   type Vendor,
+  type VendorsData,
 } from "./_data";
 
 type SortState = { key: SortKey | null; dir: SortDir };
 
+/**
+ * `/vendors`, scoped to the month the reader is looking at.
+ *
+ * `useSearchParams` suspends during the static prerender, so the boundary's
+ * fallback renders the same screen with no month chosen; the client fills it
+ * in. The screen holds no vendors of its own - they are built from the
+ * documents a close reads, so before a month has run there are none.
+ */
 export default function VendorsPage() {
+  return (
+    <Suspense fallback={<VendorsScreen period={null} />}>
+      <VendorsWithPeriod />
+    </Suspense>
+  );
+}
+
+function VendorsWithPeriod() {
+  return <VendorsScreen period={useSearchParams().get("period")} />;
+}
+
+function VendorsScreen({ period }: { period: string | null }) {
+  const periods = usePeriods();
+  /* The URL wins, then whatever month the backend calls current. */
+  const selected = period ?? periods.current;
+  const scope = selected === ALL_PERIODS ? null : selected;
+
+  const path = useMemo(() => withPeriod(vendorsPath, scope), [scope]);
+  const live = useLiveData<VendorsData>(path, { isEmpty: vendorsIsEmpty });
+  const vendors = useMemo(() => live.data?.VENDORS ?? [], [live.data]);
+
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<FilterValue>(ALL_STATES);
   const [sort, setSort] = useState<SortState>({ key: null, dir: "desc" });
-  const [selectedId, setSelectedId] = useState(DEFAULT_VENDOR_ID);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   /** Free-text search spans name, profile, treatment and workflow. */
   const matches = useCallback(
@@ -42,7 +83,7 @@ export default function VendorsPage() {
   );
 
   const rows = useMemo(() => {
-    const list = VENDORS.filter((vendor) => matches(vendor));
+    const list = vendors.filter((vendor) => matches(vendor));
     if (sort.key === null) return list;
     const key = sort.key;
     const dir = sort.dir === "asc" ? 1 : -1;
@@ -52,7 +93,7 @@ export default function VendorsPage() {
       if (typeof x === "number" && typeof y === "number") return (x - y) * dir;
       return String(x).localeCompare(String(y)) * dir;
     });
-  }, [matches, sort]);
+  }, [vendors, matches, sort]);
 
   // Counts ignore the state filter so the menu always shows the full split.
   const filterOptions = useMemo(
@@ -60,19 +101,26 @@ export default function VendorsPage() {
       FILTERS.map((value) => ({
         value,
         dot: value === ALL_STATES ? "#CFD3CA" : STATE_TONES[value].dot,
-        count: VENDORS.filter(
+        count: vendors.filter(
           (vendor) =>
             matches(vendor, true) &&
             (value === ALL_STATES || vendor.state === value),
         ).length,
       })),
-    [matches],
+    [vendors, matches],
   );
 
-  const selected = useMemo(
-    () => VENDORS.find((vendor) => vendor.id === selectedId) ?? VENDORS[0],
-    [selectedId],
+  /* The reader's pick, if it is still in the list - a month with different
+     vendors simply opens on its first. */
+  const selectedVendor = useMemo(
+    (): Vendor | null =>
+      vendors.find((vendor) => vendor.id === selectedId) ?? vendors[0] ?? null,
+    [vendors, selectedId],
   );
+
+  /* The headline numerals are counted from the vendors on screen; the
+     product holds no figures of its own. */
+  const kpis = useMemo(() => deriveKpis(vendors), [vendors]);
 
   const handleSort = useCallback((key: SortKey) => {
     setSort((prev) => ({
@@ -93,6 +141,11 @@ export default function VendorsPage() {
     setFilter(ALL_STATES);
   }, []);
 
+  const month = scope ? periodLabel(scope) : null;
+  const subtitle = month
+    ? `Vendor context, accounting behavior, and close history across the ${month} close.`
+    : "Vendor context, accounting behavior, and close history.";
+
   return (
     <>
       <main className="flex min-w-[700px] flex-1 flex-col overflow-hidden">
@@ -103,24 +156,47 @@ export default function VendorsPage() {
             filter={filter}
             filterOptions={filterOptions}
             onFilterChange={setFilter}
+            subtitle={subtitle}
           />
-          <VendorKpis />
+          {live.status === "ready" ? <VendorKpis kpis={kpis} /> : null}
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-[34px] pb-[30px]">
-          <VendorTable
-            rows={rows}
-            selectedId={selected.id}
-            sortKey={sort.key}
-            sortDir={sort.dir}
-            onSort={handleSort}
-            onSelect={setSelectedId}
-            onClearFilters={clearFilters}
-          />
+        <div className="min-h-0 flex-1 overflow-y-auto px-[34px] pt-6 pb-[30px]">
+          {live.status === "error" ? (
+            <BackendUnreachable
+              url={live.url}
+              error={live.error}
+              onRetry={live.retry}
+            />
+          ) : live.status === "loading" ? (
+            <LoadingRows rows={6} />
+          ) : live.status === "empty" ? (
+            <ScreenState
+              title={
+                month
+                  ? `No close has been run for ${month} yet`
+                  : "No close has been run yet"
+              }
+              body="Vendors are built from the documents a close reads, so this list fills in once the month has run."
+              actions={[{ label: "All cases", href: "/cases" }]}
+            />
+          ) : (
+            <VendorTable
+              rows={rows}
+              selectedId={selectedVendor?.id ?? ""}
+              sortKey={sort.key}
+              sortDir={sort.dir}
+              onSort={handleSort}
+              onSelect={setSelectedId}
+              onClearFilters={clearFilters}
+            />
+          )}
         </div>
       </main>
 
-      <VendorRail vendor={selected} />
+      {live.status === "ready" && selectedVendor ? (
+        <VendorRail vendor={selectedVendor} />
+      ) : null}
     </>
   );
 }

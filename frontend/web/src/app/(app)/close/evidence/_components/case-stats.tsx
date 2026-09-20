@@ -7,7 +7,8 @@ import { SectionLabel } from "@/components/ui/primitives";
 import { cn } from "@/lib/cn";
 import { easeOutSoft } from "@/lib/motion";
 
-import { CASE, TOTALS_STEP } from "../_data";
+import { TOTALS_STEP } from "../_data";
+import { useEvidenceData } from "./data-context";
 import { PulseDot } from "./pulse-dot";
 
 /**
@@ -80,6 +81,7 @@ export function CaseStats({
   step: number;
   complete: boolean;
 }) {
+  const { CASE } = useEvidenceData().data;
   const resolved = step >= TOTALS_STEP;
 
   return (
