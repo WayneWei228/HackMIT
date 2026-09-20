@@ -1,17 +1,14 @@
 """Evidence worker: canonicalise raw evidence into db tables.
 
-The LLM turns document text into a record, Jev verifies the record against the text,
-and code alone decides what gets applied to the canonical tables.
+The LLM turns document text into a record; code checks it (known vendor, resolvable PO line, required fields)
+and alone decides what gets applied to the canonical tables. No Jev here: Jev is used by the Classification worker only.
 """
 import hashlib
 import subprocess
 from datetime import date, timedelta
 from pathlib import Path
 
-from typesafe_sdk import Choice, Noul
-
-from . import events, policy, safe_math, store
-from .jev import JevUnavailable
+from . import events, safe_math, store
 from .workspace import period_bounds
 
 # System feeds copied as-is (already structured). The MERGED tables also receive rows from documents;
@@ -40,14 +37,6 @@ RECORD_KEYS = (
 NUMERIC = ("amount", "quantity", "unit_rate", "monthly_rate")
 ACTIVITY_KIND = {"USAGE_REPORT": "USAGE", "DELIVERY_REPORT": "DELIVERY", "TIMESHEET": "TIMESHEET"}
 NEEDS_LINE = set(ACTIVITY_KIND) | {"GOODS_RECEIPT"}  # an invoice without a line is kept: Invoice Lookup matches it
-MAX_TEXT = 60_000
-FIELD_MEANINGS = {
-    "amount": "money actually billed, used or delivered for the period; never a budget, cap, limit or unused remainder",
-    "quantity": "units used, hours worked or items received",
-    "unit_rate": "price per unit or hour in force from effective_start",
-    "monthly_rate": "fixed monthly fee in force from effective_start; for an amendment, the new fee",
-}
-
 
 def doc_text(path: Path) -> str:
     if path.suffix.lower() == ".pdf":
@@ -101,57 +90,6 @@ def clean(raw: dict) -> dict:
     if record["document_type"] not in DOC_TYPES:
         record["document_type"] = "OTHER"
     return record
-
-
-def questions() -> dict:
-    return {
-        "doc_type": Choice(
-            instructions="What kind of business document is `document_text`?",
-            criteria=DOC_TYPES,
-        ),
-        "vendor_consistent": Noul(
-            instructions="Is `extracted.vendor_name` the vendor (seller or service provider) that `document_text` is from or about? "
-            "Different spellings or legal suffixes of the same company count as the same vendor."
-        ),
-        "amounts_supported": Noul(
-            instructions="Is every non-null number in `extracted` among amount, quantity, unit_rate and monthly_rate "
-            "stated in `document_text` with the meaning given in `field_meanings`? Answer no if any of them is absent "
-            "from the text, is a different figure, or is really another kind of figure such as a budget, cap, "
-            "limit, earlier rate or unused remainder."
-        ),
-        "dates_supported": Noul(
-            instructions="Is every non-null date or period in `extracted` (service_period, effective_start, effective_end, "
-            "coverage_start, coverage_end, received_date, termination_effective) supported by `document_text`?"
-        ),
-        "recurring_obligation": Noul(
-            instructions="Does `document_text` establish a payment obligation that repeats every month?"
-        ),
-        "changes_prior_terms": Noul(
-            instructions="Does `document_text` change, replace or end the terms of an earlier agreement between the same parties?"
-        ),
-    }
-
-
-def verify(ws, jev, doc_id: str, text: str, record: dict) -> tuple[dict, list[str]]:
-    """One Jev call per document. Returns (answers, reasons the record cannot be trusted)."""
-    state = {"document_text": text[:MAX_TEXT], "extracted": record, "field_meanings": FIELD_MEANINGS}
-    try:
-        answers = jev.ask(state, questions(), tag=f"evidence:{doc_id}")
-    except JevUnavailable as exc:
-        return {}, [f"JEV_UNAVAILABLE: {exc}"]
-    reasons = []
-    kind = answers["doc_type"]
-    if kind["choice"] != record["document_type"]:
-        reasons.append(f"TYPE_MISMATCH: extractor {record['document_type']}, Jev {kind['choice']} ({kind['confidence']:.2f})")
-    elif policy.gate(kind["confidence"]) == "REVIEW":
-        reasons.append(f"TYPE_UNCERTAIN: {kind['choice']} ({kind['confidence']:.2f})")
-    for qid, label in (("vendor_consistent", "VENDOR"), ("amounts_supported", "AMOUNTS"), ("dates_supported", "DATES")):
-        if answers[qid]["noul"] < policy.NOUL_YES:
-            reasons.append(f"{label}_NOT_SUPPORTED ({answers[qid]['noul']:.2f})")
-    changes = answers["changes_prior_terms"]["noul"]
-    if record["document_type"] == "CONTRACT" and changes >= policy.NOUL_YES:
-        reasons.append(f"CONTRACT_READS_AS_AMENDMENT ({changes:.2f})")
-    return answers, reasons
 
 
 def resolve_vendor(ws, name: str | None) -> dict | None:
@@ -278,7 +216,7 @@ def missing_fields(record: dict) -> list[str]:
     return missing
 
 
-def run(ws, llm, jev, period: str) -> list[dict]:
+def run(ws, llm, period: str) -> list[dict]:
     """Process this period's documents only (new or changed, visible at ws.as_of). Returns the rows it (re)wrote.
 
     Earlier months are never re-read: what they established is already in the db."""
@@ -296,11 +234,11 @@ def run(ws, llm, jev, period: str) -> list[dict]:
         text = doc_text(ws.world_dir / "documents" / entry["file"])
         digest = hashlib.sha256(text.encode()).hexdigest()
         old = seen.get(doc_id)
-        if old and old["hash"] == digest and not any(r.startswith("JEV_UNAVAILABLE") for r in old["reasons"]):
+        if old and old["hash"] == digest:
             continue
         record = clean(llm("extract", {"DOCUMENT": text, "DOC_ID": doc_id, "KNOWN_VENDORS": vendor_names,
                                        "DOCUMENT_TYPES": list(DOC_TYPES)}))
-        answers, reasons = verify(ws, jev, doc_id, text, record)
+        reasons = []
         vendor = resolve_vendor(ws, record["vendor_name"])
         line_id = resolve_line(ws, record, vendor)
         if record["document_type"] != "OTHER" and vendor is None:
@@ -313,7 +251,7 @@ def run(ws, llm, jev, period: str) -> list[dict]:
         row = {
             "doc_id": doc_id, "file": entry["file"], "hash": digest, "period": entry.get("period"), "available_at": available_at,
             "doc_type": record["document_type"], "vendor_id": vendor and vendor["vendor_id"], "po_line_id": line_id,
-            "record": record, "checks": answers, "quality": quality, "reasons": reasons, "applied_to": applied_to,
+            "record": record, "quality": quality, "reasons": reasons, "applied_to": applied_to,
         }
         store.upsert(documents, row, ("doc_id",))
         done.append(row)

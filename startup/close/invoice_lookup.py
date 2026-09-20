@@ -5,14 +5,11 @@ An invoice lives in one of two places: on the AP ledger (status POSTED) or in th
 received but not booked). Email intake is out of scope.
 
 Matching is exact: PO line + service period (a goods line takes every invoice of the line up to the period end,
-because goods are billed per delivery, not per month). Jev is asked only for an invoice that names no PO line
-while its vendor has several detected lines.
+because goods are billed per delivery, not per month). Pure rules, no model: an invoice that names no PO line
+while its vendor has several detected lines is flagged AMBIGUOUS_MATCH for a human, never guessed.
 """
-from typesafe_sdk import Choice
-
 from . import case as cases_mod
-from . import events, policy, store
-from .jev import JevUnavailable
+from . import events, store
 
 TOLERANCE = 0.005
 
@@ -44,49 +41,22 @@ def expected_value(case: dict, line: dict | None) -> float | None:
     return round((line.get("quantity_received") or 0) * (line.get("unit_price") or 0), 2)
 
 
-def ask_which_line(ws, jev, invoice: dict, candidates: list[dict], lines: dict) -> dict | None:
-    state = {
-        "invoice": {k: invoice.get(k) for k in ("invoice_id", "invoice_number", "service_period", "amount", "quantity", "unit_rate")},
-        "po_lines": {c["po_line_id"]: {k: lines.get(c["po_line_id"], {}).get(k) for k in
-                                       ("line_description", "unit_price", "quantity_ordered", "pricing_model", "billing_frequency")}
-                     for c in candidates},
-    }
-    criteria = {c["po_line_id"]: f"The invoice bills the purchase order line `po_lines.{c['po_line_id']}`." for c in candidates}
-    criteria["NONE"] = "The invoice does not clearly belong to any of these purchase order lines."
-    question = Choice(instructions="`invoice` names no purchase order line. Which line in `po_lines` is it billing? "
-                      "Compare amounts, quantities, rates and what each line buys.", criteria=criteria)
-    try:
-        return jev.ask(state, {"which_line": question}, tag=f"invoice_lookup:{invoice['invoice_id']}")["which_line"]
-    except JevUnavailable:
-        return None
-
-
-def assign_unreferenced(ws, jev, cases: list[dict], invoices: list[dict], lines: dict, period: str) -> dict[str, list[dict]]:
-    """Invoices with no PO line. One detected line for the vendor: it is that line. Several: ask Jev.
-    Returns {case_id: [ambiguous invoices]} for the cases Jev could not settle."""
+def assign_unreferenced(cases: list[dict], invoices: list[dict], period: str) -> dict[str, list[dict]]:
+    """Invoices with no PO line. One detected line for the vendor: it is that line.
+    Several: returns {case_id: [the ambiguous invoices]} so every candidate case gets flagged."""
     unsettled: dict[str, list[dict]] = {}
     for inv in invoices:
         if inv.get("po_line_id") or inv.get("service_period") != period:
             continue
         candidates = [c for c in cases if c["vendor_id"] and c["vendor_id"] == inv.get("vendor_id")]
-        if not candidates:
-            continue
         if len(candidates) == 1:
             inv["po_line_id"] = candidates[0]["po_line_id"]
-            continue
-        answer = ask_which_line(ws, jev, inv, candidates, lines)
-        chosen = next((c for c in candidates if answer and c["po_line_id"] == answer["choice"]), None)
-        if chosen and policy.gate(answer["confidence"], inv.get("amount")) == "ACT":
-            inv["po_line_id"] = chosen["po_line_id"]
-            cases_mod.log_decision(ws, chosen, "invoice_lookup", "JEV", f"Which PO line does {inv['invoice_id']} bill?",
-                                   answer["choice"], answer["confidence"], action="match invoice")
-            continue
-        for c in candidates:
-            unsettled.setdefault(c["case_id"], []).append({"invoice_id": inv["invoice_id"], "jev": answer})
+        for c in candidates if len(candidates) > 1 else []:
+            unsettled.setdefault(c["case_id"], []).append({"invoice_id": inv["invoice_id"], "amount": inv.get("amount")})
     return unsettled
 
 
-def run(ws, jev, period: str) -> list[dict]:
+def run(ws, period: str) -> list[dict]:
     """Fill `invoice_match` on every DETECTED case of the period. Idempotent: the match is rebuilt each run."""
     everything = cases_mod.load_cases(ws)
     cases = [c for c in everything if c["period"] == period and c["status"] == "DETECTED" and c["kind"] == "PO_LINE"]
@@ -95,7 +65,7 @@ def run(ws, jev, period: str) -> list[dict]:
     for case in cases:  # a re-run replaces this worker's earlier marks
         case["decision_log"] = [d for d in case["decision_log"] if d["worker"] != "invoice_lookup"]
         case["flags"] = [f for f in case["flags"] if f not in ("AMBIGUOUS_MATCH", "DUPLICATE_CANDIDATE")]
-    unsettled = assign_unreferenced(ws, jev, cases, invoices, lines, period)
+    unsettled = assign_unreferenced(cases, invoices, period)
 
     for case in cases:
         found = [i for i in invoices if is_for(i, case)]

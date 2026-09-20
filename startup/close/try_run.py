@@ -1,6 +1,6 @@
-"""Run the workers built so far (Evidence, Detection, Invoice Lookup) month by month on a folder of PDFs.
+"""Run the workers built so far (Evidence, Detection, Invoice Lookup, Classification) month by month on a folder of PDFs.
 
-    cd startup && ../.venv/bin/python -m close.try_run ../output/pdf/startup_minimal_data [2026-12 ...] [--skip-jev] [--fresh]
+    cd startup && ../.venv/bin/python -m close.try_run ../output/pdf/startup_minimal_data [2026-12 ...] [--fresh]
 
 <pdf_dir>/<YYYY-MM>/ holds the documents of that month. Each monthly run reads ONLY its own folder; what earlier
 months established (contracts, invoices) is already in the db, exactly as in a real close. With no period given,
@@ -13,8 +13,7 @@ import re
 import shutil
 from pathlib import Path
 
-from . import detection, evidence, invoice_lookup, store
-from .jev import TypeSafeJev
+from . import classifier, detection, evidence, invoice_lookup, store
 from .llm import bedrock_llm
 from .workspace import CLOSE_DIR, Workspace
 
@@ -27,26 +26,12 @@ HEADERS = [
     {"po_number": "CAMPAIGN-004", "vendor_id": "V004", "order_type": "NB", "validity_start": "2026-12-01", "validity_end": "2026-12-31"},
 ]
 LINES = [
-    {"po_line_id": "PO-001-001", "po_number": "PO-001", "item_category": "P", "contract_id": "CTR-001", "pricing_model": "FIXED",
-     "billing_frequency": "MONTHLY", "unit_price": 1200, "line_description": "Team documentation platform subscription, billed monthly"},
-    {"po_line_id": "PO-002-001", "po_number": "PO-002", "item_category": "B", "contract_id": "CTR-002", "pricing_model": "USAGE",
-     "billing_frequency": "MONTHLY", "overall_limit": 300000, "line_description": "AI API usage, billed monthly on metered units"},
-    {"po_line_id": "PO-003-001", "po_number": "PO-003", "item_category": "", "pricing_model": "UNIT", "billing_frequency": "NONE",
+    {"po_line_id": "PO-001-001", "po_number": "PO-001", "item_category": "P", "contract_id": "CTR-001", "unit_price": 1200, "line_description": "Team documentation platform subscription, billed monthly"},
+    {"po_line_id": "PO-002-001", "po_number": "PO-002", "item_category": "B", "contract_id": "CTR-002", "overall_limit": 300000, "line_description": "AI API usage, billed monthly on metered units"},
+    {"po_line_id": "PO-003-001", "po_number": "PO-003", "item_category": "",
      "gr_required": True, "quantity_ordered": 25, "unit_price": 1600, "line_description": "Laptop packages for new hires"},
-    {"po_line_id": "CAMPAIGN-004-001", "po_number": "CAMPAIGN-004", "item_category": "B", "pricing_model": "LIMIT",
-     "billing_frequency": "NONE", "overall_limit": 30000, "line_description": "Product-launch advertising campaign, charged on delivery"},
+    {"po_line_id": "CAMPAIGN-004-001", "po_number": "CAMPAIGN-004", "item_category": "B", "overall_limit": 30000, "line_description": "Product-launch advertising campaign, charged on delivery"},
 ]
-
-class SkipJev:
-    """Stands in when there is no TYPESAFE_API_KEY: agrees with the extractor and says so in every answer."""
-
-    def ask(self, state, questions, *, tag):  # noqa: ARG002
-        out = {q: {"type": "noul", "noul": 1.0, "skipped": True} for q in questions}
-        out["changes_prior_terms"]["noul"] = 0.0
-        out["doc_type"] = {"type": "choice", "choice": state["extracted"]["document_type"], "confidence": 1.0,
-                           "probabilities": {}, "skipped": True}
-        return out
-
 
 def close_clock(period: str) -> str:
     y, m = map(int, period.split("-"))
@@ -69,7 +54,7 @@ def show(title: str, rows: list[dict], cols: tuple[str, ...]) -> None:
         print("    " + "  ".join(f"{c}={r.get(c)}" for c in cols))
 
 
-def snapshot(ws, period: str, documents: list[dict], cases: list[dict], matched: list[dict]) -> None:
+def snapshot(ws, period: str, documents: list[dict], cases: list[dict], matched: list[dict], classified: list[dict]) -> None:
     """Freeze what each worker produced for this month under out/<period>/, so later months do not overwrite it."""
     out = ws.out_dir / period
     shutil.rmtree(out, ignore_errors=True)
@@ -80,7 +65,7 @@ def snapshot(ws, period: str, documents: list[dict], cases: list[dict], matched:
     for d in documents:  # one file per PDF, for checking them one by one
         rows = store.load_table(ws, d["applied_to"]) if d["applied_to"] else []
         one = {"pdf": d["file"], "doc_id": d["doc_id"], "doc_type": d["doc_type"], "extracted": d["record"],
-               "matched_vendor_id": d["vendor_id"], "matched_po_line_id": d["po_line_id"], "jev_checks": d["checks"],
+               "matched_vendor_id": d["vendor_id"], "matched_po_line_id": d["po_line_id"],
                "quality": d["quality"], "reasons": d["reasons"], "written_to_table": d["applied_to"],
                "written_row": next((r for r in rows if r.get("source_doc") == d["doc_id"]), None)}
         (out / "evidence" / "documents" / f"{d['doc_id']}.json").write_text(json.dumps(one, indent=2))
@@ -90,6 +75,16 @@ def snapshot(ws, period: str, documents: list[dict], cases: list[dict], matched:
     (out / "detection" / "cases.json").write_text(json.dumps(cases, indent=2))
     (out / "invoice_lookup").mkdir()
     (out / "invoice_lookup" / "cases.json").write_text(json.dumps(matched, indent=2))
+    (out / "classification").mkdir()
+    (out / "classification" / "cases.json").write_text(json.dumps(classified, indent=2))
+    headers = {h["po_number"]: h for h in store.load_table(ws, "po_headers")}
+    lines = {l["po_line_id"]: l for l in store.load_table(ws, "po_lines")}
+    for c in classified:  # one file per PO line: the row it read, and both reads of it
+        line = lines[c["po_line_id"]]
+        one = {"case_id": c["case_id"], "input_po_header": headers[line["po_number"]], "input_po_line": line,
+               "output_classification": c["classification"], "flags": [f for f in c["flags"] if f.startswith("CLASSIFICATION_")],
+               "decision": [d for d in c["decision_log"] if d["worker"] == "classifier"]}
+        (out / "classification" / f"{c['case_key']}.json").write_text(json.dumps(one, indent=2))
     invoices = store.visible(store.load_table(ws, "invoices"), ws.as_of)
     for c in matched:  # one file per detected PO line: what lookup saw, and what it concluded
         same_line = [i for i in invoices if i.get("po_line_id") == c["po_line_id"]]
@@ -105,7 +100,6 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("pdf_dir", type=Path)
     ap.add_argument("periods", nargs="*", help="months to run, e.g. 2026-12 (default: every month folder, in order)")
-    ap.add_argument("--skip-jev", action="store_true", help="no Jev key: accept the extractor's record unverified")
     ap.add_argument("--fresh", action="store_true", help="wipe close/_run/try first (otherwise earlier months and unchanged documents are kept)")
     args = ap.parse_args()
 
@@ -116,12 +110,11 @@ def main() -> None:
     periods = args.periods or sorted(p.name for p in args.pdf_dir.iterdir() if re.fullmatch(r"\d{4}-\d{2}", p.name))
     ws = Workspace(world_dir=root / "world", db_dir=root / "db", state_dir=root / "state", out_dir=root / "out",
                    as_of=close_clock(periods[0])).ensure()
-    jev = SkipJev() if args.skip_jev else TypeSafeJev(ws)
 
     for period in periods:
         ws = ws.at(close_clock(period))
         print(f"\n=== {period} close, as_of {ws.as_of} - reading {args.pdf_dir / period}/ ===")
-        done = evidence.run(ws, bedrock_llm, jev, period)
+        done = evidence.run(ws, bedrock_llm, period)
         for d in done:
             facts = {k: v for k, v in d["record"].items() if v is not None and k != "document_type"}
             print(f"  {d['doc_id']:<22} {d['doc_type']:<18} {d['quality']:<12} -> {d['applied_to'] or '-':<14} "
@@ -136,12 +129,19 @@ def main() -> None:
             print(f"  {c['case_key']:<18} {o['recognition_basis']:<17} why: {'; '.join(o['reasons'])}")
         detected = json.loads(json.dumps(cases))  # Detection's output, before Invoice Lookup writes on the cases
         print(f"\n  --- Invoice Lookup for {period} (input: detected cases + invoices + po_lines) ---")
-        matched = invoice_lookup.run(ws, jev, period)
+        matched = invoice_lookup.run(ws, period)
         for c in matched:
             m = c["invoice_match"]
             where = f"on AP {m['on_ap']} / in queue {m['in_queue']}" if m["invoice_ids"] else "nothing on the AP or in the queue"
             print(f"  {c['case_key']:<18} {m['result']:<19} invoiced={m['invoiced_amount']:>10,.2f}  {where}")
-        snapshot(ws, period, done, detected, matched)
+        looked_up = json.loads(json.dumps(matched))
+        print(f"\n  --- Classification for {period} (input: detected cases + po_headers + po_lines) ---")
+        classified = classifier.run(ws, bedrock_llm, period)
+        for c in classified:
+            k = c["classification"]
+            read = f"{k['model']} ({k['model_confidence']:.2f}{', cached' if k['cache_hit'] else ''})" if k["model"] else "no answer"
+            print(f"  {c['case_key']:<18} rules={k['rules']:<19} model={read:<34} final={k['final']}  {[f for f in c['flags'] if f.startswith('CLASS')] or ''}")
+        snapshot(ws, period, done, detected, looked_up, classified)
 
     print(f"\n=== db after {periods[-1]} ===")
     show("contracts", store.load_table(ws, "contracts"),
@@ -150,7 +150,7 @@ def main() -> None:
     show("activity", store.load_table(ws, "activity"),
          ("activity_id", "po_line_id", "kind", "service_period", "coverage_start", "coverage_end", "quantity", "value"))
     show("goods_receipts", store.load_table(ws, "goods_receipts"), ("gr_id", "po_line_id", "received_date", "quantity"))
-    print(f"\nPer-month output files: {root / 'out'}/<YYYY-MM>/{evidence,detection,invoice_lookup}/")
+    print(f"\nPer-month output files: {root / 'out'}/<YYYY-MM>/ (evidence, detection, invoice_lookup, classification)")
 
 
 if __name__ == "__main__":

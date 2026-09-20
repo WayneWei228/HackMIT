@@ -50,13 +50,15 @@ def find_env(start: Path | None = None) -> Path | None:
 
 
 def load_env(start: Path | None = None) -> Path | None:
-    """Load the nearest `.env` into os.environ without overriding what is already set."""
-    path = find_env(start)
-    if path is not None:
-        from dotenv import load_dotenv
+    """Load every `.env` at or above `start` into os.environ, nearest first, never overriding what is already set.
+    Returns the nearest one."""
+    from dotenv import load_dotenv
 
+    here = (start or CLOSE_DIR).resolve()
+    found = [parent / ".env" for parent in [here, *here.parents] if (parent / ".env").is_file()]
+    for path in found:
         load_dotenv(path, override=False)
-    return path
+    return found[0] if found else None
 
 
 def repo_root(start: Path | None = None) -> Path | None:
