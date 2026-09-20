@@ -13,6 +13,7 @@ from trueup.agents.policy_agent import (
     PolicyConfigError,
     enforce,
 )
+from trueup.learning.testing import activate_escalator_rule
 from trueup.simulator import generator
 from trueup.simulator.simulator import Simulator
 from trueup.simulator.stand_in import open_obligation_for_classification
@@ -519,6 +520,7 @@ def test_openai_waits_for_outreach_then_passes_policy_with_complete_usage(closed
         ).confirmation_status,
         created_at=NOW,
     )
+    activate_escalator_rule(s, now=NOW)
     advance(ob, S.ESTIMATING, A.ESTIMATE, "test", at=NOW)
     estimate(s, ob.obligation_id, now=NOW)
     wp = s.get(m.TrueUpWorkpaper, ob.current_workpaper_id)

@@ -30,6 +30,7 @@ Set `MODEL_ID` to override the model. Never commit these values.
 | `trueup/agents/` | Evidence (PDF to typed fields, cached by text hash), detection, invoice lookup, classifier, outreach, learning |
 | `trueup/estimators/` | The only place a dollar amount is computed |
 | `trueup/agents/estimation.py` | Chooses the estimator for a classified obligation |
+| `trueup/learning/rules.py` | Typed playbook rules from `trueup_learning_rules`; Estimation honors a usage contract's escalator only while an ACTIVE rule matches |
 | `data/startup/` | Demo documents: 14 PDFs, their source JSON, and the expected answers (from the `startup-output` branch) |
 | `trueup/orchestrator.py` | Runs the agents in order and persists results |
 | `trueup/api.py` | HTTP routes for the UI |

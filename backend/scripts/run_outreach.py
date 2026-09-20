@@ -21,6 +21,7 @@ from trueup.agents.classification_agent import classify  # noqa: E402
 from trueup.agents.estimation_agent import estimate  # noqa: E402
 from trueup.agents.outreach_agent import Topic, poll_replies, send_outreach  # noqa: E402
 from trueup.agents.policy_agent import enforce  # noqa: E402
+from trueup.learning.testing import activate_escalator_rule  # noqa: E402
 from trueup.simulator.simulator import Simulator  # noqa: E402
 from trueup.simulator.stand_in import open_obligation_for_classification  # noqa: E402
 from trueup.store import enums as e  # noqa: E402
@@ -119,6 +120,8 @@ def main() -> None:
             and reply.unit == "API_CALL"
             and (reply.routed_stage, reply.next_action) == ESTIMATE,
         )
+        print("  (starting from a taught state: the escalator rule is already active)")
+        activate_escalator_rule(session, now=now)
         second = estimate(session, openai.obligation_id, now=now)
         print(f"OpenAI  re-estimate: {second.amount} ({second.expression})")
         verdict = enforce(session, openai.obligation_id, now=now)

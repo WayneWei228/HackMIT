@@ -12,6 +12,7 @@ sys.path.insert(0, str(ROOT))
 
 from trueup.agents.classification_agent import classify  # noqa: E402
 from trueup.agents.estimation_agent import EstimationResult, estimate  # noqa: E402
+from trueup.learning.testing import activate_escalator_rule  # noqa: E402
 from trueup.simulator.simulator import Simulator  # noqa: E402
 from trueup.simulator.stand_in import open_obligation_for_classification  # noqa: E402
 from trueup.store import enums as e  # noqa: E402
@@ -78,6 +79,8 @@ def main() -> None:
             )
         )
         session.flush()
+        print("  (starting from a taught state: the escalator rule is already active)")
+        activate_escalator_rule(session, now=NOW)
         advance(obligation, e.WorkflowStage.ESTIMATING, e.NextAction.ESTIMATE, "outreach", at=NOW)
         hits += show(
             "VEN-OPENAI", estimate(session, obligation.obligation_id, now=NOW), Decimal("18600.00")

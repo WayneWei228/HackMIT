@@ -17,6 +17,7 @@ from trueup.agents.invoice_lookup_agent import lookup  # noqa: E402
 from trueup.agents.journal_entry_service import draft_entry, post_simulated  # noqa: E402
 from trueup.agents.policy_agent import enforce  # noqa: E402
 from trueup.agents.reconciliation_agent import collect_arrivals, reconcile  # noqa: E402
+from trueup.learning.testing import activate_escalator_rule  # noqa: E402
 from trueup.simulator.simulator import Simulator  # noqa: E402
 from trueup.store import enums as e  # noqa: E402
 from trueup.store import models as m  # noqa: E402
@@ -77,6 +78,8 @@ def close_december(session):
         )
     )
     session.flush()
+    print("(starting OpenAI from a taught state: the escalator rule is already active)")
+    activate_escalator_rule(session, now=CLOSE)
     advance(
         session.get(m.TrueUpObligation, "OBL-OPENAI-2026-12"),
         e.WorkflowStage.ESTIMATING,

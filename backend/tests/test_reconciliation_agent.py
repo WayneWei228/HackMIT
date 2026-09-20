@@ -16,6 +16,7 @@ from trueup.agents.reconciliation_agent import (
     collect_arrivals,
     reconcile,
 )
+from trueup.learning.testing import activate_escalator_rule
 from trueup.simulator import generator
 from trueup.simulator.simulator import Simulator
 from trueup.store import enums as e
@@ -564,6 +565,7 @@ def january(sim):
             estimate(s, oid, now=CLOSE)
 
         openai = s.get(m.TrueUpObligation, "OBL-OPENAI-2026-12")
+        activate_escalator_rule(s, now=CLOSE)
         full_usage(s)
         advance(openai, e.WorkflowStage.ESTIMATING, e.NextAction.ESTIMATE, "outreach", at=CLOSE)
         estimate(s, openai.obligation_id, now=CLOSE)

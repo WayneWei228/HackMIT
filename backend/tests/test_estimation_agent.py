@@ -5,7 +5,9 @@ import pytest
 from sqlalchemy import inspect, select
 
 from trueup.agents.classification_agent import classify
-from trueup.agents.estimation_agent import estimate
+from trueup.agents.estimation_agent import estimate, usage_rate
+from trueup.learning.rules import CandidateRule
+from trueup.learning.testing import LEARNING_ID, activate_escalator_rule
 from trueup.simulator import generator
 from trueup.simulator.simulator import Simulator
 from trueup.simulator.stand_in import open_obligation_for_classification
@@ -39,6 +41,12 @@ def sim(world):
 def session(sim):
     with sim.session() as s:
         yield s
+
+
+@pytest.fixture
+def taught(session):
+    """Start from a state where the escalator rule has already been learned."""
+    activate_escalator_rule(session, now=NOW)
 
 
 def ready(session, vendor_id):
@@ -204,6 +212,7 @@ def test_openai_is_held_for_outreach_then_estimates_once_usage_is_complete(sessi
         )
     )
     session.flush()
+    activate_escalator_rule(session, now=NOW)
     advance(obligation, e.WorkflowStage.ESTIMATING, e.NextAction.ESTIMATE, "outreach", at=NOW)
 
     second = estimate(session, obligation.obligation_id, now=NOW)
@@ -271,7 +280,7 @@ def test_rate_change_inside_the_period_is_prorated_by_day(session):
     assert result.checks[4].result == "split by rate change"
 
 
-def test_step_up_inside_the_period_is_not_guessed(session):
+def test_step_up_inside_the_period_is_not_guessed(session, taught):
     obligation = ready(session, "VEN-OPENAI")
     session.get(m.CompanyContract, "CON-OPENAI-V1").escalator_effective_date = date(2026, 12, 15)
     session.flush()
@@ -347,7 +356,7 @@ def test_matching_card_does_not_conflict(session):
     assert result.outcome == "ESTIMATED" and not result.conflicts
 
 
-def test_stale_rate_card_on_the_step_up_is_caught(session):
+def test_stale_rate_card_on_the_step_up_is_caught(session, taught):
     obligation = ready(session, "VEN-OPENAI")
     session.get(m.CompanyServiceEvidence, "USE-OPENAI-2026-12-PARTIAL").service_end_date = date(
         2026, 12, 31
@@ -432,3 +441,102 @@ def test_estimating_again_creates_a_second_numbered_workpaper(session):
     advance(obligation, e.WorkflowStage.ESTIMATING, e.NextAction.ESTIMATE, "test", at=NOW)
     estimate(session, obligation.obligation_id, now=NOW)
     assert obligation.current_workpaper_id.endswith("-02")
+
+
+def complete_openai_usage(session):
+    session.add(
+        m.CompanyServiceEvidence(
+            service_evidence_id="USE-OPENAI-2026-12-FULL",
+            vendor_id="VEN-OPENAI",
+            contract_id="CON-OPENAI",
+            po_id="PO-OPENAI-2026",
+            service_start_date=date(2026, 12, 1),
+            service_end_date=date(2026, 12, 31),
+            evidence_type=e.ServiceEvidenceType.SYSTEM_USAGE,
+            quantity=Decimal("930000"),
+            unit="API_CALL",
+            accepted_amount=None,
+            source_system=e.SourceSystem.ENGINEERING_PLATFORM,
+            confirmed_by_person_id="ENG-001",
+            confirmation_status=e.ConfirmationStatus.OWNER_CONFIRMED,
+            created_at=NOW,
+        )
+    )
+    session.flush()
+
+
+def test_without_an_active_rule_the_escalator_is_missed(session):
+    complete_openai_usage(session)
+    obligation = ready(session, "VEN-OPENAI")
+    result = estimate(session, obligation.obligation_id, now=NOW)
+    assert result.amount == Decimal("14880.00")
+    assert result.expression == "930000 x 0.016 per API_CALL"
+    inputs = wp_for(session, obligation).calculation_inputs_json
+    assert inputs["step_up_applied"] is False
+    assert inputs["rules_applied"] == []
+    assert inputs["unit_rate"] == inputs["base_rate"] == "0.016"
+
+
+def test_an_active_rule_applies_the_escalator_and_is_recorded(session):
+    complete_openai_usage(session)
+    learning_id = activate_escalator_rule(session, now=NOW)
+    obligation = ready(session, "VEN-OPENAI")
+    result = estimate(session, obligation.obligation_id, now=NOW)
+    assert result.amount == Decimal("18600.00")
+    applied = [{"learning_id": learning_id, "kind": "APPLY_CONTRACT_ESCALATOR"}]
+    inputs = wp_for(session, obligation).calculation_inputs_json
+    assert inputs["step_up_applied"] is True
+    assert inputs["rules_applied"] == applied
+    [rate_check] = [c for c in result.checks if c.name == "rate_applied"]
+    assert rate_check.detail["rules_applied"] == applied
+
+
+@pytest.mark.parametrize("status", [e.LearningStatus.REPLAY_PASSED, e.LearningStatus.REVOKED])
+def test_a_rule_that_is_not_active_is_ignored(session, status):
+    complete_openai_usage(session)
+    learning_id = activate_escalator_rule(session, now=NOW)
+    session.get(m.TrueUpLearningRule, learning_id).status = status
+    session.flush()
+    obligation = ready(session, "VEN-OPENAI")
+    assert estimate(session, obligation.obligation_id, now=NOW).amount == Decimal("14880.00")
+
+
+def test_an_active_rule_does_not_touch_a_fixed_fee_estimate(session, taught):
+    obligation = ready(session, "VEN-MINTLIFY")
+    result = estimate(session, obligation.obligation_id, now=NOW)
+    assert result.amount == Decimal("1400.00")
+    assert result.method == M.FIXED_CONTRACT_RATE
+    [rate_check] = [c for c in result.checks if c.name == "rate_applied"]
+    assert rate_check.detail["rules_applied"] == []
+
+
+def test_usage_rate_with_a_rule_leaves_a_contract_without_an_escalator_alone():
+    rule = CandidateRule.apply_contract_escalator(["LRN-1"])
+    contract = m.CompanyContract(base_rate=Decimal("0.05"), escalator_percent=None)
+    contract.escalator_effective_date = None
+    obligation = m.TrueUpObligation(
+        purchase_type=e.PurchaseType.USAGE_BASED,
+        service_start_date=date(2026, 12, 1),
+        service_end_date=date(2026, 12, 31),
+    )
+    decision = usage_rate(contract, obligation, [("LRN-1", rule)])
+    assert decision.rate == Decimal("0.05")
+    assert decision.step_up_applied is False and decision.rules_applied == []
+
+
+def test_usage_rate_is_pure_and_takes_hypothetical_rules():
+    contract = m.CompanyContract(
+        base_rate=Decimal("0.016"),
+        escalator_percent=Decimal("25"),
+        escalator_effective_date=date(2026, 9, 1),
+    )
+    obligation = m.TrueUpObligation(
+        purchase_type=e.PurchaseType.USAGE_BASED,
+        service_start_date=date(2026, 12, 1),
+        service_end_date=date(2026, 12, 31),
+    )
+    assert usage_rate(contract, obligation, []).rate == Decimal("0.016")
+    rule = CandidateRule.apply_contract_escalator()
+    decision = usage_rate(contract, obligation, [(LEARNING_ID, rule)])
+    assert decision.rate == Decimal("0.02000")
+    assert decision.step_up_applied is True

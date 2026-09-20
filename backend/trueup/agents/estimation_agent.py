@@ -18,6 +18,13 @@ from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from trueup.learning.rules import (
+    CandidateRule,
+    RuleFeatures,
+    features_for,
+    load_active_rules,
+    matches,
+)
 from trueup.store import enums as e
 from trueup.store import models as m
 from trueup.store.integrity import AgentRunLog, assert_balanced
@@ -110,6 +117,7 @@ class Context:
     gl_entries: list[m.CompanyGLEntry]
     accounts: dict[str, tuple[str, str]]
     cards: list[m.TrueUpEvidence]
+    rules: list[tuple[str, CandidateRule]] = field(default_factory=list)
 
     @property
     def start(self) -> date:
@@ -346,6 +354,7 @@ def _load(session: Session, obligation: m.TrueUpObligation) -> Context:
                 )
             )
         ),
+        rules=load_active_rules(session),
     )
 
 
@@ -407,21 +416,51 @@ def _fixed(ctx: Context) -> Estimate:
     )
 
 
+@dataclass(frozen=True)
+class RateDecision:
+    rate: Decimal
+    step_up_applied: bool
+    rules_applied: list[dict[str, str]]
+
+
+def usage_rate(
+    contract: m.CompanyContract,
+    obligation: m.TrueUpObligation,
+    rules: list[tuple[str, CandidateRule]],
+) -> RateDecision:
+    """The unit rate for a usage obligation under an explicit rule set.
+
+    With no matching rule the contract's base rate is used and any escalator clause is ignored,
+    which is the baseline a fresh playbook starts from. A matching APPLY_CONTRACT_ESCALATOR rule
+    honors the step-up once its effective date has passed. Pure: it never touches the database,
+    so the Learning agent's replay can call it with hypothetical rules.
+    """
+    rate = contract.base_rate
+    features: RuleFeatures = features_for(obligation, contract)
+    matched = [(learning_id, rule) for learning_id, rule in rules if matches(rule, features)]
+    if not matched:
+        return RateDecision(rate, False, [])
+    pct, effective = contract.escalator_percent, contract.escalator_effective_date
+    if pct is None or effective is None:
+        return RateDecision(rate, False, [])
+    start, end = obligation.service_start_date, obligation.service_end_date
+    if effective <= start:
+        applied = [{"learning_id": lid, "kind": rule.kind.value} for lid, rule in matched]
+        return RateDecision(rate * (1 + pct / 100), True, applied)
+    if effective <= end:
+        raise Insufficient(
+            e.EvidenceStatus.CONFLICTING,
+            f"The rate step-up takes effect {effective}, inside the period, "
+            "and usage is not split by day.",
+            "controller",
+        )
+    return RateDecision(rate, False, [])
+
+
 def _usage(ctx: Context) -> Estimate:
     contract = _contract_in_effect(ctx, (e.BillingModel.USAGE_BASED, e.BillingModel.SEAT_BASED))
-    rate = contract.base_rate
-    escalated = False
-    pct, effective = contract.escalator_percent, contract.escalator_effective_date
-    if pct is not None and effective is not None:
-        if effective <= ctx.start:
-            rate, escalated = rate * (1 + pct / 100), True
-        elif effective <= ctx.end:
-            raise Insufficient(
-                e.EvidenceStatus.CONFLICTING,
-                f"The rate step-up takes effect {effective}, inside the period, "
-                "and usage is not split by day.",
-                "controller",
-            )
+    decision = usage_rate(contract, ctx.obligation, ctx.rules)
+    rate, escalated = decision.rate, decision.step_up_applied
     rows = [
         r
         for r in ctx.service_rows
@@ -467,6 +506,7 @@ def _usage(ctx: Context) -> Estimate:
             "unit_rate": str(rate),
             "base_rate": str(contract.base_rate),
             "step_up_applied": escalated,
+            "rules_applied": decision.rules_applied,
             "contract_row_id": contract.contract_row_id,
         },
         source_ids=[contract.contract_row_id, row.service_evidence_id]
@@ -785,7 +825,11 @@ def _checks(ctx: Context, est: Estimate) -> list[Check]:
         Check(
             name="rate_applied",
             result=est.expression,
-            detail={"sources": est.source_ids, "method": est.method.value},
+            detail={
+                "sources": est.source_ids,
+                "method": est.method.value,
+                "rules_applied": est.inputs.get("rules_applied", []),
+            },
         ),
         Check(
             name="credits_and_refunds",

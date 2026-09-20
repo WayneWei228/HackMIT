@@ -21,6 +21,7 @@ from trueup.agents.outreach_agent import (
 )
 from trueup.agents.policy_agent import enforce
 from trueup.gateway import llm
+from trueup.learning.testing import activate_escalator_rule
 from trueup.simulator import generator
 from trueup.simulator.simulator import Simulator
 from trueup.simulator.stand_in import open_obligation_for_classification
@@ -586,6 +587,7 @@ def test_openai_end_to_end_partial_usage_outreach_reply_estimate_permit(sim, ses
     )
     assert (reply.routed_stage, reply.next_action) == ESTIMATE_STATE
 
+    activate_escalator_rule(session, now=reply_at)
     second = estimate(session, obligation.obligation_id, now=reply_at)
     assert (second.outcome, second.amount) == ("ESTIMATED", Decimal("18600.00"))
     assert obligation.evidence_status == S.SUFFICIENT
