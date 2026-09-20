@@ -24,8 +24,16 @@ _WALK = (
 
 
 def open_obligation_for_classification(
-    session: Session, vendor_id: str, period: str, *, now: datetime
+    session: Session,
+    vendor_id: str,
+    period: str,
+    *,
+    now: datetime,
+    to: tuple[e.WorkflowStage, e.NextAction] = _WALK[-1],
 ) -> m.TrueUpObligation:
+    """Open the obligation and walk it to `to`, one of the states in the standard walk."""
+    if to not in _WALK:
+        raise ValueError(f"the stand-in cannot open an obligation at {to[0]}/{to[1]}")
     year, month = (int(part) for part in period.split("-"))
     po = session.scalars(
         select(m.CompanyPurchaseOrder).where(m.CompanyPurchaseOrder.vendor_id == vendor_id)
@@ -57,4 +65,6 @@ def open_obligation_for_classification(
     session.flush()
     for stage, action in _WALK:
         advance(obligation, stage, action, "detection-stand-in", at=now)
+        if (stage, action) == to:
+            break
     return obligation
