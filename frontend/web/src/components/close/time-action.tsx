@@ -129,6 +129,12 @@ export function NextTimeAction({ className }: { className?: string }) {
             "This case has taken a path at its email. Rewind to take the other one."
           )}
         </div>
+        {pending && canRewind && (
+          <div className="mt-1 text-meta text-muted-3">
+            Replaying this case from day one with the live model. This can take
+            up to a minute.
+          </div>
+        )}
         {error && <div className="mt-1 text-meta text-[#A4452F]">{error}</div>}
       </div>
       <div className="flex flex-wrap items-center gap-2.5">

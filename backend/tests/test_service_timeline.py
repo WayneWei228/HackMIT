@@ -333,3 +333,39 @@ def test_a_case_that_took_one_path_offers_the_other_path_by_name(api):
     rest(api, OPENAI)
     other = api.get(f"/api/obligations/{OPENAI}").json()["other_path"]
     assert other["kind"] == "DELIVER_REPLY" and other["label"] == "Synthetic reply from Riley Kim"
+
+
+ASUS_NO_RECEIPT = "OBL-ASUS-2026-12-02"
+
+
+def test_the_receiptless_asus_case_can_take_both_paths_from_its_email_in_any_order(api):
+    api.post(f"/api/obligations/{ASUS_NO_RECEIPT}/start")
+    for take_first, then in (
+        ("deliver-reply", "expire-outreach"),
+        ("expire-outreach", "deliver-reply"),
+    ):
+        for step in (take_first, then):
+            assert api.post(f"/api/obligations/{ASUS_NO_RECEIPT}/{step}").status_code == 200
+            rest(api, ASUS_NO_RECEIPT)
+            assert api.get(f"/api/obligations/{ASUS_NO_RECEIPT}").json()["can_rewind"] is True
+            assert (
+                api.post(f"/api/obligations/{ASUS_NO_RECEIPT}/rewind-outreach").status_code == 200
+            )
+            waiting = api.get(f"/api/obligations/{ASUS_NO_RECEIPT}").json()
+            assert waiting["next_time_action"]["kind"] == "DELIVER_REPLY"
+
+
+def test_a_rewind_that_replays_one_turn_short_still_ends_at_the_email(api):
+    """A live model may need a different number of turns to reach the email than the first run."""
+    from trueup.service import demo_state as ds
+
+    api.post(f"/api/obligations/{ASUS_NO_RECEIPT}/start")
+    api.post(f"/api/obligations/{ASUS_NO_RECEIPT}/deliver-reply")
+    rest(api, ASUS_NO_RECEIPT)
+    events = ds.current().events
+    branch = next(i for i, ev in enumerate(events) if ev.kind == "reply")
+    del events[branch - 1]
+    assert api.post(f"/api/obligations/{ASUS_NO_RECEIPT}/rewind-outreach").status_code == 200
+    waiting = api.get(f"/api/obligations/{ASUS_NO_RECEIPT}").json()
+    assert waiting["next_time_action"]["kind"] == "DELIVER_REPLY"
+    assert api.post(f"/api/obligations/{ASUS_NO_RECEIPT}/expire-outreach").status_code == 200

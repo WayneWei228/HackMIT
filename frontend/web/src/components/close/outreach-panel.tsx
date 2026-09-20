@@ -6,7 +6,11 @@ import { AnimatePresence, motion } from "motion/react";
 
 import { CloseIcon, MailIcon } from "@/components/ui/icons";
 import { Button } from "@/components/ui/primitives";
-import type { OutreachThread, ThreadMessage, ThreadParsed } from "@/lib/api-types";
+import type {
+  OutreachThread,
+  ThreadMessage,
+  ThreadParsed,
+} from "@/lib/api-types";
 import { useCaseId } from "@/lib/case-context";
 import { cn } from "@/lib/cn";
 import { formatMoney } from "@/lib/money";
@@ -15,13 +19,27 @@ import { outreachPanel, useOutreachPanel } from "@/lib/outreach-panel";
 import { formatStamp } from "@/lib/time";
 
 import { VerdictChip } from "./gate";
-import { counterpartOf, statusOf, topicLabel, useOutreachThreads } from "./outreach-thread";
+import {
+  counterpartOf,
+  statusOf,
+  topicLabel,
+  useOutreachThreads,
+} from "./outreach-thread";
 import { momentLabel, useTimeAction } from "./time-action";
 
-const METHOD_CHIPS: Record<ThreadMessage["method"], { label: string; chip: string }> = {
-  LLM: { label: "Written by the language model", chip: "bg-[#EDE8F5] text-[#5B4A86]" },
+const METHOD_CHIPS: Record<
+  ThreadMessage["method"],
+  { label: string; chip: string }
+> = {
+  LLM: {
+    label: "Written by the language model",
+    chip: "bg-[#EDE8F5] text-[#5B4A86]",
+  },
   TEMPLATE: { label: "Template draft", chip: "bg-wash text-muted-3" },
-  SCRIPTED_REPLY: { label: "Synthetic reply", chip: "bg-[#F6ECD3] text-[#8A6516]" },
+  SCRIPTED_REPLY: {
+    label: "Synthetic reply",
+    chip: "bg-[#F6ECD3] text-[#8A6516]",
+  },
 };
 
 const FACT_LABELS: Record<string, string> = {
@@ -40,11 +58,20 @@ function stampOf(iso: string | null): string | null {
 
 function factValue(key: string, value: string): string {
   if (key === "corrected_amount") return formatMoney(value);
-  if (key === "quantity" && /^\d+(\.\d+)?$/.test(value)) return Number(value).toLocaleString("en-US");
+  if (key === "quantity" && /^\d+(\.\d+)?$/.test(value))
+    return Number(value).toLocaleString("en-US");
   return value;
 }
 
-function Party({ label, name, role }: { label: string; name: string; role: string }) {
+function Party({
+  label,
+  name,
+  role,
+}: {
+  label: string;
+  name: string;
+  role: string;
+}) {
   return (
     <div className="flex items-baseline gap-2 text-ui leading-[1.4]">
       <span className="w-[34px] flex-none text-meta text-faint-2">{label}</span>
@@ -66,14 +93,18 @@ function Message({ message }: { message: ThreadMessage }) {
       transition={transitions.base}
       className={cn(
         "rounded-xl border p-4 shadow-[var(--shadow-tile)]",
-        outgoing ? "border-divider bg-panel" : "border-accent-line-2 bg-accent-tint",
+        outgoing
+          ? "border-divider bg-panel"
+          : "border-accent-line-2 bg-accent-tint",
       )}
     >
       <div className="flex items-center justify-between gap-3">
         <span className="text-eyebrow font-medium tracking-caps text-faint uppercase">
           {outgoing ? "Sent" : "Reply received"}
         </span>
-        <span className="text-meta text-faint-2 tabular-nums">{stampOf(message.at)}</span>
+        <span className="text-meta text-faint-2 tabular-nums">
+          {stampOf(message.at)}
+        </span>
       </div>
       <div className="mt-2.5 flex flex-col gap-1">
         <Party label="From" name={message.from.name} role={message.from.role} />
@@ -82,7 +113,9 @@ function Message({ message }: { message: ThreadMessage }) {
       <div className="mt-3.5 border-t border-line pt-3.5 font-display text-[19px] leading-[1.25] text-ink-deep text-balance">
         {message.subject}
       </div>
-      <div className="mt-2.5 text-ui leading-[1.6] whitespace-pre-wrap text-ink-2">{message.body}</div>
+      <div className="mt-2.5 text-ui leading-[1.6] whitespace-pre-wrap text-ink-2">
+        {message.body}
+      </div>
       <div className="mt-3.5 flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
         <span
           className={cn(
@@ -93,7 +126,9 @@ function Message({ message }: { message: ThreadMessage }) {
           {chip.label}
         </span>
         {message.run_id !== null && (
-          <span className="font-mono text-nano text-ghost">run #{message.run_id}</span>
+          <span className="font-mono text-nano text-ghost">
+            run #{message.run_id}
+          </span>
         )}
       </div>
     </motion.article>
@@ -106,8 +141,15 @@ function ReplyButton() {
   if (!action || action.kind === "BRING_IN_INVOICE") return null;
   return (
     <div className="flex flex-col items-start gap-2.5">
-      <div data-slot="outreach-actions" className="flex flex-wrap items-center gap-2.5">
-        <Button variant="solid" disabled={pending} onClick={() => void take(action)}>
+      <div
+        data-slot="outreach-actions"
+        className="flex flex-wrap items-center gap-2.5"
+      >
+        <Button
+          variant="solid"
+          disabled={pending}
+          onClick={() => void take(action)}
+        >
           {pending ? "Working..." : action.label}
         </Button>
         {others.map((other) => (
@@ -122,7 +164,8 @@ function ReplyButton() {
         ))}
       </div>
       <div className="text-meta leading-[1.45] text-faint-2">
-        {action.detail} Moves this case to {momentLabel(action.moves_to)}; no other case is touched.
+        {action.detail} Moves this case to {momentLabel(action.moves_to)}; no
+        other case is touched.
         {others.map((other) => ` ${other.detail}`).join("")}
       </div>
       {error && <div className="text-meta text-[#A4452F]">{error}</div>}
@@ -132,7 +175,8 @@ function ReplyButton() {
 
 /** After a path is taken, the same two scenarios stay one click away, from this panel too. */
 function OtherScenario() {
-  const { canRewind, otherPath, tryOther, rewind, pending, error } = useTimeAction();
+  const { canRewind, otherPath, tryOther, rewind, pending, error } =
+    useTimeAction();
   if (!canRewind) return null;
   return (
     <div className="flex flex-col items-start gap-2.5 rounded-xl border border-divider bg-panel p-4">
@@ -141,18 +185,32 @@ function OtherScenario() {
       </div>
       <div className="flex flex-wrap items-center gap-2.5">
         {otherPath && (
-          <Button variant="solid" disabled={pending} onClick={() => void tryOther()}>
-            {pending ? "Working..." : `Try the other scenario: ${otherPath.label}`}
+          <Button
+            variant="solid"
+            disabled={pending}
+            onClick={() => void tryOther()}
+          >
+            {pending ? "Working..." : "Try the other scenario"}
           </Button>
         )}
-        <Button variant="secondary" disabled={pending} onClick={() => void rewind()}>
+        <Button
+          variant="secondary"
+          disabled={pending}
+          onClick={() => void rewind()}
+        >
           Rewind to the email
         </Button>
       </div>
       {otherPath && (
         <div className="text-meta leading-[1.45] text-faint-2">
-          {otherPath.detail} Moves this case to {momentLabel(otherPath.moves_to)}; no other case is
-          touched.
+          {otherPath.detail} Moves this case to{" "}
+          {momentLabel(otherPath.moves_to)}; no other case is touched.
+        </div>
+      )}
+      {pending && (
+        <div className="text-meta text-faint-2">
+          Replaying this case from day one with the live model. This can take up
+          to a minute.
         </div>
       )}
       {error && <div className="text-meta text-[#A4452F]">{error}</div>}
@@ -179,15 +237,22 @@ function Waiting({ thread }: { thread: OutreachThread }) {
       </div>
       <div className="mt-1.5 mb-3.5 text-meta leading-[1.5] text-muted-3">
         No reply yet.
-        {due ? ` A reply is due by ${due}.` : ""} The case is paused until it arrives; in this demo the reply is scripted
-        and lands when you send the synthetic reply.
+        {due ? ` A reply is due by ${due}.` : ""} The case is paused until it
+        arrives; in this demo the reply is scripted and lands when you send the
+        synthetic reply.
       </div>
       <ReplyButton />
     </motion.div>
   );
 }
 
-function ParsedReply({ parsed, thread }: { parsed: ThreadParsed; thread: OutreachThread }) {
+function ParsedReply({
+  parsed,
+  thread,
+}: {
+  parsed: ThreadParsed;
+  thread: OutreachThread;
+}) {
   const facts = Object.entries(parsed.facts);
   const gate = thread.verification;
   return (
@@ -204,7 +269,9 @@ function ParsedReply({ parsed, thread }: { parsed: ThreadParsed; thread: Outreac
         <span
           className={cn(
             "rounded-sm px-1.5 py-[3px] text-nano leading-none font-semibold tracking-caps",
-            parsed.resolved ? "bg-accent-soft text-accent-deep" : "bg-[#F6E4DD] text-[#A4452F]",
+            parsed.resolved
+              ? "bg-accent-soft text-accent-deep"
+              : "bg-[#F6E4DD] text-[#A4452F]",
           )}
         >
           {parsed.resolved ? "ENOUGH TO CONTINUE" : "NOT ENOUGH"}
@@ -215,13 +282,17 @@ function ParsedReply({ parsed, thread }: { parsed: ThreadParsed; thread: Outreac
           {facts.map(([key, value]) => (
             <div key={key} className="flex justify-between gap-4">
               <dt className="text-faint-2">{FACT_LABELS[key] ?? key}</dt>
-              <dd className="font-medium text-ink tabular-nums">{factValue(key, value)}</dd>
+              <dd className="font-medium text-ink tabular-nums">
+                {factValue(key, value)}
+              </dd>
             </div>
           ))}
         </dl>
       )}
       {parsed.note && (
-        <div className="mt-3 text-meta leading-[1.5] text-muted-3 text-pretty">{parsed.note}</div>
+        <div className="mt-3 text-meta leading-[1.5] text-muted-3 text-pretty">
+          {parsed.note}
+        </div>
       )}
       <div className="mt-3 border-t border-line pt-3 text-meta leading-[1.5] text-muted-3">
         {parsed.resolved
@@ -231,7 +302,8 @@ function ParsedReply({ parsed, thread }: { parsed: ThreadParsed; thread: Outreac
       {gate && (
         <div className="mt-2.5 flex items-center gap-2 text-meta text-muted-3">
           <VerdictChip verdict={gate.verdict} />
-          {gate.passed}/{gate.total} checks passed at the handoff after the reply
+          {gate.passed}/{gate.total} checks passed at the handoff after the
+          reply
         </div>
       )}
     </motion.div>
@@ -246,14 +318,20 @@ function ThreadView({ thread }: { thread: OutreachThread }) {
     <div className="flex flex-col gap-3.5">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-meta text-muted-3">
         <span className="inline-flex items-center gap-1.5 font-medium text-ink">
-          <span className="h-[7px] w-[7px] rounded-full" style={{ background: state.mark }} />
+          <span
+            className="h-[7px] w-[7px] rounded-full"
+            style={{ background: state.mark }}
+          />
           {state.text}
         </span>
         {sent && <span className="tabular-nums">Sent {sent}</span>}
         <span>{topicLabel(thread.topic)}</span>
       </div>
       {thread.messages.map((message) => (
-        <Message key={message.evidence_id ?? `${message.direction}-${message.at}`} message={message} />
+        <Message
+          key={message.evidence_id ?? `${message.direction}-${message.at}`}
+          message={message}
+        />
       ))}
       {!replied && thread.waiting_on && <Waiting thread={thread} />}
       {thread.parsed && <ParsedReply parsed={thread.parsed} thread={thread} />}
@@ -262,7 +340,13 @@ function ThreadView({ thread }: { thread: OutreachThread }) {
   );
 }
 
-function Panel({ obligationId, threadId }: { obligationId: string; threadId: string | null }) {
+function Panel({
+  obligationId,
+  threadId,
+}: {
+  obligationId: string;
+  threadId: string | null;
+}) {
   const threads = useOutreachThreads(obligationId);
   const thread = threads.find((t) => t.thread_id === threadId) ?? threads[0];
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -300,9 +384,13 @@ function Panel({ obligationId, threadId }: { obligationId: string; threadId: str
         <header className="flex-none border-b border-divider bg-panel px-6 pt-5 pb-4">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
-              <div className="text-eyebrow font-medium tracking-caps text-faint uppercase">Outreach</div>
+              <div className="text-eyebrow font-medium tracking-caps text-faint uppercase">
+                Outreach
+              </div>
               <div className="mt-1.5 truncate font-display text-[26px] leading-[1.1] text-ink-deep">
-                {thread ? `Email to ${counterpartOf(thread)}` : "No emails on this case"}
+                {thread
+                  ? `Email to ${counterpartOf(thread)}`
+                  : "No emails on this case"}
               </div>
             </div>
             <button
@@ -361,7 +449,13 @@ export function OutreachPanel() {
   if (typeof document === "undefined") return null;
   return createPortal(
     <AnimatePresence>
-      {showing && <Panel key="outreach" obligationId={open.obligationId} threadId={open.threadId} />}
+      {showing && (
+        <Panel
+          key="outreach"
+          obligationId={open.obligationId}
+          threadId={open.threadId}
+        />
+      )}
     </AnimatePresence>,
     document.body,
   );

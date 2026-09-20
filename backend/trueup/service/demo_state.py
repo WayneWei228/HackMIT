@@ -316,8 +316,19 @@ def rewind_case(state: DemoState, obligation_id: str) -> DemoState:
                 _apply(fresh, event)
             except _REPLAY_ERRORS as exc:
                 fresh.dropped.append(f"{event.kind} {event.obligation_id or ''}: {exc}".strip())
+        _rest_at_email(fresh, obligation_id)
         _state = fresh
         return fresh
+
+
+def _rest_at_email(state: DemoState, obligation_id: str) -> None:
+    """Carry the case on until its email is out. A live model does not always take the same
+    number of turns to get there, so the replayed turn count alone can stop one short."""
+    for _ in range(_TURNS_TO_EMAIL):
+        if _open_request(state, obligation_id) is not None:
+            return
+        if not advance_case(state, obligation_id).ran:
+            return
 
 
 def invoice_is_due(state: DemoState, session: Session, ob: m.TrueUpObligation) -> bool:
@@ -568,6 +579,7 @@ def set_selection(state: DemoState, obligation_id: str, excluded: list[str]) -> 
 
 
 _BRANCHES = ("reply", "no_reply")
+_TURNS_TO_EMAIL = 12
 _REPLAY_ERRORS = (
     ControllerWorkspaceError,
     IllegalTransitionError,
