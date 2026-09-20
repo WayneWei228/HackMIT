@@ -5,6 +5,7 @@ import type {
   Decision,
   LearningView,
   ObligationDetail,
+  StartResult,
   VendorsView,
 } from "./api-types";
 
@@ -77,7 +78,10 @@ function post<T>(path: string, body?: unknown): Promise<T> {
   });
 }
 
+/** Start every Pending case. */
 export const runClose = () => post<ActionResult>("/api/close/run");
+export const startObligation = (id: string) =>
+  post<StartResult>(`/api/obligations/${encodeURIComponent(id)}/start`);
 export const advanceToJanuary = () =>
   post<ActionResult>("/api/close/advance-to-january");
 export const resetDemo = () => post<ActionResult>("/api/reset");

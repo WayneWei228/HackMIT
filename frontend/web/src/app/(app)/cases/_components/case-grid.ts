@@ -3,4 +3,4 @@
  * trailing 44px column holds the row's overflow affordance.
  */
 export const CASE_GRID =
-  "grid grid-cols-[230px_minmax(150px,1fr)_150px_118px_132px_130px_118px_44px] items-center gap-x-[14px] gap-y-0";
+  "grid grid-cols-[200px_minmax(140px,1fr)_136px_104px_122px_122px_112px_72px] items-center gap-x-[14px] gap-y-0";

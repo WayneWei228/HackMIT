@@ -128,11 +128,11 @@ export function CasesWorkspace({
   const totals = useMemo(
     () => ({
       total: visible.length,
+      pending: visible.filter((record) => record.status === "Pending").length,
       active: visible.filter(
         (record) =>
           record.status === "Running" ||
           record.status === "In progress" ||
-          record.status === "Queued" ||
           record.status === "Waiting" ||
           record.status === "Needs review",
       ).length,

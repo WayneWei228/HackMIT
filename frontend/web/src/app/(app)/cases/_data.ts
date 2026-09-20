@@ -28,6 +28,8 @@ export type CaseRecord = {
   amount: string | null;
   stage: CaseStage;
   status: CaseStatus;
+  /** A Pending case the close can still start. */
+  canStart: boolean;
   date: string;
   time: string;
   /** Sortable stamp: milliseconds since the epoch. */
@@ -71,9 +73,9 @@ export const CATEGORY_ORDER: readonly CaseCategory[] = [
 
 export const STATUS_OPTIONS: readonly StatusFilter[] = [
   ALL_STATUSES,
+  "Pending",
   "Running",
   "In progress",
-  "Queued",
   "Needs review",
   "Waiting",
   "Blocked",

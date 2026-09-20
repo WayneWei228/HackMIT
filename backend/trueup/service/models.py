@@ -8,9 +8,9 @@ from pydantic import BaseModel, ConfigDict, Field
 
 FrontStage = Literal["Ingestion", "Evidence", "Obligation", "Estimation", "Verification"]
 CaseStatus = Literal[
+    "Pending",
     "Running",
     "In progress",
-    "Queued",
     "Needs review",
     "Waiting",
     "Blocked",
@@ -44,6 +44,7 @@ class CaseRow(Strict):
     amount: str | None
     stage: FrontStage
     status: CaseStatus
+    can_start: bool
     workflow_stage: str
     next_action: str
     updated_at: str
@@ -88,6 +89,7 @@ class Header(Strict):
     previous_accrual: str | None
     supported: str | None
     difference: str | None
+    started: bool
     status: CaseStatus
     stage: FrontStage
     workflow_stage: str
@@ -421,3 +423,10 @@ class ActionResult(Strict):
     ok: bool
     message: str
     obligation_ids: list[str]
+
+
+class StartResult(Strict):
+    ok: bool
+    message: str
+    started: bool
+    case: CaseRow

@@ -28,6 +28,7 @@ export function toCaseRecords(rows: readonly CaseRow[]): CaseRecord[] {
       amount: row.amount,
       stage: row.stage,
       status: row.status,
+      canStart: row.can_start,
       date: stamp.date,
       time: stamp.time,
       ts: stamp.ts,

@@ -8,12 +8,13 @@ import type { StatusFilter } from "../_data";
 
 export type CaseTotals = {
   total: number;
+  pending: number;
   active: number;
   ready: number;
   done: number;
 };
 
-/** Search, period, status - and the four serif totals for what survives them. */
+/** Search, period, status - and the serif totals for what survives them. */
 export function CasesToolbar({
   query,
   onQueryChange,
@@ -64,6 +65,7 @@ export function CasesToolbar({
         size={27}
         stats={[
           { value: totals.total, label: "Total cases" },
+          { value: totals.pending, label: "Pending" },
           { value: totals.active, label: "Active" },
           { value: totals.ready, label: "Close-ready" },
           { value: totals.done, label: "Complete" },

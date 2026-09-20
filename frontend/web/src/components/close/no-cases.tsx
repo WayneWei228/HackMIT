@@ -10,8 +10,8 @@ export function NoCases({ close }: { close: CloseView }) {
       </div>
       <div className="font-display text-4xl text-ink-deep">No cases are open yet</div>
       <p className="max-w-[440px] text-center text-lead text-muted-4 text-pretty">
-        The close has not started. Running it opens one obligation per vendor and hands each to the
-        agents.
+        The close has not started. Once the close opens one obligation per vendor, each one waits Pending until
+        you start it.
       </p>
       <div className="mt-2">
         <CloseControls close={close} />

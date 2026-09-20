@@ -67,10 +67,7 @@ CHECK_LABELS = {
     "partial_period_offsets": "Partial-period offsets",
     "prior_close_comparison": "Compare to prior close",
 }
-CATEGORY_BY_TYPE = {
-    e.PurchaseType.PREPAID: "Prepaids",
-    e.PurchaseType.RECEIPT_BASED: "Fixed Assets",
-}
+CASE_CATEGORY = "Accruals"
 PROFILE_BY_CATEGORY = {
     e.VendorCategory.SAAS: "Software subscription",
     e.VendorCategory.AI_CREDITS: "AI usage",
@@ -207,13 +204,17 @@ def case_status(ob: m.TrueUpObligation) -> v.CaseStatus:
         return "Blocked"
     if stage == _S.AWAITING_OUTREACH:
         return "Waiting"
-    if stage == _S.DETECTED:
-        return "Queued"
+    if is_pending(ob):
+        return "Pending"
     return "Running"
 
 
-def _category(session: Session, ob: m.TrueUpObligation) -> str:
-    return CATEGORY_BY_TYPE.get(ob.purchase_type, "Accruals")
+def is_pending(ob: m.TrueUpObligation) -> bool:
+    """Detection opened the obligation and no agent has worked it yet."""
+    return (ob.workflow_stage, ob.next_action) in {
+        (_S.DETECTED, _A.SEARCH_AP),
+        (_S.SEARCHING_AP, _A.SEARCH_AP),
+    }
 
 
 def _vendor(session: Session, vendor_id: str) -> m.CompanyVendor:
@@ -227,27 +228,8 @@ def close_view(session: Session, *, period: str, phase: v.Phase, now: datetime) 
     people = _config(session, "people") or []
     names = {p["person_id"]: p["name"] for p in people}
     controller = controller_id(session)
-    rows: list[v.CaseRow] = []
-    for ob in _period_obligations(session, period):
-        wp = _workpaper(session, ob)
-        vendor = _vendor(session, ob.vendor_id)
-        rows.append(
-            v.CaseRow(
-                obligation_id=ob.obligation_id,
-                vendor_id=ob.vendor_id,
-                vendor_name=vendor.vendor_name,
-                initials=initials(vendor.vendor_name),
-                item=ITEM_LABELS.get(ob.purchase_type, "Accrual"),
-                category=_category(session, ob),
-                purchase_type=TREATMENT_LABELS[ob.purchase_type],
-                amount=money(wp.proposed_amount) if wp is not None else None,
-                stage=front_stage(ob),
-                status=case_status(ob),
-                workflow_stage=ob.workflow_stage.value,
-                next_action=ob.next_action.value,
-                updated_at=utc_iso(ob.updated_at),
-            )
-        )
+    obligations = _period_obligations(session, period)
+    rows = [case_row(session, ob, phase=phase) for ob in obligations]
     pending = session.scalars(
         select(m.TrueUpLearningRule).where(
             m.TrueUpLearningRule.status == e.LearningStatus.REPLAY_PASSED
@@ -265,9 +247,30 @@ def close_view(session: Session, *, period: str, phase: v.Phase, now: datetime) 
         queue_count=len(review_queue(session, now=now)),
         pending_rules=len(pending),
         actions=v.CloseActions(
-            can_run_close=phase == "DAY_ONE",
+            can_run_close=phase != "JANUARY" and any(is_pending(ob) for ob in obligations),
             can_advance_to_january=phase == "CLOSED",
         ),
+    )
+
+
+def case_row(session: Session, ob: m.TrueUpObligation, *, phase: v.Phase) -> v.CaseRow:
+    wp = _workpaper(session, ob)
+    vendor = _vendor(session, ob.vendor_id)
+    return v.CaseRow(
+        obligation_id=ob.obligation_id,
+        vendor_id=ob.vendor_id,
+        vendor_name=vendor.vendor_name,
+        initials=initials(vendor.vendor_name),
+        item=ITEM_LABELS.get(ob.purchase_type, "Accrual"),
+        category=CASE_CATEGORY,
+        purchase_type=TREATMENT_LABELS[ob.purchase_type],
+        amount=money(wp.proposed_amount) if wp is not None else None,
+        stage=front_stage(ob),
+        status=case_status(ob),
+        can_start=phase != "JANUARY" and is_pending(ob),
+        workflow_stage=ob.workflow_stage.value,
+        next_action=ob.next_action.value,
+        updated_at=utc_iso(ob.updated_at),
     )
 
 
@@ -302,7 +305,13 @@ def obligation_detail(
     )
     files = {f.file_id: f for f in universe.files}
     facts = [_fact(c, files) for c in cards if c.source_table == "document"]
-    ingestion = _ingestion(session, universe, case, now)
+    ingestion = (
+        _ingestion(session, universe, case, now)
+        if not is_pending(ob)
+        else v.IngestionView(
+            available=False, judge=None, files_loaded=0, selected_count=0, summary=None, files=[]
+        )
+    )
     header = _header(session, ob, wp, case, accounts)
     evidence = _evidence(runs, universe, ingestion, facts, seed_dir)
     return v.ObligationDetail(
@@ -346,6 +355,7 @@ def _header(
         previous_accrual=money(prior["prior_amount"]) if prior else None,
         supported=money(wp.proposed_amount) if wp is not None else None,
         difference=signed(prior["delta"]) if prior else None,
+        started=not is_pending(ob),
         status=case_status(ob),
         stage=front_stage(ob),
         workflow_stage=ob.workflow_stage.value,

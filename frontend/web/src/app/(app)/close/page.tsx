@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { NoCases } from "@/components/close/no-cases";
+import { NotStarted } from "@/components/close/not-started";
 import { loadCase, type SearchParams } from "@/lib/load-case";
 
 import { CloseCaseScreen } from "./_components/close-case-screen";
@@ -26,5 +27,8 @@ export default async function CloseCasePage({
 }) {
   const { close, detail } = await loadCase(searchParams);
   if (!detail) return <NoCases close={close} />;
+  if (!detail.header.started) {
+    return <NotStarted close={close} header={detail.header} screen="Ingestion" />;
+  }
   return <CloseCaseScreen view={buildCloseView(detail)} />;
 }

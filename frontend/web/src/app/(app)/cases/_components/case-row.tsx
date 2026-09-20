@@ -8,6 +8,7 @@ import { cn } from "@/lib/cn";
 import { MoreIcon } from "@/components/ui/icons";
 import { formatMoney } from "@/lib/money";
 import { easeOutSoft } from "@/lib/motion";
+import { StartCaseButton } from "@/components/close/start-case-button";
 
 import { CASE_GRID } from "./case-grid";
 import { CaseStatusDot } from "./case-status-dot";
@@ -100,7 +101,11 @@ export function CaseRow({
       </div>
 
       <div className="flex justify-end">
-        <MoreIcon className="text-[15px] text-ghost-2" />
+        {row.canStart ? (
+          <StartCaseButton obligationId={row.obligationId} compact />
+        ) : (
+          <MoreIcon className="text-[15px] text-ghost-2" />
+        )}
       </div>
     </MotionLink>
   );

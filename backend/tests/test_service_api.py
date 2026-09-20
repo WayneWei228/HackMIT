@@ -42,11 +42,22 @@ def walk(node):
             yield from walk(value)
 
 
-def test_day_one_has_no_obligations_and_a_rule_waiting_for_the_controller(api):
+def test_reset_opens_five_pending_accrual_cases_and_a_rule_waiting_for_the_controller(api):
     close = api.get("/api/close").json()
-    assert close["phase"] == "DAY_ONE" and close["cases"] == []
+    assert close["phase"] == "DAY_ONE"
     assert close["controller_id"] == CONTROLLER and close["pending_rules"] == 1
     assert close["actions"] == {"can_run_close": True, "can_advance_to_january": False}
+    assert {c["vendor_name"] for c in close["cases"]} == {
+        "Mintlify",
+        "OpenAI",
+        "ASUS",
+        "Meta",
+        "Notability",
+    }
+    for case in close["cases"]:
+        assert case["category"] == "Accruals"
+        assert (case["status"], case["stage"], case["amount"]) == ("Pending", "Ingestion", None)
+        assert case["can_start"] is True
     learning = api.get("/api/learning").json()
     (rule,) = [r for r in learning["rules"] if r["can_approve"]]
     assert rule["learning_id"] == RULE and rule["status"] == "REPLAY_PASSED"
@@ -59,7 +70,57 @@ def test_day_one_has_no_obligations_and_a_rule_waiting_for_the_controller(api):
     assert all(MONEY.match(m["accrued"]) for m in learning["misses"])
 
 
-def test_the_close_leaves_every_case_at_its_expected_resting_state(api):
+def test_a_pending_case_has_computed_nothing_on_any_screen(api):
+    detail = api.get(f"/api/obligations/{ASUS}").json()
+    assert detail["header"]["started"] is False and detail["header"]["status"] == "Pending"
+    for screen in ("ingestion", "evidence", "obligation", "estimation", "verification"):
+        assert detail[screen]["available"] is False, screen
+    assert detail["ingestion"]["files"] == [] and detail["ingestion"]["selected_count"] == 0
+    assert detail["evidence"]["facts"] == [] and detail["timeline"] == []
+
+
+def test_starting_one_case_moves_only_that_case_and_fills_every_screen(api):
+    started = api.post(f"/api/obligations/{MINTLIFY}/start")
+    assert started.status_code == 200
+    body = started.json()
+    assert body["started"] is True
+    assert (body["case"]["status"], body["case"]["amount"]) == ("Close-ready", "1400.00")
+    cases = status_by_vendor(api)
+    assert cases["Mintlify"]["can_start"] is False
+    others = {k: c["status"] for k, c in cases.items() if k != "Mintlify"}
+    assert set(others.values()) == {"Pending"}
+    close = api.get("/api/close").json()
+    assert close["phase"] == "CLOSED" and close["actions"]["can_advance_to_january"]
+    detail = api.get(f"/api/obligations/{MINTLIFY}").json()
+    assert detail["header"]["started"] is True
+    for screen in ("ingestion", "evidence", "obligation", "estimation", "verification"):
+        assert detail[screen]["available"] is True, screen
+    assert detail["ingestion"]["files_loaded"] == 10 and detail["ingestion"]["selected_count"] >= 1
+    assert detail["evidence"]["facts"]
+
+
+def test_starting_a_started_case_is_a_no_op(api):
+    api.post(f"/api/obligations/{ASUS}/start")
+    before = api.get(f"/api/obligations/{ASUS}").json()
+    again = api.post(f"/api/obligations/{ASUS}/start")
+    assert again.status_code == 200 and again.json()["started"] is False
+    assert api.get(f"/api/obligations/{ASUS}").json() == before
+    assert api.post("/api/obligations/OBL-NOPE/start").status_code == 404
+
+
+def test_advance_to_january_needs_a_started_case_and_ends_starting(api):
+    assert api.post("/api/close/advance-to-january").status_code == 409
+    api.post(f"/api/obligations/{MINTLIFY}/start")
+    assert api.post("/api/close/advance-to-january").status_code == 200
+    late = api.post(f"/api/obligations/{ASUS}/start")
+    assert late.status_code == 409 and "January" in late.json()["detail"]
+    assert api.post("/api/close/run").status_code == 409
+    cases = status_by_vendor(api)
+    assert cases["ASUS"]["status"] == "Pending" and cases["ASUS"]["can_start"] is False
+    assert api.post(f"/api/obligations/{MINTLIFY}/start").status_code == 200
+
+
+def test_start_all_leaves_every_case_at_its_expected_resting_state(api):
     assert api.post("/api/close/run").status_code == 200
     cases = status_by_vendor(api)
     assert {k: (c["status"], c["amount"]) for k, c in cases.items()} == {
@@ -69,7 +130,9 @@ def test_the_close_leaves_every_case_at_its_expected_resting_state(api):
         "Meta": ("Close-ready", "24700.00"),
         "Notability": ("Blocked", "1800.00"),
     }
-    assert api.post("/api/close/run").status_code == 409
+    assert {c["category"] for c in cases.values()} == {"Accruals"}
+    again = api.post("/api/close/run")
+    assert again.status_code == 200 and again.json()["obligation_ids"] == []
     assert api.get("/api/close").json()["queue_count"] == 2
     queue = api.get("/api/controller/queue").json()
     assert [i["vendor_name"] for i in queue] == ["Notability", "ASUS"]

@@ -26,6 +26,7 @@ from trueup.agents.learning_agent import LearningError, approve_rule, reject_rul
 from trueup.service import demo_state as demo
 from trueup.service import models as v
 from trueup.service import readmodels as rm
+from trueup.store import models as m
 from trueup.store.workflow import IllegalTransitionError
 
 SEED_DIR = Path(__file__).resolve().parents[2] / "seed"
@@ -68,12 +69,29 @@ def create_app() -> FastAPI:
     def run_close() -> v.ActionResult:
         with demo.locked():
             state = demo.current()
-            if state.phase != "DAY_ONE":
-                raise HTTPException(status_code=409, detail="The December close already ran.")
-            opened = demo.run_close(state)
-        return v.ActionResult(
-            ok=True, message=f"Opened and worked {len(opened)} obligations.", obligation_ids=opened
-        )
+            try:
+                started = demo.run_close(state)
+            except demo.CloseMovedOnError as exc:
+                raise HTTPException(status_code=409, detail=str(exc)) from exc
+        message = f"Started {len(started)} pending cases." if started else "No pending cases."
+        return v.ActionResult(ok=True, message=message, obligation_ids=started)
+
+    @app.post("/api/obligations/{obligation_id}/start", response_model=v.StartResult)
+    def start_obligation(obligation_id: str) -> v.StartResult:
+        with demo.locked():
+            state = demo.current()
+            try:
+                started = demo.start_case(state, obligation_id)
+            except LookupError as exc:
+                raise HTTPException(status_code=404, detail=str(exc)) from exc
+            except demo.CloseMovedOnError as exc:
+                raise HTTPException(status_code=409, detail=str(exc)) from exc
+            with state.session() as session:
+                case = rm.case_row(
+                    session, session.get(m.TrueUpObligation, obligation_id), phase=state.phase
+                )
+        message = "Started." if started else "Already started."
+        return v.StartResult(ok=True, message=message, started=started, case=case)
 
     @app.post("/api/close/advance-to-january", response_model=v.ActionResult)
     def advance_to_january() -> v.ActionResult:

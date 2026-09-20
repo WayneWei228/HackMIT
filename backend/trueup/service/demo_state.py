@@ -3,7 +3,7 @@
 Everything here calls the agents' public functions and advances stages through the workflow
 graph. `load_demo_close()` is the single entry point the app builds its state from. When
 `run_month_end_close` (the orchestrator) is the owner of this sequence, replace the body of
-`run_close` and `advance_to_january` with calls to it and delete the driver below.
+`start_case` and `advance_to_january` with calls to it and delete the driver below.
 """
 
 from __future__ import annotations
@@ -17,6 +17,7 @@ from pathlib import Path
 from threading import RLock
 from typing import Literal
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from trueup.agents.classification_agent import classify
@@ -33,6 +34,7 @@ from trueup.agents.outreach_agent import expire_overdue, poll_replies, send_outr
 from trueup.agents.policy_agent import enforce
 from trueup.agents.reconciliation_agent import collect_arrivals, reconcile
 from trueup.gateway import llm
+from trueup.service.readmodels import is_pending
 from trueup.simulator.simulator import Simulator
 from trueup.store import enums as e
 from trueup.store import models as m
@@ -65,10 +67,17 @@ _state: DemoState | None = None
 
 
 def load_demo_close() -> DemoState:
-    """Day one: the closed history is graded and a rule is proposed, waiting for the Controller."""
+    """Day one: the closed history is graded and a rule waits for the Controller.
+
+    The five December obligations are detected and left untouched, so every case starts Pending
+    and the presenter starts each one by hand.
+    """
     sim = Simulator.initialize()
     with sim.session() as session:
         run_learning_loop(session, now=sim.now())
+    sim.advance_to(CLOSE_AT)
+    with sim.session() as session:
+        detect(session, PERIOD, now=CLOSE_AT)
     return DemoState(sim=sim)
 
 
@@ -94,18 +103,44 @@ def reset() -> DemoState:
         return _state
 
 
-def run_close(state: DemoState) -> list[str]:
-    """Advance to the close, open every December obligation and drive each to a resting state."""
+class CloseMovedOnError(RuntimeError):
+    """A case cannot be started once January's invoices are in."""
+
+
+def start_case(state: DemoState, obligation_id: str) -> bool:
+    """Work one Pending obligation from the top to its resting state; a started case is a no-op."""
     with _lock:
-        if state.phase != "DAY_ONE":
-            return []
-        state.sim.advance_to(CLOSE_AT)
         with state.session() as session:
-            opened = detect(session, PERIOD, now=CLOSE_AT).opened
-            for obligation_id in opened:
-                drive(session, obligation_id, now=CLOSE_AT)
+            ob = session.get(m.TrueUpObligation, obligation_id)
+            if ob is None:
+                raise LookupError(f"No obligation {obligation_id}.")
+            if not is_pending(ob):
+                return False
+            if state.phase == "JANUARY":
+                raise CloseMovedOnError(
+                    "January's invoices are already in; the close has moved on."
+                )
+            drive(session, obligation_id, now=CLOSE_AT)
         state.phase = "CLOSED"
-        return opened
+        return True
+
+
+def run_close(state: DemoState) -> list[str]:
+    """Start every Pending obligation, in the order Detection opened them."""
+    with _lock:
+        if state.phase == "JANUARY":
+            raise CloseMovedOnError("January's invoices are already in; the close has moved on.")
+        with state.session() as session:
+            pending = [
+                ob.obligation_id
+                for ob in session.scalars(
+                    select(m.TrueUpObligation)
+                    .where(m.TrueUpObligation.period == PERIOD)
+                    .order_by(m.TrueUpObligation.opened_at, m.TrueUpObligation.obligation_id)
+                )
+                if is_pending(ob)
+            ]
+        return [oid for oid in pending if start_case(state, oid)]
 
 
 def advance_to_january(state: DemoState) -> list[str]:

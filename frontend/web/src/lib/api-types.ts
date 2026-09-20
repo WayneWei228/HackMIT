@@ -13,9 +13,9 @@ export type FrontStage =
   | "Verification";
 
 export type CaseStatus =
+  | "Pending"
   | "Running"
   | "In progress"
-  | "Queued"
   | "Needs review"
   | "Waiting"
   | "Blocked"
@@ -39,6 +39,8 @@ export type CaseRow = {
   amount: string | null;
   stage: FrontStage;
   status: CaseStatus;
+  /** True while the case is Pending and the close has not moved on to January. */
+  can_start: boolean;
   workflow_stage: string;
   next_action: string;
   updated_at: string;
@@ -69,6 +71,8 @@ export type Header = {
   previous_accrual: string | null;
   supported: string | null;
   difference: string | null;
+  /** False until an agent has worked the case; every stage screen is empty until then. */
+  started: boolean;
   status: CaseStatus;
   stage: FrontStage;
   workflow_stage: string;
@@ -387,6 +391,14 @@ export type ActionResult = {
   ok: boolean;
   message: string;
   obligation_ids: string[];
+};
+
+export type StartResult = {
+  ok: boolean;
+  message: string;
+  /** False when the case was already started and nothing ran. */
+  started: boolean;
+  case: CaseRow;
 };
 
 /** The Auditor's independent re-performance of the controls (backend/trueup/agents/auditor_agent.py). */
