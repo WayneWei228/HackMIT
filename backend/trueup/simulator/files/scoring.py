@@ -5,12 +5,13 @@ from __future__ import annotations
 from collections.abc import Iterable
 from datetime import datetime
 
-from trueup.simulator.files.models import FileEntry, FileUniverse, RelevanceTruth
+from trueup.ingest.manifest import FileEntry, FileUniverse
+from trueup.simulator.files.models import RelevanceTruth
 
 
 def visible_files(universe: FileUniverse, now: datetime) -> list[FileEntry]:
     """Files a simulated agent may see at `now`."""
-    return [f for f in universe.files if f.available_at <= now]
+    return universe.visible_at(now)
 
 
 def score_selection(

@@ -5,17 +5,12 @@ from __future__ import annotations
 import random
 from pathlib import Path
 
+from trueup.ingest.manifest import CaseEntry, FileEntry, FileUniverse
 from trueup.simulator.files import render
 from trueup.simulator.files.cases import BUILDERS, late_specs
 from trueup.simulator.files.common import CLOSE, Cast, Ctx, Spec
 from trueup.simulator.files.doc import Chat, Doc, Sheet, Thread
-from trueup.simulator.files.models import (
-    CaseEntry,
-    FileEntry,
-    FileUniverse,
-    RelevanceEntry,
-    RelevanceTruth,
-)
+from trueup.simulator.files.models import RelevanceEntry, RelevanceTruth
 from trueup.simulator.files.text import slug
 from trueup.simulator.files.world_view import WorldView
 from trueup.simulator.scenario_models import GeneratedWorld

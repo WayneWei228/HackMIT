@@ -2,12 +2,8 @@ from datetime import UTC, datetime
 
 import pytest
 
-from trueup.simulator.files.models import (
-    FileEntry,
-    FileUniverse,
-    RelevanceEntry,
-    RelevanceTruth,
-)
+from trueup.ingest.manifest import FileEntry, FileUniverse
+from trueup.simulator.files.models import RelevanceEntry, RelevanceTruth
 from trueup.simulator.files.scoring import score_selection, visible_files
 
 CLOSE = datetime(2026, 12, 31, 23, 59, tzinfo=UTC)

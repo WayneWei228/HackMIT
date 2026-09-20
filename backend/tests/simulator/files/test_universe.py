@@ -3,9 +3,10 @@ import re
 from decimal import Decimal
 from pathlib import Path
 
+from trueup.ingest.manifest import FileUniverse
 from trueup.simulator.files.build import build_universe
 from trueup.simulator.files.common import CLOSE
-from trueup.simulator.files.models import FileUniverse, RelevanceTruth
+from trueup.simulator.files.models import RelevanceTruth
 from trueup.simulator.files.scoring import score_selection, visible_files
 from trueup.simulator.files.text import usd, usd2
 
