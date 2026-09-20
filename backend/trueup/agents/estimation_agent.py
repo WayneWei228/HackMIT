@@ -428,6 +428,7 @@ class _FeeCandidate:
     fee: Decimal
     effective: date
     own: bool
+    currency: str | None
 
 
 def _obligation_currency(ctx: Context) -> str:
@@ -441,23 +442,13 @@ def _document_fee_for(ctx: Context, day: date) -> tuple[m.TrueUpEvidence, Decima
     source carries no dated fee of its own, else undated. When several fees apply, the one with
     the latest effective date wins; a card with its own date beats one that inherited it.
     """
-    candidates, rejected = _document_fee_candidates(ctx, day)
+    candidates = _document_fee_candidates(ctx, day)
     if not candidates:
-        if rejected:
-            card, currency = rejected[0]
-            raise Insufficient(
-                e.EvidenceStatus.CONFLICTING,
-                f"Document fee {card.evidence_id} is stated in "
-                f"{currency or 'an unknown currency'}, not {_obligation_currency(ctx)}.",
-                "controller",
-            )
         return None
-    return _pick_document_fee(candidates, day)
+    return _pick_document_fee(candidates, day, _obligation_currency(ctx))
 
 
-def _document_fee_candidates(
-    ctx: Context, day: date
-) -> tuple[list[_FeeCandidate], list[tuple[m.TrueUpEvidence, str | None]]]:
+def _document_fee_candidates(ctx: Context, day: date) -> list[_FeeCandidate]:
     effective_by_source: dict[str, date] = {}
     for card in ctx.cards:
         value = card.value_json or {}
@@ -485,24 +476,19 @@ def _document_fee_candidates(
             continue
         fees.append((card, fee))
     dated_sources = {card.source_id for card, _fee in fees if _own_date(card) is not None}
-    currency = _obligation_currency(ctx)
     candidates: list[_FeeCandidate] = []
-    rejected: list[tuple[m.TrueUpEvidence, str | None]] = []
     for card, fee in fees:
         value = card.value_json or {}
         unit = value.get("unit")
-        stated = unit.split("/")[0].strip().upper() if isinstance(unit, str) else None
-        if stated != currency:
-            rejected.append((card, stated))
-            continue
+        currency = unit.split("/")[0].strip().upper() if isinstance(unit, str) else None
         effective = _own_date(card)
         own = effective is not None
         if effective is None and card.source_id not in dated_sources:
             effective = effective_by_source.get(card.source_id)
         if effective is not None and effective > day:
             continue
-        candidates.append(_FeeCandidate(card, fee, effective or date.min, own))
-    return candidates, rejected
+        candidates.append(_FeeCandidate(card, fee, effective or date.min, own, currency))
+    return candidates
 
 
 def _own_date(card: m.TrueUpEvidence) -> date | None:
@@ -516,12 +502,20 @@ def _own_date(card: m.TrueUpEvidence) -> date | None:
 
 
 def _pick_document_fee(
-    candidates: list[_FeeCandidate], day: date
+    candidates: list[_FeeCandidate], day: date, currency: str
 ) -> tuple[m.TrueUpEvidence, Decimal] | None:
     if not candidates:
         return None
     latest = max((c.effective, c.own) for c in candidates)
     winners = [c for c in candidates if (c.effective, c.own) == latest]
+    mismatched = next((c for c in winners if c.currency != currency), None)
+    if mismatched is not None:
+        raise Insufficient(
+            e.EvidenceStatus.CONFLICTING,
+            f"Document fee {mismatched.card.evidence_id} is stated in "
+            f"{mismatched.currency or 'an unknown currency'}, not {currency}.",
+            "controller",
+        )
     fees = {c.fee for c in winners}
     if len(fees) > 1:
         ids = ", ".join(c.card.evidence_id for c in winners)
@@ -604,7 +598,7 @@ def _fixed(ctx: Context) -> Estimate:
     if card_warnings:
         inputs["rate_source"] = "document"
         # A card that an amendment superseded is not a conflict: it documented the old fee.
-        rates |= {c.fee for day in days for c in _document_fee_candidates(ctx, day)[0]}
+        rates |= {c.fee for day in days for c in _document_fee_candidates(ctx, day)}
     return Estimate(
         method=e.EstimationMethod.FIXED_CONTRACT_RATE,
         amount=_round(raw),

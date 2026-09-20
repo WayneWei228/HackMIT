@@ -562,6 +562,46 @@ def test_document_fee_without_a_currency_goes_to_the_controller(session):
     assert "unknown currency" in result.uncertainties[0]
 
 
+def test_currency_changing_amendment_goes_to_the_controller(session):
+    obligation = ready(session, "VEN-MINTLIFY")
+    no_contract_rate(session)
+    session.add(card(obligation.obligation_id, "MONTHLY_FEE", "1200.00"))
+    session.add(
+        card(
+            obligation.obligation_id,
+            "MONTHLY_FEE",
+            "1400.00",
+            evidence_id="EVD-T-02",
+            date="2026-12-16",
+            unit="EUR/month",
+        )
+    )
+    session.flush()
+    result = estimate(session, obligation.obligation_id, now=NOW)
+    assert result.outcome == "NEEDS_CONTROLLER" and result.workpaper_id is None
+    assert obligation.evidence_status == e.EvidenceStatus.CONFLICTING
+    assert "EUR" in result.uncertainties[0]
+
+
+def test_stale_foreign_currency_fee_is_ignored_once_superseded(session):
+    obligation = ready(session, "VEN-MINTLIFY")
+    no_contract_rate(session)
+    session.add(card(obligation.obligation_id, "MONTHLY_FEE", "1200.00", unit="EUR/month"))
+    session.add(
+        card(
+            obligation.obligation_id,
+            "MONTHLY_FEE",
+            "1400.00",
+            evidence_id="EVD-T-02",
+            date="2026-11-15",
+        )
+    )
+    session.flush()
+    result = estimate(session, obligation.obligation_id, now=NOW)
+    assert result.outcome == "ESTIMATED" and not result.conflicts
+    assert result.amount == Decimal("1400.00")
+
+
 def test_amendment_in_force_beats_the_original(session):
     obligation = ready(session, "VEN-MINTLIFY")
     no_contract_rate(session)
