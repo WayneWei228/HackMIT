@@ -307,7 +307,6 @@ class _World:
             m.CompanyAPInvoice,
             m.CompanyGLEntry,
             m.CompanyNonPOSpend,
-            m.TrueUpEvidence,
         ):
             row = self.session.get(model, source_id)
             if row is not None:
@@ -564,6 +563,10 @@ def _evidence_control(world: _World, case: _Case, rec: _Recorder) -> None:
 def _trace_source(world: _World, case: _Case, rec: _Recorder, source_id: str) -> None:
     ob, wp = case.ob, case.wp
     row = world.source_row(source_id)
+    if row is None and any(
+        c.evidence_id == source_id and c.status == e.EvidenceCardStatus.VERIFIED for c in case.cards
+    ):
+        return
     if row is None:
         rec.critical(
             "AUD-01",
@@ -839,11 +842,28 @@ def _inputs_match_sources(world: _World, case: _Case, rec: _Recorder) -> None:
             )
         elif method == e.EstimationMethod.FIXED_CONTRACT_RATE:
             for segment in i.get("segments") or []:
-                if not segment.get("contract_row_id"):
-                    continue
-                row = world.session.get(m.CompanyContract, segment["contract_row_id"])
-                if row is not None:
-                    pairs.append(("monthly_rate", _dec(segment["monthly_rate"]), row.base_rate))
+                if segment.get("contract_row_id"):
+                    row = world.session.get(m.CompanyContract, segment["contract_row_id"])
+                    if row is not None:
+                        pairs.append(("monthly_rate", _dec(segment["monthly_rate"]), row.base_rate))
+                elif segment.get("evidence_id"):
+                    card = next(
+                        (
+                            c
+                            for c in case.cards
+                            if c.evidence_id == segment["evidence_id"]
+                            and c.status == e.EvidenceCardStatus.VERIFIED
+                        ),
+                        None,
+                    )
+                    if card is not None:
+                        pairs.append(
+                            (
+                                "monthly_rate",
+                                _dec(segment["monthly_rate"]),
+                                Decimal(str((card.value_json or {})["number"])),
+                            )
+                        )
         elif method == e.EstimationMethod.PREPAID_AMORTIZATION:
             paid = [r for r in rows if isinstance(r, m.CompanyAPInvoice)]
             if paid:

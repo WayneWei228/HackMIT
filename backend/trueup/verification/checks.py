@@ -363,15 +363,19 @@ _SOURCE_KIND: dict[type, tuple[e.EvidenceCardType, ...]] = {
 }
 
 
+def _cited_cards(h: Handoff) -> dict[str, m.TrueUpEvidence]:
+    return {c.evidence_id: c for c in h.cards if c.status == e.EvidenceCardStatus.VERIFIED}
+
+
 def _kinds_cited(h: Handoff) -> set[e.EvidenceCardType]:
+    cards = _cited_cards(h)
     kinds: set[e.EvidenceCardType] = set()
     for source_id in h.inputs.get("sources") or []:
         for model, covers in _SOURCE_KIND.items():
             if h.session.get(model, source_id) is not None:
                 kinds.update(covers)
-        card = h.session.get(m.TrueUpEvidence, source_id)
-        if card is not None:
-            kinds.add(card.evidence_type)
+        if source_id in cards:
+            kinds.add(cards[source_id].evidence_type)
     return kinds
 
 
@@ -441,7 +445,6 @@ def _source_exists(session: Session, source_id: str) -> bool:
         m.CompanyAPInvoice,
         m.CompanyGLEntry,
         m.CompanyNonPOSpend,
-        m.TrueUpEvidence,
     ):
         if session.get(model, source_id) is not None:
             return True
@@ -467,8 +470,9 @@ def ver_07(h: Handoff) -> CheckResult:
     sources = list(h.inputs.get("sources") or [])
     if not sources:
         return _fail("VER-07", name, "The workpaper cites no source record for its amount.")
+    cards = _cited_cards(h)
     for source_id in sources:
-        if not _source_exists(h.session, source_id):
+        if source_id not in cards and not _source_exists(h.session, source_id):
             return _fail(
                 "VER-07",
                 name,

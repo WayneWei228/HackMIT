@@ -327,7 +327,11 @@ def _cited_kinds(session: Session, wp: m.TrueUpWorkpaper) -> set[e.EvidenceCardT
         if session.get(m.CompanyServiceEvidence, source_id) is not None:
             kinds |= {e.EvidenceCardType.SERVICE_USAGE, e.EvidenceCardType.SERVICE_RECEIPT}
         card = session.get(m.TrueUpEvidence, source_id)
-        if card is not None:
+        if (
+            card is not None
+            and card.obligation_id == wp.obligation_id
+            and card.status == e.EvidenceCardStatus.VERIFIED
+        ):
             kinds.add(card.evidence_type)
     return kinds
 

@@ -422,9 +422,24 @@ def _load(session: Session, obligation: m.TrueUpObligation) -> Context:
 # ---- estimators: pure Decimal arithmetic over the loaded rows ---------------------------------
 
 
-def _document_monthly_fee(ctx: Context) -> tuple[m.TrueUpEvidence, Decimal] | None:
-    """A monthly fee verified from a document card, usable when the contract table lacks a rate."""
-    candidates: list[tuple[m.TrueUpEvidence, Decimal]] = []
+def _document_fee_for(ctx: Context, day: date) -> tuple[m.TrueUpEvidence, Decimal] | None:
+    """The monthly fee a verified document card gives for one day, or None if none applies.
+
+    An EFFECTIVE_DATE card with the same source_id dates the fee; undated fees apply from the
+    start of time. When several fees apply, the one with the latest effective date wins.
+    """
+    effective_by_source: dict[str, date] = {}
+    for card in ctx.cards:
+        value = card.value_json or {}
+        if value.get("key") != "EFFECTIVE_DATE" or not value.get("date"):
+            continue
+        try:
+            effective = date.fromisoformat(str(value["date"]))
+        except ValueError:
+            continue
+        if effective > effective_by_source.get(card.source_id, date.min):
+            effective_by_source[card.source_id] = effective
+    candidates: list[tuple[m.TrueUpEvidence, Decimal, date]] = []
     for card in ctx.cards:
         if (
             card.evidence_type != e.EvidenceCardType.CONTRACT_TERM
@@ -435,40 +450,36 @@ def _document_monthly_fee(ctx: Context) -> tuple[m.TrueUpEvidence, Decimal] | No
         if value.get("key") != "MONTHLY_FEE" or value.get("number") is None:
             continue
         try:
-            candidates.append((card, Decimal(str(value["number"]))))
+            fee = Decimal(str(value["number"]))
         except InvalidOperation:
             continue
+        effective = effective_by_source.get(card.source_id)
+        if effective is not None and effective > day:
+            continue
+        candidates.append((card, fee, effective or date.min))
     if not candidates:
         return None
-    fees = {fee for _, fee in candidates}
+    latest = max(effective for _, _, effective in candidates)
+    winners = [(card, fee) for card, fee, effective in candidates if effective == latest]
+    fees = {fee for _, fee in winners}
     if len(fees) > 1:
-        ids = ", ".join(card.evidence_id for card, _ in candidates)
+        ids = ", ".join(card.evidence_id for card, _ in winners)
         amounts = ", ".join(_money(fee) for fee in sorted(fees))
         raise Insufficient(
             e.EvidenceStatus.CONFLICTING,
-            f"Documents give different monthly fees: {ids}: {amounts}.",
+            f"Documents give different monthly fees for {day}: {ids}: {amounts}.",
             "controller",
         )
-    card, fee = min(candidates, key=lambda pair: pair[0].evidence_id)
-    for other in ctx.cards:
-        if other.source_id != card.source_id:
-            continue
-        value = other.value_json or {}
-        if value.get("key") != "EFFECTIVE_DATE" or not value.get("date"):
-            continue
-        try:
-            effective = date.fromisoformat(str(value["date"]))
-        except ValueError:
-            continue
-        if effective > ctx.start:
-            return None
-    return card, fee
+    return min(winners, key=lambda pair: pair[0].evidence_id)
+
+
+def _rate_source_id(row: m.CompanyContract | m.TrueUpEvidence) -> str:
+    return row.contract_row_id if isinstance(row, m.CompanyContract) else row.evidence_id
 
 
 def _fixed(ctx: Context) -> Estimate:
     days = [ctx.start + timedelta(n) for n in range((ctx.end - ctx.start).days + 1)]
-    picks: list[m.CompanyContract] = []
-    uncovered: date | None = None
+    picks: list[tuple[m.CompanyContract | m.TrueUpEvidence, Decimal]] = []
     for day in days:
         covering = [
             c
@@ -478,77 +489,67 @@ def _fixed(ctx: Context) -> Estimate:
             and c.effective_start_date <= day
             and (c.effective_end_date is None or day <= c.effective_end_date)
         ]
-        if not covering:
-            uncovered = uncovered or day
+        if covering:
+            contract = max(covering, key=lambda c: c.contract_version)
+            picks.append((contract, contract.base_rate))
             continue
-        picks.append(max(covering, key=lambda c: c.contract_version))
-    if uncovered is not None:
-        found = _document_monthly_fee(ctx)
+        found = _document_fee_for(ctx, day)
         if found is None:
             raise Insufficient(
                 e.EvidenceStatus.MISSING_RATE,
-                f"No fixed-fee contract rate covers {uncovered}.",
+                f"No fixed-fee contract rate covers {day}.",
                 "controller",
             )
         card, fee = found
-        file = (card.value_json or {}).get("file") or card.source_id
-        total = len(days)
-        return Estimate(
-            method=e.EstimationMethod.FIXED_CONTRACT_RATE,
-            amount=_round(fee),
-            expression=f"{_money(fee)} x 1 month",
-            inputs={
-                "segments": [
-                    {
-                        "evidence_id": card.evidence_id,
-                        "monthly_rate": str(fee),
-                        "days": total,
-                    }
-                ],
-                "period_days": total,
-                "rate_source": "document",
-            },
-            source_ids=[card.evidence_id] + ([ctx.po.po_id] if ctx.po else []),
-            expected_cards={"MONTHLY_FEE": {fee}},
-            warnings=[
-                f"Monthly rate {_money(fee)} taken from {file} ({card.evidence_id}); "
-                "the contract table has no rate covering this period."
-            ]
-            + _stale_po_price(ctx, {fee}),
-        )
-    if any(c.rate_unit != e.RateUnit.MONTH for c in picks):
+        picks.append((card, fee))
+    if any(
+        isinstance(row, m.CompanyContract) and row.rate_unit != e.RateUnit.MONTH for row, _ in picks
+    ):
         raise Insufficient(
             e.EvidenceStatus.MISSING_RATE, "The contract rate is not a monthly rate.", "controller"
         )
 
     segments: list[list[Any]] = []
-    for contract in picks:
-        if segments and segments[-1][0].contract_row_id == contract.contract_row_id:
-            segments[-1][1] += 1
+    for row, rate in picks:
+        if segments and _rate_source_id(segments[-1][0]) == _rate_source_id(row):
+            segments[-1][2] += 1
         else:
-            segments.append([contract, 1])
+            segments.append([row, rate, 1])
     total = len(days)
-    raw = sum((c.base_rate * n / total for c, n in segments), ZERO)
-    if len(segments) == 1 and segments[0][1] == total:
-        expression = f"{_money(segments[0][0].base_rate)} x 1 month"
+    raw = sum((rate * n / total for _row, rate, n in segments), ZERO)
+    if len(segments) == 1 and segments[0][2] == total:
+        expression = f"{_money(segments[0][1])} x 1 month"
     else:
-        expression = " + ".join(f"{_money(c.base_rate)} x {n}/{total}" for c, n in segments)
-    rates = {c.base_rate for c, _ in segments}
-    warnings = _stale_po_price(ctx, rates)
+        expression = " + ".join(f"{_money(rate)} x {n}/{total}" for _r, rate, n in segments)
+    rates = {rate for _, rate, _ in segments}
+    segment_inputs: list[dict[str, Any]] = []
+    card_warnings: list[str] = []
+    for row, rate, n in segments:
+        if isinstance(row, m.CompanyContract):
+            segment_inputs.append(
+                {"contract_row_id": row.contract_row_id, "monthly_rate": str(rate), "days": n}
+            )
+            continue
+        segment_inputs.append(
+            {"evidence_id": row.evidence_id, "monthly_rate": str(rate), "days": n}
+        )
+        file = (row.value_json or {}).get("file") or row.source_id
+        card_warnings.append(
+            f"Monthly rate {_money(rate)} for {n} of {total} days taken from {file} "
+            f"({row.evidence_id}); the contract table has no rate for those days."
+        )
+    inputs: dict[str, Any] = {"segments": segment_inputs, "period_days": total}
+    if card_warnings:
+        inputs["rate_source"] = "document"
     return Estimate(
         method=e.EstimationMethod.FIXED_CONTRACT_RATE,
         amount=_round(raw),
         expression=expression,
-        inputs={
-            "segments": [
-                {"contract_row_id": c.contract_row_id, "monthly_rate": str(c.base_rate), "days": n}
-                for c, n in segments
-            ],
-            "period_days": total,
-        },
-        source_ids=[c.contract_row_id for c, _ in segments] + ([ctx.po.po_id] if ctx.po else []),
+        inputs=inputs,
+        source_ids=[_rate_source_id(row) for row, _, _ in segments]
+        + ([ctx.po.po_id] if ctx.po else []),
         expected_cards={"MONTHLY_FEE": rates},
-        warnings=warnings,
+        warnings=_stale_po_price(ctx, rates) + card_warnings,
     )
 
 
