@@ -73,6 +73,12 @@ export const casesPath = "/api/cases";
 /** `GET /api/vendors` -> `{ VENDORS }`. */
 export const vendorsPath = "/api/vendors";
 
+/** `GET /api/journals` - every entry the close posted, scoped by period. */
+export const journalsPath = "/api/journals";
+
+/** `GET /api/documents` - every file the close could read, by period. */
+export const documentsPath = "/api/documents";
+
 /** `GET /api/health` - used only to tell "API down" from "API said no". */
 export const healthPath = "/api/health";
 

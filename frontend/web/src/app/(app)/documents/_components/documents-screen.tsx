@@ -7,7 +7,7 @@ import {
   LoadingRows,
   ScreenState,
 } from "@/components/ui/screen-state";
-import { withPeriod } from "@/lib/api";
+import { documentsPath, withPeriod } from "@/lib/api";
 import { ALL_PERIODS, periodLabel, type PeriodInfo } from "@/lib/period";
 import { routes, withPeriodParam } from "@/lib/routes";
 import { useLiveData } from "@/lib/use-live-data";
@@ -18,7 +18,6 @@ import { DocumentTable } from "./document-table";
 import { documentsIsEmpty, type DocumentsData } from "../_data";
 
 /** `GET /api/documents` - the files a close read. */
-const documentsPath = "/api/documents";
 
 /**
  * The document list.

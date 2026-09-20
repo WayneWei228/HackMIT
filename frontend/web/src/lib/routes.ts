@@ -10,6 +10,8 @@
 export const routes = {
   home: "/",
   cases: "/cases",
+  journals: "/journals",
+  documents: "/documents",
   vendors: "/vendors",
   closeCase: "/close",
   evidence: "/close/evidence",

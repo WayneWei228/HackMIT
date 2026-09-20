@@ -7,7 +7,7 @@ import {
   LoadingRows,
   ScreenState,
 } from "@/components/ui/screen-state";
-import { withPeriod } from "@/lib/api";
+import { journalsPath, withPeriod } from "@/lib/api";
 import { ALL_PERIODS, periodLabel, type PeriodInfo } from "@/lib/period";
 import { routes, withPeriodParam } from "@/lib/routes";
 import { useLiveData } from "@/lib/use-live-data";
@@ -18,7 +18,6 @@ import { JournalTable } from "./journal-table";
 import { journalsIsEmpty, type JournalsData } from "../_data";
 
 /** `GET /api/journals` - the entries a close posted. */
-const journalsPath = "/api/journals";
 
 /**
  * The journal list.

@@ -69,10 +69,28 @@ export const COLUMNS: readonly string[] = [
  * render a token it had not been taught as a blank - the token is lowercased
  * and its first letter raised, so an unseen one still reads.
  */
+/**
+ * Accounting acronyms that must stay shouted.
+ *
+ * The generic rule below lowercases a token before capitalising it, which
+ * turns `PO_BUDGET` into "Po budget" - a word nobody writes. Keeping a short,
+ * explicit list of the acronyms this domain actually uses is more honest than
+ * a clever rule: a length heuristic would read `TRUE_UP` as "True UP".
+ */
+const ACRONYMS = new Set(["PO", "GL", "AP", "GR", "ID", "VAT"]);
+
+/** `PO_BUDGET` -> "PO budget", `TRUE_UP` -> "True up". */
 export function tokenLabel(token: string): string {
-  const words = token.replace(/_/g, " ").trim().toLowerCase();
-  if (!words) return token;
-  return words.charAt(0).toUpperCase() + words.slice(1);
+  const parts = token.trim().split("_").filter(Boolean);
+  if (parts.length === 0) return token;
+  return parts
+    .map((part, i) => {
+      const upper = part.toUpperCase();
+      if (ACRONYMS.has(upper)) return upper;
+      const lower = part.toLowerCase();
+      return i === 0 ? lower.charAt(0).toUpperCase() + lower.slice(1) : lower;
+    })
+    .join(" ");
 }
 
 /* Fixed locale and time zone, so the server's render and the client's

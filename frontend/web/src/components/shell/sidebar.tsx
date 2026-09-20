@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { cn } from "@/lib/cn";
+import { routes } from "@/lib/routes";
 import { useHealth } from "@/lib/use-health";
 import { PeriodMenu } from "./period-menu";
 import {
@@ -27,7 +28,7 @@ type NavLeaf = { label: string; href?: string };
 const CLOSE_CHILDREN: NavLeaf[] = [
   { label: "Active cases", href: "/close" },
   { label: "All cases", href: "/cases" },
-  { label: "Journals", href: "/journals" },
+  { label: "Journals", href: routes.journals },
   { label: "Reconciliations" },
 ];
 
@@ -105,7 +106,7 @@ export function Sidebar() {
   const isCloseSection =
     pathname.startsWith("/close") ||
     pathname.startsWith("/cases") ||
-    pathname.startsWith("/journals") ||
+    pathname.startsWith(routes.journals) ||
     pathname.startsWith("/agents");
 
   return (
@@ -135,8 +136,8 @@ export function Sidebar() {
             active={
               item.href === "/cases"
                 ? pathname === "/cases"
-                : item.href === "/journals"
-                  ? pathname.startsWith("/journals")
+                : item.href === routes.journals
+                  ? pathname.startsWith(routes.journals)
                   : item.href === "/close"
                     ? pathname.startsWith("/close") || pathname.startsWith("/agents")
                     : false
@@ -155,8 +156,8 @@ export function Sidebar() {
         <TopRow
           icon={<DocIcon />}
           label="Documents"
-          href="/documents"
-          active={pathname.startsWith("/documents")}
+          href={routes.documents}
+          active={pathname.startsWith(routes.documents)}
         />
         <TopRow icon={<InsightsIcon />} label="Insights" />
         <TopRow icon={<SettingsIcon />} label="Settings" />
