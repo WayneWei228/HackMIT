@@ -2,22 +2,28 @@ import { AppShell } from "@/components/shell/app-shell";
 import { AppProviders } from "@/components/shell/providers";
 import type { SidebarIdentity } from "@/components/shell/sidebar";
 import { getClose } from "@/lib/api";
+import type { CloseView } from "@/lib/api-types";
 
 /** Every screen shows live backend state, so nothing here is prerendered at build time. */
 export const dynamic = "force-dynamic";
 
-/** The user the app acts for is the configured Controller; without a backend the sidebar says so. */
-async function identity(): Promise<SidebarIdentity | undefined> {
+/** The close, or null when the backend is not reachable, so the sidebar can say so. */
+async function readClose(): Promise<CloseView | null> {
   try {
-    const close = await getClose();
-    return {
-      periodLabel: close.period_label,
-      controllerName: close.controller_name,
-      controllerRole: close.people.find((p) => p.person_id === close.controller_id)?.role ?? "Controller",
-    };
+    return await getClose();
   } catch {
-    return undefined;
+    return null;
   }
+}
+
+/** The user the app acts for is the configured Controller; without a backend the sidebar says so. */
+function identityOf(close: CloseView | null): SidebarIdentity | undefined {
+  if (!close) return undefined;
+  return {
+    periodLabel: close.period_label,
+    controllerName: close.controller_name,
+    controllerRole: close.people.find((p) => p.person_id === close.controller_id)?.role ?? "Controller",
+  };
 }
 
 /**
@@ -29,9 +35,12 @@ export default async function AppLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const close = await readClose();
   return (
     <AppProviders>
-      <AppShell identity={await identity()}>{children}</AppShell>
+      <AppShell identity={identityOf(close)} close={close}>
+        {children}
+      </AppShell>
     </AppProviders>
   );
 }

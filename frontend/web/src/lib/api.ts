@@ -109,6 +109,8 @@ export const advanceObligation = (id: string) =>
   post<AdvanceResult>(`/api/obligations/${encodeURIComponent(id)}/advance`);
 export const advanceToJanuary = () =>
   post<ActionResult>("/api/close/advance-to-january");
+export const advanceToVendorReply = () =>
+  post<ActionResult>("/api/close/advance-to-vendor-reply");
 export const resetDemo = () => post<ActionResult>("/api/reset");
 
 export const decideObligation = (

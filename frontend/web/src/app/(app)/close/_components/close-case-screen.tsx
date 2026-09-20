@@ -1,5 +1,6 @@
 "use client";
 
+import { CaseRibbon } from "@/components/close/case-ribbon";
 import { EscalationBanner } from "@/components/close/escalation-banner";
 import { TrailPanel } from "@/components/close/case-trail-panel";
 import { CaseProvider, useCaseId } from "@/lib/case-context";
@@ -79,6 +80,7 @@ function CloseCaseBody({ view: full, showExecutionPanel = true, compactCards = f
         <div className="flex-none px-[34px] pt-[26px]">
           <CaseHeader header={view.header} />
           <CaseStats header={view.header} />
+          <CaseRibbon className="pt-3" />
           <SourceTabs tabs={view.tabs} value={tab} onChange={setTab} />
         </div>
 

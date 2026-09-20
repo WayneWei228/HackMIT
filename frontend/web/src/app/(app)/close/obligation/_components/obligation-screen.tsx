@@ -1,5 +1,6 @@
 "use client";
 
+import { CaseRibbon } from "@/components/close/case-ribbon";
 import { TrailPanel } from "@/components/close/case-trail-panel";
 import { Awaiting } from "@/components/close/awaiting";
 import { EscalationBanner } from "@/components/close/escalation-banner";
@@ -46,6 +47,7 @@ function ObligationBody() {
     <>
       <main className="flex min-w-[820px] flex-1 flex-col overflow-hidden leading-[normal]">
         <CaseHeader />
+        <CaseRibbon />
 
         <div className="h-px flex-none bg-line" />
 

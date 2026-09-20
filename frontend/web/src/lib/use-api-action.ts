@@ -3,6 +3,8 @@
 import { useCallback, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
+import { caseData } from "./case-data";
+
 /**
  * Runs a backend action from the browser, then re-renders the server-fetched
  * screen so it shows what the agents did. Errors are kept for the caller to show.
@@ -19,6 +21,8 @@ export function useApiAction() {
       setError(null);
       try {
         await action();
+        /* The screens draw from the browser's copy of each case, so it is read again too. */
+        await caseData.refreshAll();
         startTransition(() => router.refresh());
         return true;
       } catch (caught) {

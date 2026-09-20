@@ -1,5 +1,6 @@
 "use client";
 
+import { CaseRibbon } from "@/components/close/case-ribbon";
 import { useMemo } from "react";
 
 import { TrailPanel } from "@/components/close/case-trail-panel";
@@ -72,6 +73,7 @@ function EvidenceBody({ view }: { view: EvidenceScreenView }) {
         <div className="flex-none px-[34px] pt-[26px]">
           <CaseHeader header={view.header} />
           <CaseStats header={view.header} />
+          <CaseRibbon className="pt-3" />
           <DocumentTabs
             tabs={view.tabs}
             doc={viewer.doc}

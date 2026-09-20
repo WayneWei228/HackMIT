@@ -50,6 +50,18 @@ export type CaseRow = {
   handoff_count?: number;
 };
 
+export type ClockState = "DONE" | "CURRENT" | "UPCOMING";
+
+/** One moment on the demo calendar; the current one is the latest the demo has reached. */
+export type ClockStop = {
+  key: "CLOSE_STARTS" | "ACCRUALS_POSTED" | "INVOICES_ARRIVE" | "VENDORS_REPLY";
+  label: string;
+  date_label: string;
+  state: ClockState;
+  /** How far the cases have got; empty until the demo reaches the stop. */
+  detail: string;
+};
+
 export type CloseView = {
   period: string;
   period_label: string;
@@ -61,7 +73,12 @@ export type CloseView = {
   cases: CaseRow[];
   queue_count: number;
   pending_rules: number;
-  actions: { can_run_close: boolean; can_advance_to_january: boolean };
+  actions: {
+    can_run_close: boolean;
+    can_advance_to_january: boolean;
+    can_advance_to_vendor_reply?: boolean;
+  };
+  timeline?: ClockStop[];
 };
 
 export type Header = {
@@ -343,6 +360,27 @@ export type TimelineEntry = {
   at: string;
 };
 
+export type RibbonKey =
+  | "ACCRUAL"
+  | "INVOICE"
+  | "VARIANCE"
+  | "DIAGNOSIS"
+  | "CONTROLLER"
+  | "LEARNING";
+
+export type RibbonStep = {
+  key: RibbonKey;
+  label: string;
+  /** SKIPPED means the step does not apply to this case. */
+  state: "DONE" | "CURRENT" | "UPCOMING" | "SKIPPED";
+  tone: "NEUTRAL" | "OK" | "WARN" | "BAD";
+  headline: string;
+  detail: string;
+  at: string | null;
+  /** Decimal-string amounts, never floats. */
+  figures: { label: string; amount: string }[];
+};
+
 export type ObligationDetail = {
   header: Header;
   ingestion: IngestionView;
@@ -353,6 +391,8 @@ export type ObligationDetail = {
   timeline: TimelineEntry[];
   /** Present when the reader's file selection left too little evidence to accrue. */
   escalation?: Escalation | null;
+  /** The case's story over time; a step is filled only once it has happened. */
+  ribbon?: RibbonStep[];
 };
 
 export type ReplayLine = {

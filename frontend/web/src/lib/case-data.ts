@@ -86,6 +86,13 @@ export const caseData = {
       }
     });
   },
+  /** Read the close and every case the browser holds again, after something changed the backend. */
+  async refreshAll(): Promise<void> {
+    await Promise.all([
+      caseData.refreshClose(),
+      ...Object.keys(state.details).map((id) => caseData.refreshDetail(id)),
+    ]);
+  },
   /** Warm the cache for a case, waiting no longer than `maxMs` for the backend. */
   async prefetch(id: string, maxMs = 300): Promise<void> {
     const read = Promise.all([caseData.refreshDetail(id), caseData.refreshClose()]);
@@ -128,4 +135,16 @@ export function useCaseData(requested: string | null): {
 export function useCachedHeader(id: string | null): ObligationDetail["header"] | null {
   const current = useSyncExternalStore(subscribe, snapshot, snapshot);
   return id ? (current.details[id]?.header ?? null) : null;
+}
+
+/** The close as the browser last read it, kept fresh; `initial` is what the server rendered. */
+export function useClose(initial: CloseView | null = null): CloseView | null {
+  const current = useSyncExternalStore(subscribe, snapshot, snapshot);
+  useEffect(() => {
+    if (initial) caseData.putClose(initial);
+  }, [initial]);
+  useEffect(() => {
+    if (!current.close && !initial) void caseData.refreshClose();
+  }, [current.close, initial]);
+  return current.close ?? initial;
 }

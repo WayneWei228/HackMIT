@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import { ClockTimeline } from "@/components/shell/clock-timeline";
+import type { CloseView } from "@/lib/api-types";
 import { cn } from "@/lib/cn";
 import {
   ChevronDownIcon,
@@ -92,7 +94,14 @@ const FALLBACK_IDENTITY: SidebarIdentity = {
   controllerRole: "Backend offline",
 };
 
-export function Sidebar({ identity = FALLBACK_IDENTITY }: { identity?: SidebarIdentity }) {
+export function Sidebar({
+  identity = FALLBACK_IDENTITY,
+  close = null,
+}: {
+  identity?: SidebarIdentity;
+  /** The close as the server read it; the timeline keeps itself fresh after that. */
+  close?: CloseView | null;
+}) {
   const pathname = usePathname();
   const isCloseSection =
     pathname.startsWith("/close") ||
@@ -161,6 +170,8 @@ export function Sidebar({ identity = FALLBACK_IDENTITY }: { identity?: SidebarId
       </nav>
 
       <div className="flex-1" />
+
+      <ClockTimeline initial={close} />
 
       <div className="px-3">
         <div className="mx-2 mb-4 h-px bg-line-warm" />
