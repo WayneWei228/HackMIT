@@ -269,6 +269,11 @@ def decide(
         )
     workpaper = _workpaper(session, obligation)
     _check_allowed(obligation, workpaper, decision)
+    if decision == _C.DISPUTE_WITH_VENDOR and not _vendor_contact(session, obligation.vendor_id):
+        raise DecisionNotAllowedError(
+            f"no contact is configured for {_vendor_name(session, obligation.vendor_id)}, "
+            "so a dispute email has nowhere to go"
+        )
     original = coerce_money(workpaper.proposed_amount) if workpaper is not None else None
     new_lines = _adjusted_lines(workpaper, decision, adjusted_amount, notes, original)
     if decision != _C.APPROVE_WITH_ADJUSTMENT and adjusted_amount is not None:
@@ -288,7 +293,9 @@ def decide(
         },
     )
 
-    if workpaper is not None:
+    if workpaper is not None and decision == _C.DISPUTE_WITH_VENDOR:
+        _record_dispute(workpaper, decided_by, notes, now)
+    elif workpaper is not None:
         if new_lines is not None:
             adjusted = adjusted_amount.quantize(_CENTS)
             expression = (
@@ -398,6 +405,36 @@ def _vendor_name(session: Session, vendor_id: str) -> str:
     return vendor.vendor_name if vendor is not None else vendor_id
 
 
+def _vendor_contact(session: Session, vendor_id: str) -> dict[str, Any] | None:
+    row = session.get(m.CompanyConfig, "vendor_contacts")
+    return ((row.config_value_json or {}) if row is not None else {}).get(vendor_id)
+
+
+def _record_dispute(
+    workpaper: m.TrueUpWorkpaper, decided_by: str, notes: str, now: datetime
+) -> None:
+    """Keep the approved workpaper as it is and note the dispute beside it.
+
+    The email may only cite what Reconciliation recorded, so those figures are copied here when the
+    Controller raises the dispute and nothing else feeds the draft.
+    """
+    record = reconciliation_record(workpaper) or {}
+    workpaper.calculation_inputs_json = {
+        **(workpaper.calculation_inputs_json or {}),
+        "dispute": {
+            "status": "RAISED",
+            "raised_by": decided_by,
+            "raised_at": now.isoformat(),
+            "notes": notes,
+            "invoice_ids": list(record.get("invoice_ids") or []),
+            "invoiced_amount": record.get("actual"),
+            "supported_amount": record.get("accrued"),
+            "explanation": record.get("explanation"),
+        },
+    }
+    workpaper.updated_at = now
+
+
 def _approvable(workpaper: m.TrueUpWorkpaper | None) -> bool:
     return (
         workpaper is not None
@@ -433,7 +470,32 @@ def _allowed(
         allowed.append(_C.APPROVE)
         if _simple_entry(workpaper):
             allowed.append(_C.APPROVE_WITH_ADJUSTMENT)
-    return [*allowed, _C.REQUEST_MORE_EVIDENCE, _C.REJECT]
+    disputes = [_C.DISPUTE_WITH_VENDOR] if _disputable(obligation, workpaper) else []
+    return [*disputes, *allowed, _C.REQUEST_MORE_EVIDENCE, _C.REJECT]
+
+
+def reconciliation_record(workpaper: m.TrueUpWorkpaper | None) -> dict[str, Any] | None:
+    """What Reconciliation recorded for the posted accrual, or None before it has run."""
+    if workpaper is None:
+        return None
+    return (workpaper.calculation_inputs_json or {}).get("reconciliation") or None
+
+
+def _disputable(obligation: m.TrueUpObligation, workpaper: m.TrueUpWorkpaper | None) -> bool:
+    """A posted accrual whose invoice Reconciliation found above what was delivered and accepted."""
+    if (obligation.workflow_stage, obligation.next_action) != (
+        _S.AWAITING_CONTROLLER,
+        _A.CONTROLLER_REVIEW,
+    ):
+        return False
+    if workpaper is None or obligation.accrual_status != e.AccrualStatus.POSTED_SIMULATED:
+        return False
+    record = reconciliation_record(workpaper)
+    return (
+        record is not None
+        and record.get("root_cause") == e.RootCause.SOURCE_DATA_ERROR.value
+        and record.get("invoice_accepted") is False
+    )
 
 
 def _check_allowed(
@@ -441,6 +503,11 @@ def _check_allowed(
     workpaper: m.TrueUpWorkpaper | None,
     decision: e.ControllerDecision,
 ) -> None:
+    if decision == _C.DISPUTE_WITH_VENDOR and decision not in _allowed(obligation, workpaper):
+        raise DecisionNotAllowedError(
+            f"{obligation.obligation_id} has no reconciled invoice above what was delivered, "
+            "so there is nothing to raise with the vendor"
+        )
     if decision not in _APPROVING or decision in _allowed(obligation, workpaper):
         return
     if workpaper is None:
@@ -717,6 +784,12 @@ def _recommendation(
     if workpaper is None:
         return "No estimate exists, so nothing can be approved. Request more evidence or reject."
     decision = workpaper.policy_decision
+    if _C.DISPUTE_WITH_VENDOR in allowed:
+        record = reconciliation_record(workpaper) or {}
+        return (
+            f"Raise it with the vendor. The invoice bills {record.get('actual')} but the records "
+            f"support {record.get('accrued')}. Ask for a corrected invoice or a credit memo."
+        )
     reasons = "; ".join(f"{h.rule_id} {h.detail.rstrip('.')}" for h in hits if h.status == "HIT")
     notes = " ".join(f"Note: {h.detail}" for h in hits if h.status == "NOTE")
     if decision == _D.BLOCK:

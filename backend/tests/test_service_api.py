@@ -46,7 +46,11 @@ def test_reset_opens_five_pending_accrual_cases_and_a_rule_waiting_for_the_contr
     close = api.get("/api/close").json()
     assert close["phase"] == "DAY_ONE"
     assert close["controller_id"] == CONTROLLER and close["pending_rules"] == 1
-    assert close["actions"] == {"can_run_close": True, "can_advance_to_january": False}
+    assert close["actions"] == {
+        "can_run_close": True,
+        "can_advance_to_january": False,
+        "can_advance_to_vendor_reply": False,
+    }
     assert {c["vendor_name"] for c in close["cases"]} == {
         "Mintlify",
         "OpenAI",

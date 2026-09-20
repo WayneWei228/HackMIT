@@ -148,6 +148,7 @@ def test_late_files_are_gated_by_the_clock_and_are_late_arrivals(built):
     assert sorted(f.case_id.split("-")[1] for f in invoices) == [
         "ASUS",
         "META",
+        "META",
         "MINTLIFY",
         "OPENAI",
     ]

@@ -184,6 +184,22 @@
       "in_universe": false,
       "reason": "The real invoice arrives after the close and grades the accrual."
     },
+    "FILE-META-L2": {
+      "file_id": "FILE-META-L2",
+      "case_id": "CASE-META-2026-12",
+      "relevant": true,
+      "role": "LATE_ARRIVAL",
+      "in_universe": false,
+      "reason": "The real invoice arrives after the close and grades the accrual."
+    },
+    "FILE-META-L3": {
+      "file_id": "FILE-META-L3",
+      "case_id": "CASE-META-2026-12",
+      "relevant": true,
+      "role": "LATE_ARRIVAL",
+      "in_universe": false,
+      "reason": "An outreach reply that arrives after the close."
+    },
     "FILE-MINTLIFY-01": {
       "file_id": "FILE-MINTLIFY-01",
       "case_id": "CASE-MINTLIFY-2026-12",

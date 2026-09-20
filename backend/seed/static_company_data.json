@@ -930,6 +930,42 @@
       "updated_at": "2026-12-01T08:00:00Z"
     },
     {
+      "config_key": "vendor_contacts",
+      "config_value_json": {
+        "VEN-MINTLIFY": {
+          "person_id": "VC-MINTLIFY-001",
+          "name": "Alex Chen",
+          "role": "Billing contact, Mintlify",
+          "email": "billing@mintlify.example"
+        },
+        "VEN-OPENAI": {
+          "person_id": "VC-OPENAI-001",
+          "name": "Priya Nair",
+          "role": "Billing contact, OpenAI",
+          "email": "billing@openai.example"
+        },
+        "VEN-ASUS": {
+          "person_id": "VC-ASUS-001",
+          "name": "Dana Cho",
+          "role": "Order desk contact, ASUS",
+          "email": "orders@asus.example"
+        },
+        "VEN-META": {
+          "person_id": "VC-META-001",
+          "name": "Sam Ortiz",
+          "role": "Ads billing contact, Meta",
+          "email": "ads-billing@meta.example"
+        },
+        "VEN-NOTABILITY": {
+          "person_id": "VC-NOTABILITY-001",
+          "name": "Lee Hart",
+          "role": "Billing contact, Notability",
+          "email": "billing@notability.example"
+        }
+      },
+      "updated_at": "2026-12-01T08:00:00Z"
+    },
+    {
       "config_key": "accounting_periods",
       "config_value_json": {
         "2026-09": {

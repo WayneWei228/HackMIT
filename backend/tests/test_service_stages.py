@@ -501,3 +501,21 @@ def test_the_live_judge_records_whether_the_model_or_the_rules_picked_the_files(
     monkeypatch.setattr(ingestion, "llm_judge", refuse)
     assert judge(None, []) == fallback
     assert "llm_judge" not in judge.__name__ and "rule_judge" in judge.__name__
+
+
+@pytest.mark.parametrize("obligation_id", CASES)
+def test_a_case_that_has_not_run_lists_the_files_it_will_read_but_judges_none(api, obligation_id):
+    ingestion = api.get(f"/api/obligations/{obligation_id}").json()["ingestion"]
+    assert ingestion["available"] is False
+    assert ingestion["files"] == [] and ingestion["selected_count"] == 0
+    offered = ingestion["offered"]
+    assert len(offered) == 10
+    assert {"file_id", "name", "kind", "format", "size_label"} == set(offered[0])
+    assert len({f["file_id"] for f in offered}) == 10
+
+    advance(api, obligation_id)
+    advance(api, obligation_id)
+    after = api.get(f"/api/obligations/{obligation_id}").json()["ingestion"]
+    assert after["available"] is True
+    assert [f["file_id"] for f in after["files"]] == [f["file_id"] for f in offered]
+    assert after["offered"] == offered

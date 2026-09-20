@@ -25,8 +25,8 @@ from trueup.agents.ingestion import load_universe
 from trueup.agents.learning_agent import LearningError
 from trueup.service import demo_state as demo
 from trueup.service import models as v
+from trueup.service import outreach_threads, runlog
 from trueup.service import readmodels as rm
-from trueup.service import runlog
 from trueup.store import models as m
 from trueup.store.workflow import IllegalTransitionError
 
@@ -114,6 +114,20 @@ def create_app() -> FastAPI:
             obligation_ids=touched,
         )
 
+    @app.post("/api/close/advance-to-vendor-reply", response_model=v.ActionResult)
+    def advance_to_vendor_reply() -> v.ActionResult:
+        with demo.locked():
+            state = demo.current()
+            if state.phase != "JANUARY":
+                raise HTTPException(status_code=409, detail="Advance to January first.")
+            touched = demo.advance_to_vendor_reply(state)
+        message = (
+            "The vendors' replies and corrected invoices arrived."
+            if touched
+            else "No vendor reply was due."
+        )
+        return v.ActionResult(ok=True, message=message, obligation_ids=touched)
+
     @app.post("/api/reset", response_model=v.ActionResult)
     def reset() -> v.ActionResult:
         with demo.locked():
@@ -151,6 +165,21 @@ def create_app() -> FastAPI:
         with demo.locked():
             trace = trace_of(demo.current(), obligation_id)
         return v.LogView(obligation_id=obligation_id, entries=trace.entries)
+
+    @app.get("/api/obligations/{obligation_id}/outreach", response_model=list[v.OutreachThread])
+    def obligation_outreach(obligation_id: str) -> list[v.OutreachThread]:
+        with demo.locked():
+            state = demo.current()
+            with state.session() as session:
+                ob = session.get(m.TrueUpObligation, obligation_id)
+                if ob is None:
+                    raise HTTPException(status_code=404, detail=f"No obligation {obligation_id}.")
+                return outreach_threads.threads_for(
+                    session,
+                    ob,
+                    runlog.case_runs(session, obligation_id),
+                    now=_aware(state.sim.now()),
+                )
 
     @app.get("/api/obligations/{obligation_id}/handoffs", response_model=v.HandoffsView)
     def obligation_handoffs(obligation_id: str) -> v.HandoffsView:

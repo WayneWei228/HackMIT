@@ -690,6 +690,7 @@ _DECISION_FOR_TARGET = {
     (e.WorkflowStage.CLOSED_NO_ACCRUAL, e.NextAction.NONE): (e.ControllerDecision.REJECT,),
     (e.WorkflowStage.AWAITING_OUTREACH, e.NextAction.SEND_OUTREACH): (
         e.ControllerDecision.REQUEST_MORE_EVIDENCE,
+        e.ControllerDecision.DISPUTE_WITH_VENDOR,
     ),
     (e.WorkflowStage.GATHERING_EVIDENCE, e.NextAction.GATHER_EVIDENCE): (
         e.ControllerDecision.REQUEST_MORE_EVIDENCE,
@@ -1000,6 +1001,129 @@ def ver_24(h: Handoff) -> CheckResult:
     return _pass("VER-24", name, f"{row.learning_id} passed replay and the Controller decides.")
 
 
+# ---- VER-25, VER-26, VER-27: raising an invoice with the vendor ---------------------------------
+
+_MONEY = re.compile(r"\d[\d,]*\.\d{2}")
+_DISPUTE_TOPIC = "INVOICE_DISPUTE"
+
+
+def _outreach_cards(h: Handoff, direction: str) -> list[m.TrueUpEvidence]:
+    return [
+        c
+        for c in h.cards
+        if c.evidence_type == e.EvidenceCardType.OUTREACH_RESPONSE
+        and (c.value_json or {}).get("direction") == direction
+        and (c.value_json or {}).get("topic") == _DISPUTE_TOPIC
+    ]
+
+
+def ver_25(h: Handoff) -> CheckResult:
+    name = "A vendor dispute rests on a reconciled invoice above what was delivered"
+    if h.facts.get("controller_decision") != e.ControllerDecision.DISPUTE_WITH_VENDOR.value:
+        return _skip("VER-25", name, "This handoff is not a vendor dispute.")
+    record = h.inputs.get("reconciliation") or {}
+    if h.ob.accrual_status != e.AccrualStatus.POSTED_SIMULATED:
+        return _fail(
+            "VER-25",
+            name,
+            f"The accrual is {h.ob.accrual_status.value}, not posted; there is nothing to dispute.",
+            expected=e.AccrualStatus.POSTED_SIMULATED.value,
+            actual=h.ob.accrual_status.value,
+        )
+    if (
+        record.get("root_cause") != e.RootCause.SOURCE_DATA_ERROR.value
+        or record.get("invoice_accepted") is not False
+    ):
+        return _fail(
+            "VER-25",
+            name,
+            "Reconciliation did not find an invoice above what was delivered and accepted.",
+            expected=e.RootCause.SOURCE_DATA_ERROR.value,
+            actual=str(record.get("root_cause")),
+        )
+    if not (h.config.get("vendor_contacts") or {}).get(h.ob.vendor_id):
+        return _fail("VER-25", name, "No vendor contact is on file to receive the email.")
+    return _pass(
+        "VER-25",
+        name,
+        f"Reconciliation recorded {record.get('actual')} invoiced against {record.get('accrued')}.",
+    )
+
+
+def ver_26(h: Handoff) -> CheckResult:
+    name = "The vendor's reply commits to the amount the records support"
+    replies = _outreach_cards(h, "RESPONSE")
+    if not replies:
+        return _skip("VER-26", name, "No vendor dispute is being answered.")
+    reply = replies[-1]
+    value = reply.value_json or {}
+    dispute = h.inputs.get("dispute") or {}
+    if h.ob.accrual_status != e.AccrualStatus.POSTED_SIMULATED:
+        return _fail(
+            "VER-26", name, "There is no posted accrual for the vendor to correct against."
+        )
+    if not value.get("resolved") or value.get("corrected_amount") is None:
+        return _fail("VER-26", name, "The reply does not commit to a corrected invoice amount.")
+    try:
+        corrected = coerce_money(value["corrected_amount"])
+        supported = coerce_money(dispute["supported_amount"])
+    except (KeyError, TypeError, ValueError):
+        return _fail("VER-26", name, "The dispute or the corrected amount is not an exact Decimal.")
+    posted = _amount(h)
+    if posted is not None and abs(supported - posted) > TOLERANCE:
+        return _fail(
+            "VER-26",
+            name,
+            f"The dispute cites {supported}, not the posted accrual {posted}.",
+            expected=str(posted),
+            actual=str(supported),
+        )
+    if abs(corrected - supported) > TOLERANCE:
+        return _fail(
+            "VER-26",
+            name,
+            f"The vendor commits to {corrected}, not the {supported} the records support.",
+            expected=str(supported),
+            actual=str(corrected),
+        )
+    shown = {
+        coerce_money(token.replace(",", "")) for token in _MONEY.findall(reply.source_excerpt or "")
+    }
+    if corrected not in shown:
+        return _fail("VER-26", name, f"{corrected} does not appear in the vendor's reply text.")
+    return _pass("VER-26", name, f"The vendor commits to {corrected}.", expected=str(supported))
+
+
+def ver_27(h: Handoff) -> CheckResult:
+    name = "The dispute email cited only figures from the reconciliation record"
+    requests = _outreach_cards(h, "REQUEST")
+    if not requests:
+        return _skip("VER-27", name, "No dispute email was sent.")
+    dispute = h.inputs.get("dispute") or {}
+    try:
+        allowed = {
+            coerce_money(dispute["invoiced_amount"]),
+            coerce_money(dispute["supported_amount"]),
+        }
+    except (KeyError, TypeError, ValueError):
+        return _fail("VER-27", name, "The dispute records no reconciliation figures to cite.")
+    request = requests[-1].value_json or {}
+    text = f"{request.get('subject', '')}\n{request.get('body', '')}"
+    cited = {coerce_money(token.replace(",", "")) for token in _MONEY.findall(text)}
+    stray = sorted(cited - allowed)
+    if stray:
+        return _fail(
+            "VER-27",
+            name,
+            f"The email states {stray[0]}, which is not in the reconciliation record.",
+            expected=" or ".join(sorted(str(a) for a in allowed)),
+            actual=str(stray[0]),
+        )
+    return _pass(
+        "VER-27", name, f"The email cites only {', '.join(sorted(str(a) for a in cited))}."
+    )
+
+
 REGISTRY: dict[str, Check] = {
     "VER-01": ver_01,
     "VER-02": ver_02,
@@ -1022,4 +1146,7 @@ REGISTRY: dict[str, Check] = {
     "VER-22": ver_22,
     "VER-23": ver_23,
     "VER-24": ver_24,
+    "VER-25": ver_25,
+    "VER-26": ver_26,
+    "VER-27": ver_27,
 }

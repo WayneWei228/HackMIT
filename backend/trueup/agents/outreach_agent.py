@@ -1,10 +1,11 @@
 """Outreach agent: ask the right owner for missing information and read the reply.
 
 There is no messages table, so a request and its reply are `trueup_evidence` cards of type
-OUTREACH_RESPONSE. The recipient comes from the ownership map in `company_config`, never from a
-vendor. A language model drafts the email and reads the reply, but code guards both ends: a draft
-with a currency figure or an unsupplied number falls back to a template, and a quantity or date
-from a reply is kept only if it appears verbatim in the reply text.
+OUTREACH_RESPONSE. The recipient comes from the ownership map in `company_config`, or, for an
+invoice dispute, from the vendor contact on file. Every message is simulated: nothing leaves the
+system. A language model drafts the email and reads the reply, but code guards both ends: a draft
+with a currency figure or an unsupplied number falls back to a template, and a quantity, date or
+amount from a reply is kept only if it appears verbatim in the reply text.
 """
 
 from __future__ import annotations
@@ -33,10 +34,17 @@ DRAFT_PROMPT = Path(__file__).resolve().parents[1] / "prompts" / "outreach_draft
 PARSE_PROMPT = Path(__file__).resolve().parents[1] / "prompts" / "outreach_parse.md"
 DEFAULT_DEADLINE_DAYS = 5
 DEADLINE_CONFIG_KEY = "outreach_deadline_days"
+DISPUTE_DEADLINE_DAYS = 30
+DISPUTE_DEADLINE_CONFIG_KEY = "outreach_dispute_deadline_days"
 SOURCE_TABLE = "outreach"
 AT_OUTREACH = (e.WorkflowStage.AWAITING_OUTREACH, e.NextAction.SEND_OUTREACH)
 _DRAFT_SYSTEM = "You write brief, factual finance emails. You never state money amounts."
+_DISPUTE_SYSTEM = (
+    "You write brief, factual finance emails. You state only the amounts you are given."
+)
 _PARSE_SYSTEM = "You extract facts from a short reply. You never guess or compute a value."
+DISPUTE_PROMPT = Path(__file__).resolve().parents[1] / "prompts" / "outreach_dispute.md"
+VENDOR_CONTACT = "vendor_contact"
 
 
 class OutreachError(RuntimeError):
@@ -48,6 +56,7 @@ class Topic(StrEnum):
     SERVICE_CONFIRMATION = "SERVICE_CONFIRMATION"
     RATE_CONFIRMATION = "RATE_CONFIRMATION"
     IN_SERVICE_DATE = "IN_SERVICE_DATE"
+    INVOICE_DISPUTE = "INVOICE_DISPUTE"
 
 
 TOPIC_BY_STATUS = {
@@ -60,14 +69,28 @@ OWNER_FIELD = {
     Topic.SERVICE_CONFIRMATION: "service_owner_id",
     Topic.IN_SERVICE_DATE: "service_owner_id",
     Topic.RATE_CONFIRMATION: "procurement_owner_id",
+    Topic.INVOICE_DISPUTE: VENDOR_CONTACT,
 }
-ROLE_LABEL = {"service_owner_id": "SERVICE_OWNER", "procurement_owner_id": "PROCUREMENT_OWNER"}
+ROLE_LABEL = {
+    "service_owner_id": "SERVICE_OWNER",
+    "procurement_owner_id": "PROCUREMENT_OWNER",
+    VENDOR_CONTACT: "VENDOR_BILLING",
+}
 ASK = {
     Topic.USAGE_CONFIRMATION: "the total usage for the full service period, with its unit",
     Topic.SERVICE_CONFIRMATION: "whether the goods or services were received, and when",
     Topic.RATE_CONFIRMATION: "the rate we are being charged, and any amendment that changes it",
     Topic.IN_SERVICE_DATE: "the date each item received was placed in service",
+    Topic.INVOICE_DISPUTE: "a corrected invoice or a credit memo for the amount that was delivered",
 }
+
+
+class DisputeFacts(BaseModel):
+    """The only figures a dispute email may cite: what Reconciliation recorded."""
+
+    invoice_number: str
+    invoiced_amount: Decimal
+    supported_amount: Decimal
 
 
 class DraftFacts(BaseModel):
@@ -80,6 +103,7 @@ class DraftFacts(BaseModel):
     service_end: date
     received_through: date | None
     reply_by: date
+    dispute: DisputeFacts | None = None
 
     def rendered(self) -> dict[str, str]:
         out = {
@@ -92,6 +116,10 @@ class DraftFacts(BaseModel):
         }
         if self.received_through:
             out["data we already have through"] = _long(self.received_through)
+        if self.dispute:
+            out["invoice number"] = self.dispute.invoice_number
+            out["amount invoiced"] = f"{self.dispute.invoiced_amount:,.2f}"
+            out["amount our records support"] = f"{self.dispute.supported_amount:,.2f}"
         return out
 
 
@@ -106,6 +134,7 @@ class ParsedReply(BaseModel):
     quantity: Decimal | None = None
     unit: str | None = None
     in_service_date: str | None = None
+    corrected_amount: Decimal | None = None
     reason: str = ""
 
 
@@ -133,6 +162,7 @@ class ReplyResult(BaseModel):
     quantity: Decimal | None
     unit: str | None
     in_service_date: date | None
+    corrected_amount: Decimal | None = None
     routed_stage: e.WorkflowStage
     next_action: e.NextAction
     evidence_id: str
@@ -162,7 +192,7 @@ def send_outreach(
     drafter: Drafter | None = None,
 ) -> SentRequest:
     obligation = _at_outreach(session, obligation_id)
-    topic = _topic(obligation, topic)
+    topic = _topic(session, obligation, topic)
     key = f"{obligation.vendor_id.removeprefix('VEN-')}-{obligation.period}-{topic.value}"
     existing = _open_request(session, obligation_id, key)
     if existing is not None:
@@ -171,7 +201,7 @@ def send_outreach(
     person, notes = _recipient(session, obligation, topic)
     facts = _draft_facts(session, obligation, topic, person, now)
     draft, drafted_by = _draft(facts, drafter, notes)
-    due_at = _utc(now) + timedelta(days=_deadline_days(session))
+    due_at = _utc(now) + timedelta(days=_deadline_days(session, topic))
     number = 1 + sum(1 for c in _cards(session, key=key) if _direction(c) == "REQUEST")
     card = m.TrueUpEvidence(
         evidence_id=f"EVD-OUT-{key}-REQ-{number:02d}",
@@ -186,6 +216,9 @@ def send_outreach(
             "topic": topic.value,
             "recipient_person_id": person["person_id"],
             "recipient_email": person.get("email"),
+            "recipient_name": person["name"],
+            "recipient_role": facts.recipient_role,
+            "simulated": True,
             "subject": draft.subject,
             "body": draft.body,
             "sent_at": _utc(now).isoformat(),
@@ -235,18 +268,27 @@ def process_reply(
 
     parsed, parsed_by = _parse(reply_text, topic, units, parser, uncertainties)
     quantity, unit, given_date = _ground(parsed, reply_text, units, uncertainties)
-    resolved = parsed.resolved and _requirement_met(topic, parsed, quantity, given_date)
+    corrected = _ground_amount(parsed, reply_text, uncertainties)
+    if topic == Topic.INVOICE_DISPUTE:
+        resolved = _dispute_resolved(session, obligation, parsed, corrected, uncertainties)
+        to_estimate = False
+        target = (
+            (e.WorkflowStage.AWAITING_ACTUAL_INVOICE, e.NextAction.WAIT_FOR_INVOICE)
+            if resolved
+            else (e.WorkflowStage.AWAITING_CONTROLLER, e.NextAction.CONTROLLER_REVIEW)
+        )
+    else:
+        resolved = parsed.resolved and _requirement_met(topic, parsed, quantity, given_date)
+        to_estimate = resolved and parsed.service_received is not False
+        if resolved and not to_estimate:
+            uncertainties.append("The owner reports the service was not received.")
+        target = (
+            (e.WorkflowStage.ESTIMATING, e.NextAction.ESTIMATE)
+            if to_estimate
+            else (e.WorkflowStage.AWAITING_CONTROLLER, e.NextAction.CONTROLLER_REVIEW)
+        )
     if not resolved:
         uncertainties.append(parsed.reason or "The reply does not give the requested information.")
-
-    to_estimate = resolved and parsed.service_received is not False
-    if resolved and not to_estimate:
-        uncertainties.append("The owner reports the service was not received.")
-    target = (
-        (e.WorkflowStage.ESTIMATING, e.NextAction.ESTIMATE)
-        if to_estimate
-        else (e.WorkflowStage.AWAITING_CONTROLLER, e.NextAction.CONTROLLER_REVIEW)
-    )
 
     number = 1 + sum(1 for c in _cards(session, key=key) if _direction(c) == "RESPONSE")
     value = {
@@ -258,9 +300,13 @@ def process_reply(
         "quantity": None if quantity is None else format(quantity, "f"),
         "unit": unit,
         "in_service_date": None if given_date is None else given_date.isoformat(),
+        "corrected_amount": None if corrected is None else format(corrected, "f"),
         "reason": parsed.reason,
         "parsed_by": parsed_by,
         "recipient_person_id": request.value_json["recipient_person_id"],
+        "recipient_name": request.value_json.get("recipient_name"),
+        "recipient_role": request.value_json.get("recipient_role"),
+        "simulated": True,
         "replied_at": _utc(now).isoformat(),
     }
     card = m.TrueUpEvidence(
@@ -269,7 +315,9 @@ def process_reply(
         evidence_type=e.EvidenceCardType.OUTREACH_RESPONSE,
         source_table=SOURCE_TABLE,
         source_id=key,
-        fact=_reply_fact(topic, resolved, quantity, unit, given_date, parsed.service_received),
+        fact=_reply_fact(
+            topic, resolved, quantity, unit, given_date, parsed.service_received, corrected
+        ),
         value_json=value,
         source_excerpt=reply_text.strip()[:1000],
         confidence=Decimal("1.00") if resolved else Decimal("0.00"),
@@ -279,6 +327,8 @@ def process_reply(
     )
     session.add(card)
     _close(request, "ANSWERED", now)
+    if topic == Topic.INVOICE_DISPUTE:
+        _note_dispute_reply(session, obligation, resolved, corrected, now)
     session.flush()
     advance(obligation, *target, AGENT_NAME, at=now)
     _log(
@@ -304,6 +354,7 @@ def process_reply(
         quantity=quantity,
         unit=unit,
         in_service_date=given_date,
+        corrected_amount=corrected,
         routed_stage=obligation.workflow_stage,
         next_action=obligation.next_action,
         evidence_id=card.evidence_id,
@@ -375,6 +426,9 @@ def expire_overdue(session: Session, *, now: datetime) -> list[ExpiredRequest]:
 
 def llm_drafter(facts: DraftFacts) -> Draft:
     lines = "\n".join(f"- {name}: {value}" for name, value in facts.rendered().items())
+    if facts.dispute is not None:
+        prompt = DISPUTE_PROMPT.read_text().replace("{{FACTS}}", lines)
+        return cast(Draft, llm.complete_json(prompt, Draft, system=_DISPUTE_SYSTEM))
     prompt = DRAFT_PROMPT.read_text().replace("{{FACTS}}", lines)
     return cast(Draft, llm.complete_json(prompt, Draft, system=_DRAFT_SYSTEM))
 
@@ -388,6 +442,19 @@ def template_draft(facts: DraftFacts) -> Draft:
         else ""
     )
     month = f"{calendar.month_name[facts.service_end.month]} {facts.service_end.year}"
+    if facts.dispute is not None:
+        d = facts.dispute
+        body = (
+            f"Hi {first},\n\nWe are closing the books for {month}. Invoice {d.invoice_number} "
+            f"is for {d.invoiced_amount:,.2f}, but our delivery and acceptance records for "
+            f"{facts.vendor_name} support {d.supported_amount:,.2f}, covering {start} through "
+            f"{end}. Could you send a corrected invoice or a credit memo by "
+            f"{_long(facts.reply_by)}?\n\nThank you,\nFinance Operations"
+        )
+        return Draft(
+            subject=f"Invoice {d.invoice_number}: corrected invoice or credit memo needed",
+            body=body,
+        )
     body = (
         f"Hi {first},\n\nWe are closing the books for {month}. For {facts.vendor_name} we need "
         f"{facts.ask}, covering {start} through {end}.{have} Could you reply by "
@@ -399,7 +466,7 @@ def template_draft(facts: DraftFacts) -> Draft:
 def check_draft(draft: Draft, facts: DraftFacts) -> str | None:
     """Return why a draft is not allowed to be sent, or None when it is fine."""
     text = f"{draft.subject}\n{draft.body}"
-    if _CURRENCY.search(text):
+    if facts.dispute is None and _CURRENCY.search(text):
         return "it states a currency figure"
     allowed = _numbers(" ".join(_supplied_text(facts)))
     extra = sorted(_numbers(text) - allowed)
@@ -433,6 +500,19 @@ def rule_parser(reply: str, topic: Topic, units: list[str]) -> ParsedReply:
                     reason="The reply states a quantity and its unit.",
                 )
         return ParsedReply(resolved=False, reason="No quantity with a known unit in the reply.")
+    if topic == Topic.INVOICE_DISPUTE:
+        hit = re.search(
+            r"(?:corrected invoice|revised invoice|credit memo)[^0-9\n]{0,40}(\d[\d,]*\.\d{2})",
+            reply,
+            re.IGNORECASE,
+        )
+        if hit:
+            return ParsedReply(
+                resolved=True,
+                corrected_amount=Decimal(hit.group(1).replace(",", "")),
+                reason="The reply commits to a corrected invoice amount.",
+            )
+        return ParsedReply(resolved=False, reason="The reply states no corrected invoice amount.")
     return ParsedReply(resolved=False, reason="No language model is available to read this reply.")
 
 
@@ -452,7 +532,16 @@ def _long(value: date) -> str:
 
 def _supplied_text(facts: DraftFacts) -> list[str]:
     dates = [facts.service_start, facts.service_end, facts.reply_by, facts.received_through]
-    return [d.isoformat() + " " + _long(d) for d in dates if d] + [facts.vendor_name]
+    figures = (
+        [
+            facts.dispute.invoice_number,
+            f"{facts.dispute.invoiced_amount:,.2f}",
+            f"{facts.dispute.supported_amount:,.2f}",
+        ]
+        if facts.dispute
+        else []
+    )
+    return [d.isoformat() + " " + _long(d) for d in dates if d] + [facts.vendor_name, *figures]
 
 
 def _utc(value: datetime) -> datetime:
@@ -476,9 +565,11 @@ def _at_outreach(session: Session, obligation_id: str) -> m.TrueUpObligation:
     return obligation
 
 
-def _topic(obligation: m.TrueUpObligation, explicit: Topic | str | None) -> Topic:
+def _topic(session: Session, obligation: m.TrueUpObligation, explicit: Topic | str | None) -> Topic:
     if explicit is not None:
         return Topic(explicit)
+    if _dispute(session, obligation) is not None:
+        return Topic.INVOICE_DISPUTE
     topic = TOPIC_BY_STATUS.get(obligation.evidence_status)
     if topic is None:
         raise OutreachError(
@@ -493,6 +584,11 @@ def _recipient(
 ) -> tuple[dict, list[str]]:
     ownership = _config(session, "ownership_map") or {}
     field = OWNER_FIELD[topic]
+    if field == VENDOR_CONTACT:
+        contact = (_config(session, "vendor_contacts") or {}).get(obligation.vendor_id)
+        if contact is None:
+            raise OutreachError(f"no vendor contact is configured for {obligation.vendor_id}")
+        return {**contact, "role_label": ROLE_LABEL[field]}, []
     entry = (ownership.get("vendors") or {}).get(obligation.vendor_id) or {}
     person_id, notes = entry.get(field), []
     if person_id is None:
@@ -506,7 +602,10 @@ def _recipient(
     return person, notes
 
 
-def _deadline_days(session: Session) -> int:
+def _deadline_days(session: Session, topic: Topic | None = None) -> int:
+    if topic == Topic.INVOICE_DISPUTE:
+        value = str(_config(session, DISPUTE_DEADLINE_CONFIG_KEY))
+        return int(value) if value.isdigit() else DISPUTE_DEADLINE_DAYS
     value = str(_config(session, DEADLINE_CONFIG_KEY))
     return int(value) if value.isdigit() else DEFAULT_DEADLINE_DAYS
 
@@ -531,7 +630,8 @@ def _draft_facts(
         service_start=obligation.service_start_date,
         service_end=obligation.service_end_date,
         received_through=max(received, default=None),
-        reply_by=(_utc(now) + timedelta(days=_deadline_days(session))).date(),
+        reply_by=(_utc(now) + timedelta(days=_deadline_days(session, topic))).date(),
+        dispute=_dispute_facts(session, obligation) if topic == Topic.INVOICE_DISPUTE else None,
     )
 
 
@@ -550,6 +650,71 @@ def _draft(facts: DraftFacts, drafter: Drafter | None, notes: list[str]) -> tupl
                 return candidate, "llm" if drafter is None else "custom"
             notes.append(f"The model draft was rejected because {problem}; used the template.")
     return template_draft(facts), "template"
+
+
+def _workpaper_of(session: Session, obligation: m.TrueUpObligation) -> m.TrueUpWorkpaper | None:
+    if not obligation.current_workpaper_id:
+        return None
+    return session.get(m.TrueUpWorkpaper, obligation.current_workpaper_id)
+
+
+def _dispute(session: Session, obligation: m.TrueUpObligation) -> dict | None:
+    """The dispute the Controller raised, until the vendor has answered it."""
+    workpaper = _workpaper_of(session, obligation)
+    record = (workpaper.calculation_inputs_json or {}).get("dispute") if workpaper else None
+    return record if record and record.get("status") == "RAISED" else None
+
+
+def _dispute_facts(session: Session, obligation: m.TrueUpObligation) -> DisputeFacts:
+    record = _dispute(session, obligation)
+    if record is None:
+        raise OutreachError(f"{obligation.obligation_id} has no dispute to raise with the vendor")
+    invoice = session.get(m.CompanyAPInvoice, (record.get("invoice_ids") or [""])[0])
+    if invoice is None or record.get("invoiced_amount") is None:
+        raise OutreachError(f"{obligation.obligation_id}: the dispute cites no recorded invoice")
+    return DisputeFacts(
+        invoice_number=invoice.invoice_number,
+        invoiced_amount=Decimal(str(record["invoiced_amount"])),
+        supported_amount=Decimal(str(record["supported_amount"])),
+    )
+
+
+def _dispute_resolved(
+    session: Session,
+    obligation: m.TrueUpObligation,
+    parsed: ParsedReply,
+    corrected: Decimal | None,
+    notes: list[str],
+) -> bool:
+    """A reply resolves a dispute only by committing to exactly the amount the records support."""
+    record = _dispute(session, obligation)
+    if record is None or not parsed.resolved or corrected is None:
+        return False
+    supported = Decimal(str(record["supported_amount"]))
+    if corrected != supported:
+        notes.append(f"The vendor commits to {corrected}, not the {supported} the records support.")
+        return False
+    return True
+
+
+def _note_dispute_reply(
+    session: Session,
+    obligation: m.TrueUpObligation,
+    resolved: bool,
+    corrected: Decimal | None,
+    now: datetime,
+) -> None:
+    workpaper = _workpaper_of(session, obligation)
+    if workpaper is None:
+        return
+    inputs = dict(workpaper.calculation_inputs_json or {})
+    record = dict(inputs.get("dispute") or {})
+    record["status"] = "VENDOR_AGREED" if resolved else "UNRESOLVED"
+    record["replied_at"] = _utc(now).isoformat()
+    record["corrected_amount"] = None if corrected is None else format(corrected, "f")
+    inputs["dispute"] = record
+    workpaper.calculation_inputs_json = inputs
+    workpaper.updated_at = now
 
 
 def _cards(
@@ -664,6 +829,14 @@ def _ground(
     return quantity, unit, given
 
 
+def _ground_amount(parsed: ParsedReply, reply: str, notes: list[str]) -> Decimal | None:
+    amount = parsed.corrected_amount
+    if amount is not None and amount not in _numbers(reply):
+        notes.append(f"Dropped amount {amount}: it is not in the reply text.")
+        return None
+    return amount
+
+
 def _date_in_text(value: date, text: str) -> bool:
     lowered = text.lower()
     if value.isoformat() in lowered:
@@ -697,7 +870,12 @@ def _reply_fact(
     unit: str | None,
     given: date | None,
     received: bool | None,
+    corrected: Decimal | None = None,
 ) -> str:
+    if topic == Topic.INVOICE_DISPUTE:
+        if resolved and corrected is not None:
+            return f"Vendor reply to {topic.value}: corrected invoice for {format(corrected, 'f')}"
+        return f"Vendor reply to {topic.value}: not enough to act on"
     if not resolved:
         return f"Owner reply to {topic.value}: not enough to act on"
     if quantity is not None:

@@ -8,6 +8,7 @@ from sqlalchemy import func, select
 
 from trueup import close_orchestrator as orchestrator
 from trueup.agents import estimation_agent, evidence_agent, evidence_rules, ingestion
+from trueup.agents.auditor_agent import audit
 from trueup.agents.controller_workspace import controller_id
 from trueup.agents.evidence_agent import FactKey
 from trueup.agents.ingestion import FileDecision, IngestionResult, load_universe
@@ -558,3 +559,72 @@ def test_stepping_one_agent_at_a_time_takes_the_same_road_as_running_to_rest():
             S.AWAITING_CONTROLLER,
             "WP-OBL-ASUS-2026-12-01",
         )
+
+
+FEBRUARY = datetime(2027, 2, 4, tzinfo=UTC)
+
+
+@pytest.fixture(scope="module")
+def disputed():
+    """A close in which the Controller raises Meta's wrong invoice with the vendor."""
+    sim = fresh()
+    with sim.session() as session:
+        controller = demo_controller(session, dispute_vendors=["VEN-META"])
+        report = run(session, sim, controller, through=FEBRUARY)
+        gates = []
+        for row in session.scalars(
+            select(m.TrueUpAgentRun).where(
+                m.TrueUpAgentRun.obligation_id == META, m.TrueUpAgentRun.agent_name == "verifier"
+            )
+        ):
+            result = next(
+                f["result"] for f in row.facts_used_json if f["kind"] == "verification_result"
+            )
+            routing = next(f for f in row.facts_used_json if f["kind"] == "routing")
+            gates.append((routing["from"], routing["routed"], result))
+        findings = audit(session, now=FEBRUARY, period=PERIOD, persist=False).findings
+        yield report, gates, findings
+
+
+def test_a_disputed_invoice_is_settled_by_the_vendor_and_the_case_closes_at_zero(disputed):
+    report, _, _ = disputed
+    meta = report.outcome(META)
+    assert meta.workflow_stage == S.CLOSED
+    assert meta.invoice == Decimal("24700.00") and meta.variance == Decimal("0.00")
+    assert meta.resolved_root_cause == "SOURCE_DATA_ERROR" and meta.root_cause is None
+    assert META not in report.controller_queue and report.errors == []
+
+
+def test_the_dispute_sends_one_email_and_reads_one_answer(disputed):
+    report, _, _ = disputed
+    steps = [s for s in report.steps if s.obligation_id == META]
+    sent = [s for s in steps if s.action == "send_outreach"]
+    read = [s for s in steps if s.action == "process_reply"]
+    assert len(sent) == 1 and "INVOICE_DISPUTE" in sent[0].note
+    assert len(read) == 1 and read[0].note == "resolved"
+    assert sum(1 for s in steps if s.action == "reconcile") == 2
+
+
+def test_the_dispute_moves_only_through_verified_gates(disputed):
+    _, gates, _ = disputed
+    by_edge = {(frm, routed): result for frm, routed, result in gates}
+    raised = by_edge[("AWAITING_CONTROLLER/CONTROLLER_REVIEW", "AWAITING_OUTREACH/SEND_OUTREACH")]
+    returned = by_edge[
+        ("AWAITING_OUTREACH/SEND_OUTREACH", "AWAITING_ACTUAL_INVOICE/WAIT_FOR_INVOICE")
+    ]
+    for result, needed in ((raised, {"VER-13", "VER-25"}), (returned, {"VER-26", "VER-27"})):
+        ids = {c["check_id"] for c in result["checks"] if c["passed"] and not c.get("skipped")}
+        assert result["verdict"] == "PERMIT" and needed <= ids
+
+
+def test_the_dispute_is_decided_by_the_controller_and_the_orchestrator_approves_nothing(disputed):
+    report, _, _ = disputed
+    decisions = [s for s in report.steps if s.action == "decide"]
+    assert sorted(s.obligation_id for s in decisions) == [ASUS, META]
+    assert {s.note.split(" by ")[0] for s in decisions} == {"APPROVE", "DISPUTE_WITH_VENDOR"}
+
+
+def test_the_auditor_finds_nothing_critical_in_a_settled_dispute(disputed):
+    _, _, findings = disputed
+    critical = [f for f in findings if f.severity.value == "CRITICAL" and f.obligation_id == META]
+    assert critical == [], [f.message for f in critical]

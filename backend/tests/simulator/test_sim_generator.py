@@ -247,7 +247,11 @@ def test_the_four_close_statuses_are_all_demonstrated(sim_world):
 
 def test_outreach_fixtures_include_an_insufficient_reply(sim_world):
     keys = {o.outreach_key: o for o in sim_world.outreach}
-    assert set(keys) == {"OPENAI-2026-12-USAGE_CONFIRMATION", "ASUS-2026-12-IN_SERVICE_DATE"}
+    assert set(keys) == {
+        "OPENAI-2026-12-USAGE_CONFIRMATION",
+        "ASUS-2026-12-IN_SERVICE_DATE",
+        "META-2026-12-INVOICE_DISPUTE",
+    }
     weak = keys["ASUS-2026-12-IN_SERVICE_DATE"]
     assert weak.parsed_truth["resolved"] is False
     assert weak.service_evidence_on_response is None

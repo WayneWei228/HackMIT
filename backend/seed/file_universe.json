@@ -762,6 +762,62 @@
       }
     },
     {
+      "file_id": "FILE-META-L2",
+      "case_id": "CASE-META-2026-12",
+      "vendor_id": "VEN-META",
+      "name": "invoice_meta-2027-002.pdf",
+      "kind": "invoice",
+      "format": "PDF",
+      "path": "files/meta/invoice_meta-2027-002.pdf",
+      "size_label": "1 page",
+      "available_at": "2027-02-03T09:00:00Z",
+      "preview": {
+        "card": "skeleton",
+        "title": "Invoice META-2027-002",
+        "subtitle": "Meta Ads Billing Ltd.",
+        "fields": [
+          [
+            "Invoice #",
+            "META-2027-002"
+          ],
+          [
+            "Date",
+            "02/02/2027"
+          ],
+          [
+            "Due date",
+            "03/04/2027"
+          ]
+        ],
+        "total": [
+          "Total",
+          "$24,700.00"
+        ]
+      }
+    },
+    {
+      "file_id": "FILE-META-L3",
+      "case_id": "CASE-META-2026-12",
+      "vendor_id": "VEN-META",
+      "name": "reply_meta_20270202.eml",
+      "kind": "email",
+      "format": "EML",
+      "path": "files/meta/reply_meta_20270202.eml",
+      "size_label": "1 message",
+      "available_at": "2027-02-02T10:00:00Z",
+      "preview": {
+        "card": "email",
+        "title": "Re: Meta December confirmation",
+        "subtitle": "Meta",
+        "fields": {
+          "From": "Sam Ortiz <sam@meta.example>",
+          "To": "Jordan Patel <jordan.patel@northstar.example>",
+          "Date": "Feb 02, 2027"
+        },
+        "body": "Hi, thanks for raising this. You are right: the campaign delivery report supports 24,700.00, and the 30,000.00 on invoice META-2027-001 was the campaign budget, not what ran. We are voiding that invoice and will issue a corrected invoice for 24,700.00 tomorrow.\n\nSam Ortiz\nAds Billing, Meta"
+      }
+    },
+    {
       "file_id": "FILE-MINTLIFY-01",
       "case_id": "CASE-MINTLIFY-2026-12",
       "vendor_id": "VEN-MINTLIFY",

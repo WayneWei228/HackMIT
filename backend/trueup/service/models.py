@@ -18,7 +18,7 @@ CaseStatus = Literal[
     "Complete",
 ]
 Phase = Literal["DAY_ONE", "CLOSED", "JANUARY"]
-Decision = Literal["APPROVE", "REJECT", "REQUEST_MORE_EVIDENCE"]
+Decision = Literal["APPROVE", "REJECT", "REQUEST_MORE_EVIDENCE", "DISPUTE_WITH_VENDOR"]
 
 
 class Strict(BaseModel):
@@ -57,6 +57,7 @@ class CaseRow(Strict):
 class CloseActions(Strict):
     can_run_close: bool
     can_advance_to_january: bool
+    can_advance_to_vendor_reply: bool = False
 
 
 class Person(Strict):
@@ -142,6 +143,14 @@ class SourceFile(Strict):
     preview: dict[str, Any]
 
 
+class OfferedFile(Strict):
+    file_id: str
+    name: str
+    kind: str
+    format: str
+    size_label: str
+
+
 class IngestionView(StageExtras):
     available: bool
     judge: str | None
@@ -149,6 +158,8 @@ class IngestionView(StageExtras):
     selected_count: int
     summary: str | None
     files: list[SourceFile]
+    # The case's files the agent can see right now, listed before it has judged any of them.
+    offered: list[OfferedFile] = Field(default_factory=list)
 
 
 class EvidenceFact(Strict):
@@ -288,6 +299,7 @@ class ReconciliationView(Strict):
     explanation: str
     invoice_ids: list[str]
     reconciled_at: str
+    resolved_dispute: dict[str, Any] | None = None
 
 
 class OutreachMessage(Strict):
@@ -344,6 +356,53 @@ class Escalation(Strict):
     routed_to: Literal["OUTREACH", "CONTROLLER", "BLOCKED"]
 
 
+class Party(Strict):
+    name: str
+    role: str
+
+
+class WaitingOn(Strict):
+    name: str
+    role: str
+    kind: Literal["INTERNAL_OWNER", "VENDOR_CONTACT"]
+
+
+class ThreadMessage(Strict):
+    """One simulated email. The field `from_` is served as `from`, a Python keyword."""
+
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+
+    direction: Literal["OUT", "IN"]
+    from_: Party = Field(alias="from")
+    to: Party
+    subject: str
+    body: str
+    at: str
+    method: Literal["LLM", "TEMPLATE", "SCRIPTED_REPLY"]
+    run_id: int | None
+    evidence_id: str | None
+
+
+class ThreadParsed(Strict):
+    resolved: bool
+    facts: dict[str, str]
+    note: str
+
+
+class OutreachThread(Strict):
+    thread_id: str
+    topic: str
+    obligation_id: str
+    simulated: bool
+    status: Literal["DRAFTED", "SENT", "REPLIED", "INSUFFICIENT", "OVERDUE"]
+    sent_at: str | None
+    due_at: str | None
+    waiting_on: WaitingOn | None
+    messages: list[ThreadMessage]
+    parsed: ThreadParsed | None
+    verification: LogVerification | None
+
+
 class ObligationDetail(Strict):
     header: Header
     ingestion: IngestionView
@@ -353,6 +412,7 @@ class ObligationDetail(Strict):
     verification: VerificationView
     timeline: list[TimelineEntry]
     escalation: Escalation | None = None
+    outreach_threads: list[OutreachThread] = Field(default_factory=list)
 
 
 # ---- the run log and the handoffs ----------------------------------------------------------------

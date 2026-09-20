@@ -30,6 +30,7 @@ from trueup.store import models as m  # noqa: E402
 PERIOD = "2026-12"
 CLOSE = datetime(2026, 12, 31, 23, 59, 59, tzinfo=UTC)
 JANUARY = datetime(2027, 1, 31, tzinfo=UTC)
+VENDOR_REPLY = datetime(2027, 2, 4, tzinfo=UTC)
 ASUS, MINTLIFY, OPENAI, META, NOTABILITY = (
     f"OBL-{name}-{PERIOD}" for name in ("ASUS", "MINTLIFY", "OPENAI", "META", "NOTABILITY")
 )
@@ -49,9 +50,15 @@ def print_timeline(steps: list[Step]) -> None:
             print(f"    {s.at:%m-%d %H:%M}  {s.agent:<22} {s.action:<20} {move} {s.note}".rstrip())
 
 
+def cause(o) -> str:
+    if o.root_cause:
+        return o.root_cause
+    return f"{o.resolved_root_cause} (fixed)" if o.resolved_root_cause else "-"
+
+
 def print_table(report: CloseReport) -> None:
     header = (
-        f"{'vendor':11} {'accrual':>10} {'invoice':>10} {'variance':>10}  {'cause':18} final stage"
+        f"{'vendor':11} {'accrual':>10} {'invoice':>10} {'variance':>10}  {'cause':26} final stage"
     )
     print(header)
     for o in report.obligations:
@@ -60,7 +67,7 @@ def print_table(report: CloseReport) -> None:
         variance = "-" if o.variance is None else f"{o.variance}"
         print(
             f"{o.vendor_name:11} {accrual:>10} {invoice:>10} {variance:>10}  "
-            f"{o.root_cause or '-':18} {o.workflow_stage.value}"
+            f"{cause(o):26} {o.workflow_stage.value}"
         )
 
 
@@ -88,7 +95,9 @@ def main() -> None:
         results.append((label, ok))
 
     with sim.session() as session:
-        controller = ScriptedController(controller_id(session), approve_vendors=["VEN-ASUS"])
+        controller = ScriptedController(
+            controller_id(session), approve_vendors=["VEN-ASUS"], dispute_vendors=["VEN-META"]
+        )
         print(f"DAY ONE ({sim.now():%Y-%m-%d}) and MONTH END ({CLOSE:%Y-%m-%d})")
         at_close = run_month_end_close(
             session, PERIOD, now=CLOSE, simulator=sim, controller=controller
@@ -100,9 +109,12 @@ def main() -> None:
             amount = "no estimate" if o.accrued is None else f"{o.accrued}"
             print(f"  {o.vendor_name:11} {amount:>11}  {o.workflow_stage.value:26} {why[:90]}")
 
-        print(f"\nJANUARY ({JANUARY:%Y-%m-%d}): the clock moves a day at a time")
+        print(
+            f"\nJANUARY AND THE VENDOR'S REPLY (through {VENDOR_REPLY:%Y-%m-%d}): "
+            "the clock moves a day at a time"
+        )
         actuals = run_month_end_close(
-            session, PERIOD, now=CLOSE, simulator=sim, controller=controller, through=JANUARY
+            session, PERIOD, now=CLOSE, simulator=sim, controller=controller, through=VENDOR_REPLY
         )
         print_timeline(actuals.steps)
         print("\nFINAL TABLE")
@@ -114,7 +126,7 @@ def main() -> None:
 
         before = snapshot(session)
         run_month_end_close(
-            session, PERIOD, now=CLOSE, simulator=sim, controller=controller, through=JANUARY
+            session, PERIOD, now=CLOSE, simulator=sim, controller=controller, through=VENDOR_REPLY
         )
         after = snapshot(session)
 
@@ -162,12 +174,24 @@ def main() -> None:
             and asus.invoice == Decimal("32000.00")
             and asus.workflow_stage == e.WorkflowStage.CLOSED,
         )
+        dispute_sent = [
+            s for s in actuals.steps if s.obligation_id == META and "INVOICE_DISPUTE" in s.note
+        ]
+        vendor_reply = [
+            s
+            for s in actuals.steps
+            if s.obligation_id == META and s.action == "process_reply" and s.note == "resolved"
+        ]
         check(
-            "Meta's 30000.00 January invoice is flagged SOURCE_DATA_ERROR for the Controller",
-            meta.root_cause == "SOURCE_DATA_ERROR"
-            and meta.invoice == Decimal("30000.00")
-            and meta.workflow_stage == e.WorkflowStage.AWAITING_CONTROLLER
-            and META in actuals.controller_queue,
+            "Meta's 30000.00 invoice is flagged, the Controller raises it, the vendor's email "
+            "answers and the corrected 24700.00 invoice closes it at zero variance",
+            meta.resolved_root_cause == "SOURCE_DATA_ERROR"
+            and meta.invoice == Decimal("24700.00")
+            and meta.variance == Decimal("0.00")
+            and meta.workflow_stage == e.WorkflowStage.CLOSED
+            and len(dispute_sent) == 1
+            and len(vendor_reply) == 1
+            and META not in actuals.controller_queue,
         )
         check(
             "Notability is Blocked by POL-08 and nothing is accrued",
@@ -177,8 +201,8 @@ def main() -> None:
             and NOTABILITY in actuals.controller_queue,
         )
         check(
-            "the orchestrator approved nothing: one Controller decision, one rule approval",
-            len(decisions) == 1 and len(rule_approvals) == 1,
+            "the orchestrator approved nothing: two Controller decisions, one rule approval",
+            len(decisions) == 2 and len(rule_approvals) == 1,
         )
         check(
             "four accruals were reversed on 1 January and the rule is confirmed once",

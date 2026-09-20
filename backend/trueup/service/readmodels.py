@@ -28,7 +28,7 @@ from trueup.ingest.manifest import CaseEntry, FileEntry, FileUniverse
 from trueup.ingest.readers import UnsupportedFile, read_text
 from trueup.learning.rules import CandidateRule
 from trueup.service import models as v
-from trueup.service import runlog, stagechecks
+from trueup.service import outreach_threads, runlog, stagechecks
 from trueup.store import enums as e
 from trueup.store import models as m
 from trueup.store.types import coerce_money
@@ -262,7 +262,21 @@ def close_view(
         actions=v.CloseActions(
             can_run_close=phase != "JANUARY" and any(is_pending(ob) for ob in obligations),
             can_advance_to_january=phase == "CLOSED",
+            can_advance_to_vendor_reply=phase == "JANUARY" and _has_open_request(session),
         ),
+    )
+
+
+def _has_open_request(session: Session) -> bool:
+    """An email is out and its reply has not arrived."""
+    return any(
+        (card.value_json or {}).get("direction") == "REQUEST"
+        for card in session.scalars(
+            select(m.TrueUpEvidence).where(
+                m.TrueUpEvidence.evidence_type == e.EvidenceCardType.OUTREACH_RESPONSE,
+                m.TrueUpEvidence.status == e.EvidenceCardStatus.PENDING,
+            )
+        )
     )
 
 
@@ -361,6 +375,7 @@ def obligation_detail(
         if is_pending(ob)
         else [_timeline(r) for r in runs if r.agent_name not in LOG_ONLY_AGENTS],
         escalation=escalation_of(session, ob),
+        outreach_threads=outreach_threads.threads_for(session, ob, runs, now=now),
     )
 
 
@@ -470,11 +485,27 @@ def _ingestion(
     trace: runlog.Trace,
 ) -> v.IngestionView:
     run = trace.latest("ingestion", "select_files")
-    if case is None or run is None:
+    if case is None:
         return v.IngestionView(
             available=False, judge=None, files_loaded=0, selected_count=0, summary=None, files=[]
         )
     visible = [f for f in universe.for_case(case.case_id) if _utc(f.available_at) <= _utc(now)]
+    offered = [
+        v.OfferedFile(
+            file_id=f.file_id, name=f.name, kind=f.kind, format=f.format, size_label=f.size_label
+        )
+        for f in visible
+    ]
+    if run is None:
+        return v.IngestionView(
+            available=False,
+            judge=None,
+            files_loaded=0,
+            selected_count=0,
+            summary=None,
+            files=[],
+            offered=offered,
+        )
     decisions = {d["file_id"]: d for d in run.facts_used_json or []}
     override = latest_override(session, ob.obligation_id)
     removed = override.excluded if override and override.run_id > run.run_id else frozenset()
@@ -505,6 +536,7 @@ def _ingestion(
         selected_count=sum(f.selected for f in files),
         summary=run.decision_summary,
         files=files,
+        offered=offered,
     )
 
 
@@ -974,6 +1006,7 @@ def _reconciliation(wp: m.TrueUpWorkpaper | None) -> v.ReconciliationView | None
         explanation=record["explanation"],
         invoice_ids=list(record.get("invoice_ids") or []),
         reconciled_at=record["reconciled_at"],
+        resolved_dispute=record.get("resolved_dispute"),
     )
 
 

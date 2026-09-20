@@ -44,6 +44,11 @@ PERIOD = "2026-12"
 CLOSE_AT = datetime(2026, 12, 31, 23, 59, tzinfo=UTC)
 REPLIES_AT = datetime(2027, 1, 5, 12, 0, tzinfo=UTC)
 JANUARY_AT = datetime(2027, 1, 31, 12, 0, tzinfo=UTC)
+# The vendor's scripted reply arrives on 2 February and its corrected invoice on 3 February.
+VENDOR_REPLY_MOMENTS = (
+    datetime(2027, 2, 2, 12, 0, tzinfo=UTC),
+    datetime(2027, 2, 3, 12, 0, tzinfo=UTC),
+)
 SEED_DIR = Path(__file__).resolve().parents[2] / "seed"
 DEMO_USER = "demo user"
 
@@ -68,7 +73,7 @@ _AT_REST = frozenset(
 class Event:
     """One thing that happened to the demo. Replaying the events rebuilds the same state."""
 
-    kind: Literal["advance", "decision", "rule", "january"]
+    kind: Literal["advance", "decision", "rule", "january", "vendor_reply"]
     obligation_id: str | None = None
     args: dict[str, Any] = field(default_factory=dict)
 
@@ -279,6 +284,26 @@ def advance_to_january(state: DemoState) -> list[str]:
         return list(dict.fromkeys(touched))
 
 
+def advance_to_vendor_reply(state: DemoState) -> list[str]:
+    """Deliver the vendors' replies, then let their corrected invoices grade the cases again."""
+    with _lock:
+        if state.phase != "JANUARY":
+            return []
+        touched: list[str] = []
+        for moment in VENDOR_REPLY_MOMENTS:
+            if _aware(state.sim.now()) >= moment:
+                continue
+            state.sim.advance_to(moment)
+            with state.session() as session:
+                run = run_for(state, session)
+                settled = _settled(session)
+                run.collect_replies(now=moment)
+                run.settle(now=moment, obligation_ids=settled)
+                touched += [s.obligation_id for s in run.steps if s.obligation_id]
+        state.events.append(Event("vendor_reply"))
+        return list(dict.fromkeys(touched))
+
+
 def _settled(session: Session) -> set[str]:
     """Cases at rest. A case still mid-flight is not carried on by the passing of time."""
     return {
@@ -440,6 +465,8 @@ def _apply(state: DemoState, event: Event) -> None:
             decided_by=args["decided_by"],
             notes=args["notes"],
         )
+    elif event.kind == "vendor_reply":
+        advance_to_vendor_reply(state)
     else:
         advance_to_january(state)
 

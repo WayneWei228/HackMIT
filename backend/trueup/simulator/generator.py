@@ -81,6 +81,14 @@ VENDOR_OWNERS = {
     "VEN-NOTABILITY": ("OPS-001", "PROC-001", None),
 }
 
+VENDOR_CONTACTS = {
+    "VEN-MINTLIFY": ("VC-MINTLIFY-001", "Alex Chen", "Billing contact, Mintlify"),
+    "VEN-OPENAI": ("VC-OPENAI-001", "Priya Nair", "Billing contact, OpenAI"),
+    "VEN-ASUS": ("VC-ASUS-001", "Dana Cho", "Order desk contact, ASUS"),
+    "VEN-META": ("VC-META-001", "Sam Ortiz", "Ads billing contact, Meta"),
+    "VEN-NOTABILITY": ("VC-NOTABILITY-001", "Lee Hart", "Billing contact, Notability"),
+}
+
 CC_ENG, CC_OPS, CC_MKT = "CC-ENG-100", "CC-OPS-100", "CC-MKT-300"
 
 
@@ -750,6 +758,43 @@ def _meta(w: _World) -> None:
         fx.money(24700),
         "DONE",
     )
+    # The vendor's side of the dispute the Controller raises after the wrong invoice is flagged.
+    # It is dated after the January demo close, so it can only follow a request sent by then.
+    reply_at = fx.utc(2027, 2, 2, 10)
+    corrected_at = fx.utc(2027, 2, 3, 9)
+    corrected = w.invoice(
+        "META-CORR",
+        "META",
+        "VEN-META",
+        "2026-12",
+        corrected_at,
+        fx.money(24700),
+        "Corrected invoice replacing META-2027-001, billed at the delivered and accepted amount",
+        po_id="PO-META-2026",
+    )
+    w.outreach.append(
+        OutreachResponse(
+            outreach_key="META-2026-12-INVOICE_DISPUTE",
+            available_at=reply_at,
+            recipient_role="VENDOR_BILLING",
+            response_text=(
+                "Hi, thanks for raising this. You are right: the campaign delivery report supports "
+                "24,700.00, and the 30,000.00 on invoice META-2027-001 was the campaign budget, "
+                "not what ran. We are voiding that invoice and will issue a corrected invoice for "
+                "24,700.00 tomorrow.\n\nSam Ortiz\nAds Billing, Meta"
+            ),
+            parsed_truth={"resolved": True, "corrected_amount": "24700.00"},
+        )
+    )
+    w.insert("EVT-META-2027-02-INVOICE-CORRECTED", corrected_at, "company_ap_invoices", corrected)
+    voided_at = corrected_at + timedelta(minutes=5)
+    w.update(
+        "EVT-META-2027-02-INVOICE-VOIDED",
+        voided_at,
+        "company_ap_invoices",
+        {"invoice_id": inv.invoice_id},
+        {"status": "VOIDED", "updated_at": fx.iso(voided_at)},
+    )
 
 
 def _notability(w: _World) -> None:
@@ -848,6 +893,15 @@ def _config(w: _World) -> None:
                 vid: {"service_owner_id": s, "procurement_owner_id": p, "po_owner_id": o}
                 for vid, (s, p, o) in VENDOR_OWNERS.items()
             },
+        },
+        "vendor_contacts": {
+            vendor_id: {
+                "person_id": person_id,
+                "name": name,
+                "role": role,
+                "email": next(row[4] for row in VENDOR_ROWS if row[0] == vendor_id),
+            }
+            for vendor_id, (person_id, name, role) in VENDOR_CONTACTS.items()
         },
         "accounting_periods": periods,
         "approval_thresholds": {

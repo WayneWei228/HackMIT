@@ -278,7 +278,11 @@ def validate_accounting_logic(world: GeneratedWorld) -> list[str]:
             problems.append(f"non-PO {row.non_po_spend_id}: month does not match date")
     for po in models["company_purchase_orders"].values():
         billed = sum(
-            (i.amount for i in models["company_ap_invoices"].values() if i.po_id == po.po_id),
+            (
+                i.amount
+                for i in models["company_ap_invoices"].values()
+                if i.po_id == po.po_id and i.status not in ("VOIDED", "REJECTED")
+            ),
             Decimal(0),
         )
         if billed > po.approved_total:

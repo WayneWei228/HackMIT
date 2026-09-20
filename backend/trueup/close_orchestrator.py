@@ -196,6 +196,7 @@ class ObligationOutcome(BaseModel):
     variance: Decimal | None
     root_cause: str | None
     rested_because: str | None
+    resolved_root_cause: str | None = None
 
 
 class RuleOutcome(BaseModel):
@@ -281,13 +282,17 @@ def pending_agent(session: Session, ob: m.TrueUpObligation) -> str | None:
     if state in (CONTROLLER, BLOCKED):
         return reviewer_agent.AGENT_NAME if reviewer_agent.needs_review(session, ob) else None
     if state == OUTREACH:
-        asked = session.scalars(
-            select(m.TrueUpEvidence).where(
-                m.TrueUpEvidence.obligation_id == ob.obligation_id,
-                m.TrueUpEvidence.evidence_type == e.EvidenceCardType.OUTREACH_RESPONSE,
-                m.TrueUpEvidence.source_table == outreach_agent.SOURCE_TABLE,
+        asked = any(
+            (card.value_json or {}).get("direction") == "REQUEST"
+            and card.status == e.EvidenceCardStatus.PENDING
+            for card in session.scalars(
+                select(m.TrueUpEvidence).where(
+                    m.TrueUpEvidence.obligation_id == ob.obligation_id,
+                    m.TrueUpEvidence.evidence_type == e.EvidenceCardType.OUTREACH_RESPONSE,
+                    m.TrueUpEvidence.source_table == outreach_agent.SOURCE_TABLE,
+                )
             )
-        ).first()
+        )
         return None if asked else outreach_agent.AGENT_NAME
     if state == WAIT:
         return (
@@ -1210,6 +1215,7 @@ class CloseRun:
             variance=Decimal(record["variance"]) if record.get("variance") else None,
             root_cause=record.get("root_cause"),
             rested_because=self.rested.get(ob.obligation_id),
+            resolved_root_cause=(record.get("resolved_dispute") or {}).get("original_root_cause"),
         )
 
     def _rules(self) -> list[RuleOutcome]:

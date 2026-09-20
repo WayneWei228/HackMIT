@@ -37,5 +37,16 @@
       "reason": "INSUFFICIENT_RESPONSE"
     },
     "service_evidence_on_response": null
+  },
+  {
+    "outreach_key": "META-2026-12-INVOICE_DISPUTE",
+    "available_at": "2027-02-02T10:00:00Z",
+    "recipient_role": "VENDOR_BILLING",
+    "response_text": "Hi, thanks for raising this. You are right: the campaign delivery report supports 24,700.00, and the 30,000.00 on invoice META-2027-001 was the campaign budget, not what ran. We are voiding that invoice and will issue a corrected invoice for 24,700.00 tomorrow.\n\nSam Ortiz\nAds Billing, Meta",
+    "parsed_truth": {
+      "resolved": true,
+      "corrected_amount": "24700.00"
+    },
+    "service_evidence_on_response": null
   }
 ]

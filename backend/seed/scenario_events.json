@@ -306,5 +306,44 @@
     "key": {
       "po_id": "PO-ASUS-2026"
     }
+  },
+  {
+    "event_id": "EVT-META-2027-02-INVOICE-CORRECTED",
+    "available_at": "2027-02-03T09:00:00Z",
+    "operation": "INSERT",
+    "table": "company_ap_invoices",
+    "record": {
+      "invoice_id": "INV-META-CORR-2026-12",
+      "vendor_id": "VEN-META",
+      "invoice_number": "META-2027-002",
+      "invoice_date": "2027-02-02",
+      "received_at": "2027-02-03T09:00:00Z",
+      "service_start_date": "2026-12-01",
+      "service_end_date": "2026-12-31",
+      "amount": "24700.00",
+      "currency": "USD",
+      "po_id": "PO-META-2026",
+      "contract_id": null,
+      "status": "IN_QUEUE",
+      "duplicate_flag": false,
+      "credit_flag": false,
+      "description": "Corrected invoice replacing META-2027-001, billed at the delivered and accepted amount",
+      "line_items_json": null,
+      "created_at": "2027-02-03T09:00:00Z",
+      "updated_at": "2027-02-03T09:00:00Z"
+    }
+  },
+  {
+    "event_id": "EVT-META-2027-02-INVOICE-VOIDED",
+    "available_at": "2027-02-03T09:05:00Z",
+    "operation": "UPDATE",
+    "table": "company_ap_invoices",
+    "record": {
+      "status": "VOIDED",
+      "updated_at": "2027-02-03T09:05:00Z"
+    },
+    "key": {
+      "invoice_id": "INV-META-2026-12"
+    }
   }
 ]

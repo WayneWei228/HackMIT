@@ -6,6 +6,7 @@ Extract only what the reply states. Never guess, infer or compute a value the re
 - `quantity`: the quantity exactly as written in the reply, as a plain number without commas, or null. Do not add, sum or convert numbers.
 - `unit`: the unit the quantity is measured in. Use one of the known units when the reply matches it, otherwise null.
 - `in_service_date`: `YYYY-MM-DD`, only when the reply states a specific date, otherwise null.
+- `corrected_amount`: for an invoice dispute only, the amount of the corrected invoice or credit memo the sender commits to, exactly as written in the reply and as a plain number without commas, otherwise null. Never use an amount the reply only mentions as wrong or as the original bill.
 - `reason`: one short sentence saying why the reply is or is not enough.
 
 Request topic: {{TOPIC}}

@@ -118,6 +118,16 @@ def _table() -> dict[Edge, HandoffGate]:
         g(st.OUTREACH, st.ESTIMATE, "VER-03", clears=_STALE),
         g(st.OUTREACH, st.POLICY, "VER-03", "VER-07", requires=_f(ESTIMATED), clears=_FRESH),
         g(st.OUTREACH, st.CONTROLLER),
+        # A vendor's answer to a dispute returns a posted accrual to the wait for the corrected
+        # invoice. It is only reachable with an accrual already drafted and cleared by policy.
+        g(
+            st.OUTREACH,
+            st.WAIT,
+            "VER-26",
+            "VER-27",
+            requires=_f(DRAFTED, ESTIMATED, POLICY_EVALUATED),
+            forbids=_f(POLICY_BLOCKED),
+        ),
         g(
             st.CONTROLLER,
             st.DRAFT,
@@ -129,7 +139,7 @@ def _table() -> dict[Edge, HandoffGate]:
             establishes=_f(CONTROLLER_APPROVED),
             by_controller=True,
         ),
-        g(st.CONTROLLER, st.OUTREACH, "VER-13", by_controller=True),
+        g(st.CONTROLLER, st.OUTREACH, "VER-13", "VER-25", by_controller=True),
         g(st.CONTROLLER, st.NO_ACCRUAL, "VER-13", by_controller=True),
         g(st.CONTROLLER, st.LEARN, "VER-13", "VER-20", by_controller=True, requires=_f(DRAFTED)),
         g(st.BLOCKED, st.GATHER, "VER-13", by_controller=True, clears=_STALE),

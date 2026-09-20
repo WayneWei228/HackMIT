@@ -1459,9 +1459,25 @@ def _state_needs_evidence(case: _Case, rec: _Recorder, wp: m.TrueUpWorkpaper | N
         need(not case.ledger(_ACCRUAL), "no accrual in the ledger")
 
 
+def _raises_dispute(run: m.TrueUpAgentRun) -> bool:
+    return run.action == "record_decision" and any(
+        fact.get("decision") == e.ControllerDecision.DISPUTE_WITH_VENDOR.value
+        for fact in run.facts_used_json or []
+    )
+
+
 def _check_order(case: _Case, rec: _Recorder) -> None:
     last: dict[str, m.TrueUpAgentRun] = {}
+    posted: dict[str, m.TrueUpAgentRun] = {}
     for run in case.runs:
+        if run.workpaper_id and _raises_dispute(run):
+            # A vendor dispute sends a posted accrual back to wait for a corrected invoice, so
+            # matching and reconciling legitimately start again from the posting.
+            if run.workpaper_id in posted:
+                last[run.workpaper_id] = posted[run.workpaper_id]
+            else:
+                last.pop(run.workpaper_id, None)
+            continue
         rank = _ORDER.get(run.action)
         if rank is None or not run.workpaper_id:
             continue
@@ -1476,6 +1492,8 @@ def _check_order(case: _Case, rec: _Recorder) -> None:
                 records=[run.run_id, prior.run_id],
             )
         last[run.workpaper_id] = run
+        if run.action == "post_simulated":
+            posted[run.workpaper_id] = run
 
 
 # ---- AUD-06 cutoff and duplicates ---------------------------------------------------------------

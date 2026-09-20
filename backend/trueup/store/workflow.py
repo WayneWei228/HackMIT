@@ -40,7 +40,7 @@ _GRAPH: dict[State, frozenset[State]] = {
     _CLASSIFY: frozenset({_ESTIMATE, _OUTREACH, _CONTROLLER}),
     _ESTIMATE: frozenset({_POLICY, _OUTREACH, _CONTROLLER}),
     _POLICY: frozenset({_DRAFT, _OUTREACH, _CONTROLLER, _BLOCKED}),
-    _OUTREACH: frozenset({_SEARCH, _GATHER, _ESTIMATE, _POLICY, _CONTROLLER}),
+    _OUTREACH: frozenset({_SEARCH, _GATHER, _ESTIMATE, _POLICY, _WAIT, _CONTROLLER}),
     _CONTROLLER: frozenset({_DRAFT, _OUTREACH, _NO_ACCRUAL, _LEARN}),
     _BLOCKED: frozenset({_GATHER, _ESTIMATE, _NO_ACCRUAL}),
     _DRAFT: frozenset({_WAIT, _BLOCKED}),

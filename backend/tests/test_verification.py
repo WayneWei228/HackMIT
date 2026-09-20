@@ -744,7 +744,7 @@ def test_the_auditor_sees_the_chain_and_catches_a_move_the_verifier_never_saw(de
 def test_every_property_holds_on_the_real_graph():
     report = verify_workflow_graph()
     assert report.holds, [(p.key, p.counterexample) for p in report.properties if not p.holds]
-    assert report.edges == 37 and report.states == 15
+    assert report.edges == 38 and report.states == 15
     assert {p.key for p in report.properties} == {
         "completeness",
         "policy_before_posting",

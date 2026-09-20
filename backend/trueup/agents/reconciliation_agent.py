@@ -175,6 +175,7 @@ def reconcile(session: Session, obligation_id: str, *, now: datetime) -> Reconci
         "path": diagnosis.path,
         "reconciled_at": now.isoformat(),
     }
+    _keep_history(inputs, record, diagnosis, now)
     inputs["reconciliation"] = record
     workpaper.calculation_inputs_json = inputs
     cards = _invoice_cards(session, ob, invoices, diagnosis, now)
@@ -192,7 +193,7 @@ def reconcile(session: Session, obligation_id: str, *, now: datetime) -> Reconci
         status=e.AgentRunStatus.ESCALATED if escalated else e.AgentRunStatus.COMPLETED,
         decision_summary=(
             f"{label}: accrued {_money(accrued)}, invoiced {_money(actual)}, "
-            f"variance {_money(variance)}. {diagnosis.explanation}"
+            f"variance {_money(variance)}. {record['explanation']}"
         ),
         output_summary=f"Routed to {routed[0].value}/{routed[1].value}.",
         at=now,
@@ -224,6 +225,36 @@ def reconcile(session: Session, obligation_id: str, *, now: datetime) -> Reconci
         explanation=diagnosis.explanation,
         path=diagnosis.path,
     )
+
+
+def _keep_history(
+    inputs: dict[str, Any], record: dict[str, Any], diagnosis: Diagnosis, now: datetime
+) -> None:
+    """Keep an earlier reconciliation and note a dispute a corrected invoice has settled."""
+    prior = inputs.get("reconciliation")
+    if not prior:
+        return
+    inputs["reconciliation_history"] = [*inputs.get("reconciliation_history", []), prior]
+    dispute = inputs.get("dispute")
+    if not (dispute and dispute.get("status") == "VENDOR_AGREED" and diagnosis.root_cause is None):
+        return
+    record["resolved_dispute"] = {
+        "original_root_cause": prior.get("root_cause"),
+        "original_invoice_ids": list(prior.get("invoice_ids") or []),
+        "original_amount": prior.get("actual"),
+        "corrected_invoice_ids": list(record["invoice_ids"]),
+        "resolution": "VENDOR_CORRECTED_INVOICE",
+    }
+    record["explanation"] = (
+        f"{diagnosis.explanation} The invoice first received billed {prior.get('actual')} against "
+        f"{prior.get('accrued')} supported ({prior.get('root_cause')}); the vendor corrected it."
+    )
+    inputs["dispute"] = {
+        **dispute,
+        "status": "RESOLVED",
+        "resolved_at": now.isoformat(),
+        "corrected_invoice_ids": list(record["invoice_ids"]),
+    }
 
 
 def _route(
@@ -378,6 +409,7 @@ def _matching_invoices(
     ).all()
     matches: list[m.CompanyAPInvoice] = []
     considered: list[dict[str, str]] = []
+    disputed = _disputed_invoice_ids(session, ob)
 
     def note(inv: m.CompanyAPInvoice, decision: str, reason: str) -> None:
         considered.append(
@@ -407,12 +439,25 @@ def _matching_invoices(
             note(inv, "IGNORED_CREDIT", "A credit memo is not a bill for the period.")
         elif inv.duplicate_flag:
             note(inv, "IGNORED_DUPLICATE", "Flagged as a duplicate, so it is not summed.")
+        elif inv.invoice_id in disputed:
+            note(
+                inv, "IGNORED_DISPUTED", "The vendor agreed to replace it with a corrected invoice."
+            )
         elif _other_reference(inv, ob):
             note(inv, "IGNORED_REFERENCE", "Refers to a different PO or contract.")
         else:
             note(inv, "MATCHED", "Same vendor, inside the service window, consistent reference.")
             matches.append(inv)
     return matches, considered
+
+
+def _disputed_invoice_ids(session: Session, ob: m.TrueUpObligation) -> set[str]:
+    """Invoices under a dispute the vendor has answered: they wait for the corrected invoice."""
+    workpaper = _workpaper(session, ob) if ob.current_workpaper_id else None
+    dispute = (workpaper.calculation_inputs_json or {}).get("dispute") if workpaper else None
+    if not dispute or dispute.get("status") != "VENDOR_AGREED":
+        return set()
+    return set(dispute.get("invoice_ids") or [])
 
 
 def _other_reference(inv: m.CompanyAPInvoice, ob: m.TrueUpObligation) -> bool:
