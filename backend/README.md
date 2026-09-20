@@ -29,7 +29,7 @@ Set `MODEL_ID` to override the model. Never commit these values.
 | `trueup/datagen/` | Seeded simulator and hidden future invoices (the answer key) |
 | `trueup/agents/` | Evidence (PDF to typed fields, cached by text hash), detection, invoice lookup, classifier, outreach, learning |
 | `trueup/estimators/` | The only place a dollar amount is computed |
-| `trueup/agents/estimation.py` | Chooses the estimator for a classified obligation |
+| `trueup/agents/estimation.py` | Chooses the estimator for a classified obligation; a verified MONTHLY_FEE document card fills a fixed-fee rate the contract table lacks |
 | `trueup/learning/rules.py` | Typed playbook rules from `trueup_learning_rules`; Estimation honors a usage contract's escalator only while an ACTIVE rule matches |
 | `data/startup/` | Demo documents: 14 PDFs, their source JSON, and the expected answers (from the `startup-output` branch) |
 | `trueup/orchestrator.py` | Runs the agents in order and persists results |
@@ -45,7 +45,6 @@ Set `MODEL_ID` to override the model. Never commit these values.
 ## Not built yet
 
 - LLM narration of each estimate and LLM diagnosis with quoted evidence (the deterministic diagnosis is a placeholder).
-- Wiring Evidence into the close: `ingest_manifest` and `apply_contract` exist and are tested, but the orchestrator does not call them yet.
 - Applying adopted lessons inside the estimators (the playbook is recorded and versioned but not yet read by them).
 - Signed-bias guard in the replay gate, and the backtest over historical data.
 - Prepaid amortization, the fixed asset register and reversing entries.

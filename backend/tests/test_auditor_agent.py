@@ -7,7 +7,7 @@ plants one defect inside the shared session, audits, and rolls back, so every te
 import importlib.util
 import inspect
 import json
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
 
@@ -213,6 +213,44 @@ def test_aud01_catches_an_estimate_that_cites_data_from_the_future(session):
     workpaper(session, META).created_at = datetime(2026, 12, 1, tzinfo=UTC)
     session.flush()
     assert caught(run_audit(session), "AUD-01", META, "did not exist when the estimate")
+
+
+def cited_card(session, evidence_id, created_at):
+    wp = workpaper(session, MINTLIFY)
+    base = session.get(m.TrueUpEvidence, "EVD-MINTLIFY-2026-12-01")
+    session.add(
+        m.TrueUpEvidence(
+            evidence_id=evidence_id,
+            obligation_id=MINTLIFY,
+            evidence_type=e.EvidenceCardType.CONTRACT_TERM,
+            source_table="document",
+            source_id=base.source_id,
+            fact="MONTHLY_FEE: 1400.00",
+            value_json={"key": "MONTHLY_FEE", "number": "1400.00"},
+            source_excerpt=base.source_excerpt,
+            confidence=Decimal("1.00"),
+            status=e.EvidenceCardStatus.VERIFIED,
+            created_by_agent="evidence",
+            created_at=created_at,
+        )
+    )
+    sources = list(wp.calculation_inputs_json.get("sources") or [])
+    edit_inputs(wp, sources=[evidence_id] + sources)
+    session.flush()
+    return wp
+
+
+def test_aud01_catches_a_card_created_after_the_workpaper(session):
+    cited_card(session, "EVD-LATE-01", DEC_31 + timedelta(days=2))
+    assert caught(run_audit(session), "AUD-01", MINTLIFY, "card EVD-LATE-01")
+    assert caught(run_audit(session), "AUD-01", MINTLIFY, "after the workpaper")
+
+
+def test_aud01_allows_a_card_created_before_the_workpaper(session):
+    wp = workpaper(session, MINTLIFY)
+    cited_card(session, "EVD-EARLY-01", wp.created_at - timedelta(days=1))
+    report = run_audit(session)
+    assert not critical(report, "AUD-01", MINTLIFY)
 
 
 # --- AUD-02 recomputation ----------------------------------------------------------------------

@@ -95,12 +95,13 @@ def _money_fact(key: FactKey, label: str, amount: str, quote: str, unit: str = "
 def _agreement(case: CaseEntry, text: str) -> list[Fact]:
     facts: list[Fact] = []
     for sentence in _sentences(text):
+        monthly_fees: list[Fact] = []
         for match in re.finditer(rf"{_MONEY}\s+(?:per|a|each)\s+month", sentence):
-            facts.append(
-                _money_fact(
-                    FactKey.MONTHLY_FEE, "Monthly fee", match.group(1), sentence, "USD/month"
-                )
+            fact = _money_fact(
+                FactKey.MONTHLY_FEE, "Monthly fee", match.group(1), sentence, "USD/month"
             )
+            facts.append(fact)
+            monthly_fees.append(fact)
         for match in re.finditer(
             rf"{_MONEY}\s+per\s+((?:[A-Za-z]+\s+)?(?:unit|call|request|token|seat|hour))\b",
             sentence,
@@ -116,6 +117,8 @@ def _agreement(case: CaseEntry, text: str) -> list[Fact]:
             and "$" in sentence
             and re.search(r"effective|commencing|beginning", sentence, re.I)
         ):
+            if monthly_fees:
+                monthly_fees[-1].date = _iso(change)
             facts.append(
                 _fact(
                     FactKey.EFFECTIVE_DATE,

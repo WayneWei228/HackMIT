@@ -316,21 +316,320 @@ def test_prepaid_has_no_warning_when_the_bad_entry_is_voided(session):
     assert not [w for w in result.warnings if "expensed the full" in w]
 
 
-def card(obligation_id, key, number, evidence_id="EVD-T-01"):
+def card(
+    obligation_id,
+    key,
+    number,
+    evidence_id="EVD-T-01",
+    date=None,
+    source_id="FILE-T",
+    file="contract.pdf",
+    unit="USD/month",
+):
+    value_json = {"key": key, "number": number, "date": date, "file": file, "unit": unit}
     return m.TrueUpEvidence(
         evidence_id=evidence_id,
         obligation_id=obligation_id,
         evidence_type=e.EvidenceCardType.CONTRACT_TERM,
         source_table="document",
-        source_id="FILE-T",
+        source_id=source_id,
         fact=f"{key}: {number}",
-        value_json={"key": key, "number": number},
+        value_json=value_json,
         source_excerpt="quote",
         confidence=Decimal("1.00"),
         status=e.EvidenceCardStatus.VERIFIED,
         created_by_agent="evidence",
         created_at=NOW,
     )
+
+
+def no_contract_rate(session, vendor_id="VEN-MINTLIFY"):
+    for contract in session.scalars(select(m.CompanyContract)):
+        if contract.vendor_id == vendor_id:
+            contract.base_rate = None
+    session.flush()
+
+
+def test_missing_rate_is_filled_by_a_verified_contract_card(session):
+    obligation = ready(session, "VEN-MINTLIFY")
+    no_contract_rate(session)
+    session.add(card(obligation.obligation_id, "MONTHLY_FEE", "1400.00"))
+    session.flush()
+    result = estimate(session, obligation.obligation_id, now=NOW)
+    assert result.outcome == "ESTIMATED" and not result.conflicts
+    assert result.amount == Decimal("1400.00")
+    assert result.expression == "1400.00 x 1 month"
+    wp = wp_for(session, obligation)
+    inputs = wp.calculation_inputs_json
+    assert "EVD-T-01" in inputs["sources"]
+    assert inputs["rate_source"] == "document"
+    assert any("EVD-T-01" in w for w in result.warnings)
+    assert (obligation.workflow_stage, obligation.next_action) == POLICY
+
+
+def test_missing_rate_with_conflicting_contract_cards_goes_to_the_controller(session):
+    obligation = ready(session, "VEN-MINTLIFY")
+    no_contract_rate(session)
+    session.add(card(obligation.obligation_id, "MONTHLY_FEE", "1400.00"))
+    session.add(card(obligation.obligation_id, "MONTHLY_FEE", "1500.00", evidence_id="EVD-T-02"))
+    session.flush()
+    result = estimate(session, obligation.obligation_id, now=NOW)
+    assert result.outcome == "NEEDS_CONTROLLER" and result.workpaper_id is None
+    assert obligation.evidence_status == e.EvidenceStatus.CONFLICTING
+    assert (obligation.workflow_stage, obligation.next_action) == CONTROLLER
+
+
+def test_contract_card_not_yet_effective_is_not_used(session):
+    obligation = ready(session, "VEN-MINTLIFY")
+    no_contract_rate(session)
+    session.add(card(obligation.obligation_id, "MONTHLY_FEE", "1400.00"))
+    session.add(
+        card(
+            obligation.obligation_id,
+            "EFFECTIVE_DATE",
+            None,
+            evidence_id="EVD-T-02",
+            date="2027-01-01",
+        )
+    )
+    session.flush()
+    result = estimate(session, obligation.obligation_id, now=NOW)
+    assert result.outcome == "NEEDS_CONTROLLER" and result.workpaper_id is None
+    assert obligation.evidence_status == e.EvidenceStatus.MISSING_RATE
+    assert (obligation.workflow_stage, obligation.next_action) == CONTROLLER
+
+
+def test_table_rate_still_wins_when_present(session):
+    obligation = ready(session, "VEN-MINTLIFY")
+    session.add(card(obligation.obligation_id, "MONTHLY_FEE", "1400.00"))
+    session.flush()
+    result = estimate(session, obligation.obligation_id, now=NOW)
+    assert result.outcome == "ESTIMATED"
+    inputs = wp_for(session, obligation).calculation_inputs_json
+    assert "CON-MINTLIFY-V2" in inputs["sources"]
+    assert "EVD-T-01" not in inputs["sources"]
+    assert "rate_source" not in inputs
+
+
+def test_document_rate_fills_only_the_uncovered_days(session):
+    session.get(m.CompanyContract, "CON-MINTLIFY-V2").effective_end_date = date(2026, 12, 15)
+    session.flush()
+    obligation = ready(session, "VEN-MINTLIFY")
+    session.add(card(obligation.obligation_id, "MONTHLY_FEE", "1600.00"))
+    session.flush()
+    result = estimate(session, obligation.obligation_id, now=NOW)
+    assert result.outcome == "ESTIMATED" and not result.conflicts
+    expected = (Decimal("1400") * 15 / 31 + Decimal("1600") * 16 / 31).quantize(Decimal("0.01"))
+    assert result.amount == expected
+    assert result.expression == "1400.00 x 15/31 + 1600.00 x 16/31"
+    inputs = wp_for(session, obligation).calculation_inputs_json
+    assert inputs["rate_source"] == "document"
+    assert inputs["sources"][:2] == ["CON-MINTLIFY-V2", "EVD-T-01"]
+    assert any("EVD-T-01" in w for w in result.warnings)
+
+
+def test_later_amendment_card_not_yet_effective_falls_back_to_the_original(session):
+    obligation = ready(session, "VEN-MINTLIFY")
+    no_contract_rate(session)
+    session.add(card(obligation.obligation_id, "MONTHLY_FEE", "1200.00", source_id="FILE-A"))
+    session.add(
+        card(
+            obligation.obligation_id,
+            "MONTHLY_FEE",
+            "1400.00",
+            evidence_id="EVD-T-02",
+            source_id="FILE-B",
+        )
+    )
+    session.add(
+        card(
+            obligation.obligation_id,
+            "EFFECTIVE_DATE",
+            None,
+            evidence_id="EVD-T-03",
+            date="2027-01-01",
+            source_id="FILE-B",
+        )
+    )
+    session.flush()
+    result = estimate(session, obligation.obligation_id, now=NOW)
+    assert result.outcome == "ESTIMATED" and not result.conflicts
+    assert result.amount == Decimal("1200.00")
+    assert result.expression == "1200.00 x 1 month"
+
+
+def test_fee_card_dated_after_the_period_is_not_used(session):
+    obligation = ready(session, "VEN-MINTLIFY")
+    no_contract_rate(session)
+    session.add(card(obligation.obligation_id, "MONTHLY_FEE", "1400.00", date="2027-01-01"))
+    session.flush()
+    result = estimate(session, obligation.obligation_id, now=NOW)
+    assert result.outcome == "NEEDS_CONTROLLER" and result.workpaper_id is None
+    assert obligation.evidence_status == e.EvidenceStatus.MISSING_RATE
+    assert (obligation.workflow_stage, obligation.next_action) == CONTROLLER
+
+
+def test_fee_card_dated_before_the_period_is_used(session):
+    obligation = ready(session, "VEN-MINTLIFY")
+    no_contract_rate(session)
+    session.add(card(obligation.obligation_id, "MONTHLY_FEE", "1400.00", date="2026-11-15"))
+    session.flush()
+    result = estimate(session, obligation.obligation_id, now=NOW)
+    assert result.outcome == "ESTIMATED"
+    assert result.amount == Decimal("1400.00")
+
+
+def test_dated_fee_from_a_price_change_sentence_wins(session):
+    obligation = ready(session, "VEN-MINTLIFY")
+    no_contract_rate(session)
+    session.add(card(obligation.obligation_id, "MONTHLY_FEE", "1200.00"))
+    session.add(
+        card(
+            obligation.obligation_id,
+            "MONTHLY_FEE",
+            "1400.00",
+            evidence_id="EVD-T-02",
+            date="2026-12-01",
+        )
+    )
+    session.add(
+        card(
+            obligation.obligation_id,
+            "EFFECTIVE_DATE",
+            None,
+            evidence_id="EVD-T-03",
+            date="2026-12-01",
+        )
+    )
+    session.flush()
+    result = estimate(session, obligation.obligation_id, now=NOW)
+    assert result.outcome == "ESTIMATED" and not result.conflicts
+    assert result.amount == Decimal("1400.00")
+    assert result.expression == "1400.00 x 1 month"
+
+
+def test_mid_period_price_change_prorates_old_and_new_fee(session):
+    obligation = ready(session, "VEN-MINTLIFY")
+    no_contract_rate(session)
+    session.add(card(obligation.obligation_id, "MONTHLY_FEE", "1200.00", evidence_id="EVD-1200"))
+    session.add(
+        card(
+            obligation.obligation_id,
+            "MONTHLY_FEE",
+            "1400.00",
+            evidence_id="EVD-1400",
+            date="2026-12-16",
+        )
+    )
+    session.add(
+        card(
+            obligation.obligation_id,
+            "EFFECTIVE_DATE",
+            None,
+            evidence_id="EVD-T-03",
+            date="2026-12-16",
+        )
+    )
+    session.flush()
+    result = estimate(session, obligation.obligation_id, now=NOW)
+    assert result.outcome == "ESTIMATED" and not result.conflicts
+    expected = (Decimal("1200") * 15 / 31 + Decimal("1400") * 16 / 31).quantize(Decimal("0.01"))
+    assert result.amount == expected
+    assert result.expression == "1200.00 x 15/31 + 1400.00 x 16/31"
+    inputs = wp_for(session, obligation).calculation_inputs_json
+    assert inputs["sources"][:2] == ["EVD-1200", "EVD-1400"]
+
+
+def test_document_fee_in_another_currency_goes_to_the_controller(session):
+    obligation = ready(session, "VEN-MINTLIFY")
+    no_contract_rate(session)
+    session.add(card(obligation.obligation_id, "MONTHLY_FEE", "1400.00", unit="EUR/month"))
+    session.flush()
+    result = estimate(session, obligation.obligation_id, now=NOW)
+    assert result.outcome == "NEEDS_CONTROLLER" and result.workpaper_id is None
+    assert obligation.evidence_status == e.EvidenceStatus.CONFLICTING
+    assert "EUR" in result.uncertainties[0]
+
+
+def test_document_fee_without_a_currency_goes_to_the_controller(session):
+    obligation = ready(session, "VEN-MINTLIFY")
+    no_contract_rate(session)
+    session.add(card(obligation.obligation_id, "MONTHLY_FEE", "1400.00", unit=None))
+    session.flush()
+    result = estimate(session, obligation.obligation_id, now=NOW)
+    assert result.outcome == "NEEDS_CONTROLLER" and result.workpaper_id is None
+    assert obligation.evidence_status == e.EvidenceStatus.CONFLICTING
+    assert "unknown currency" in result.uncertainties[0]
+
+
+def test_currency_changing_amendment_goes_to_the_controller(session):
+    obligation = ready(session, "VEN-MINTLIFY")
+    no_contract_rate(session)
+    session.add(card(obligation.obligation_id, "MONTHLY_FEE", "1200.00"))
+    session.add(
+        card(
+            obligation.obligation_id,
+            "MONTHLY_FEE",
+            "1400.00",
+            evidence_id="EVD-T-02",
+            date="2026-12-16",
+            unit="EUR/month",
+        )
+    )
+    session.flush()
+    result = estimate(session, obligation.obligation_id, now=NOW)
+    assert result.outcome == "NEEDS_CONTROLLER" and result.workpaper_id is None
+    assert obligation.evidence_status == e.EvidenceStatus.CONFLICTING
+    assert "EUR" in result.uncertainties[0]
+
+
+def test_stale_foreign_currency_fee_is_ignored_once_superseded(session):
+    obligation = ready(session, "VEN-MINTLIFY")
+    no_contract_rate(session)
+    session.add(card(obligation.obligation_id, "MONTHLY_FEE", "1200.00", unit="EUR/month"))
+    session.add(
+        card(
+            obligation.obligation_id,
+            "MONTHLY_FEE",
+            "1400.00",
+            evidence_id="EVD-T-02",
+            date="2026-11-15",
+        )
+    )
+    session.flush()
+    result = estimate(session, obligation.obligation_id, now=NOW)
+    assert result.outcome == "ESTIMATED" and not result.conflicts
+    assert result.amount == Decimal("1400.00")
+
+
+def test_amendment_in_force_beats_the_original(session):
+    obligation = ready(session, "VEN-MINTLIFY")
+    no_contract_rate(session)
+    session.add(card(obligation.obligation_id, "MONTHLY_FEE", "1200.00", source_id="FILE-A"))
+    session.add(
+        card(
+            obligation.obligation_id,
+            "MONTHLY_FEE",
+            "1400.00",
+            evidence_id="EVD-T-02",
+            source_id="FILE-B",
+        )
+    )
+    session.add(
+        card(
+            obligation.obligation_id,
+            "EFFECTIVE_DATE",
+            None,
+            evidence_id="EVD-T-03",
+            date="2026-11-15",
+            source_id="FILE-B",
+        )
+    )
+    session.flush()
+    result = estimate(session, obligation.obligation_id, now=NOW)
+    assert result.outcome == "ESTIMATED" and not result.conflicts
+    assert result.amount == Decimal("1400.00")
+    assert result.expression == "1400.00 x 1 month"
 
 
 def test_card_that_contradicts_the_tables_routes_to_the_controller(session):

@@ -258,6 +258,64 @@ def test_a_disallowed_method_is_reviewed(at_policy):
     assert "VER-07" in failed(result) and result.verdict in (Verdict.REVIEW, Verdict.BLOCK)
 
 
+def test_an_evidence_card_cited_as_a_source_passes_ver_07(at_policy):
+    ob = at_policy.get(m.TrueUpObligation, MINTLIFY)
+    wp = at_policy.get(m.TrueUpWorkpaper, ob.current_workpaper_id)
+    at_policy.add(
+        m.TrueUpEvidence(
+            evidence_id="EVD-T-01",
+            obligation_id=ob.obligation_id,
+            evidence_type=e.EvidenceCardType.CONTRACT_TERM,
+            source_table="document",
+            source_id="FILE-T",
+            fact="MONTHLY_FEE: 1400.00",
+            value_json={"key": "MONTHLY_FEE", "number": "1400.00"},
+            source_excerpt="quote",
+            confidence=Decimal("1.00"),
+            status=e.EvidenceCardStatus.VERIFIED,
+            created_by_agent="evidence",
+            created_at=CLOSE,
+        )
+    )
+    wp.calculation_inputs_json = {**wp.calculation_inputs_json, "sources": ["EVD-T-01"]}
+    at_policy.flush()
+    assert checks_module.ver_07(
+        handoff(at_policy, MINTLIFY, st.ESTIMATE, st.POLICY, "estimation")
+    ).passed
+
+
+def _test_card(obligation_id, evidence_id, status=e.EvidenceCardStatus.VERIFIED):
+    return m.TrueUpEvidence(
+        evidence_id=evidence_id,
+        obligation_id=obligation_id,
+        evidence_type=e.EvidenceCardType.CONTRACT_TERM,
+        source_table="document",
+        source_id="FILE-T",
+        fact="MONTHLY_FEE: 1400.00",
+        value_json={"key": "MONTHLY_FEE", "number": "1400.00"},
+        source_excerpt="quote",
+        confidence=Decimal("1.00"),
+        status=status,
+        created_by_agent="evidence",
+        created_at=CLOSE,
+    )
+
+
+def test_another_obligations_card_is_not_a_source(at_policy):
+    ob = at_policy.get(m.TrueUpObligation, MINTLIFY)
+    other = at_policy.get(m.TrueUpObligation, ASUS)
+    wp = at_policy.get(m.TrueUpWorkpaper, ob.current_workpaper_id)
+    at_policy.add(_test_card(other.obligation_id, "EVD-OTHER-01"))
+    at_policy.add(_test_card(ob.obligation_id, "EVD-OLD-01", e.EvidenceCardStatus.SUPERSEDED))
+    at_policy.flush()
+    for cited in ("EVD-OTHER-01", "EVD-OLD-01"):
+        wp.calculation_inputs_json = {**wp.calculation_inputs_json, "sources": [cited]}
+        check = checks_module.ver_07(
+            handoff(at_policy, MINTLIFY, st.ESTIMATE, st.POLICY, "estimation")
+        )
+        assert not check.passed, cited
+
+
 def test_evidence_the_purchase_type_needs_is_asked_for(at_policy):
     ob = at_policy.get(m.TrueUpObligation, MINTLIFY)
     assert checks_module.ver_05(handoff(at_policy, MINTLIFY, st.ESTIMATE, st.POLICY, "x")).passed
