@@ -27,8 +27,13 @@ function nextMove(close: CloseView): { label: string; run: () => Promise<unknown
   return null;
 }
 
+/** Why the clock cannot move. January is held until every case of the close has started. */
 function disabledHint(close: CloseView): string {
-  if (close.phase === "DAY_ONE") return "Start at least one case first";
+  const pending = close.cases.filter((row) => row.status === "Pending").length;
+  if (close.phase !== "JANUARY" && pending > 0) {
+    const cases = pending === 1 ? "1 case has" : `${pending} cases have`;
+    return `${cases} not started. Start them from All cases to move to January.`;
+  }
   return "Nothing more is due";
 }
 
@@ -147,7 +152,11 @@ export function ClockTimeline({ initial }: { initial: CloseView | null }) {
       >
         {pending && move ? "Advancing..." : (move?.label ?? "Advance time")}
       </Button>
-      {error && <div className="mt-1.5 text-meta text-[#A4452F]">{error}</div>}
+      {/* A greyed-out button with its reason only in a tooltip reads as broken, so say it. */}
+      {move === null && !running && (
+        <div className="mt-1.5 text-meta leading-[1.35] text-faint-2">{disabledHint(close)}</div>
+      )}
+      {error &&<div className="mt-1.5 text-meta text-[#A4452F]">{error}</div>}
     </section>
   );
 }
