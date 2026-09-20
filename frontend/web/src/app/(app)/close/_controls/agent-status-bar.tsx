@@ -3,6 +3,7 @@
 import { motion, useReducedMotion } from "motion/react";
 
 import { RefreshIcon } from "@/components/ui/icons";
+import { AgentJsonButton } from "../_handoff/agent-json";
 import { easeOutSoft } from "@/lib/motion";
 import { useControlsData } from "./data-context";
 import { LiveDot } from "./marks";
@@ -52,7 +53,7 @@ export function AgentStatusBar({
   pulse: boolean;
   onReplay: () => void;
 }) {
-  const { agentLabel } = useControlsData();
+  const { agentId, agentLabel, caseParam } = useControlsData();
 
   return (
     <div className="flex flex-none items-center justify-between gap-5 px-[34px] py-[13px]">
@@ -83,6 +84,7 @@ export function AgentStatusBar({
           />
           <Sheen show={pulse} />
         </div>
+        <AgentJsonButton agentId={agentId} caseParam={caseParam} />
         <button
           type="button"
           onClick={onReplay}

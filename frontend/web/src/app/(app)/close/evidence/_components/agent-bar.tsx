@@ -5,6 +5,7 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { RefreshIcon } from "@/components/ui/icons";
 import { easeOutSoft, transitions } from "@/lib/motion";
 
+import { AgentJsonButton } from "../../_handoff/agent-json";
 import { AGENT_LABEL, MATCH_STEP, TOTALS_STEP } from "../_data";
 import { useEvidenceData } from "./data-context";
 import { PulseDot } from "./pulse-dot";
@@ -27,7 +28,7 @@ export function AgentBar({
   complete: boolean;
   onReplay: () => void;
 }) {
-  const { tabs } = useEvidenceData();
+  const { tabs, caseParam } = useEvidenceData();
   const reduced = useReducedMotion();
 
   /* Both counters are the case's own document count - nothing here is a
@@ -99,6 +100,7 @@ export function AgentBar({
           )}
         </div>
 
+        <AgentJsonButton agentId="evidence" caseParam={caseParam} />
         <motion.button
           type="button"
           onClick={onReplay}

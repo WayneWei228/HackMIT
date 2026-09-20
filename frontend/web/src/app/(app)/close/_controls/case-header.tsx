@@ -19,13 +19,14 @@ export function CaseHeader({
   const { data, agentId, agentLabel, caseParam } = useControlsData();
   const { CASE_META, HEAD_STATS } = data;
 
-  /* The trail is the chain itself: the last two agents that handed off, then
-     this one. The chain is navigation, so it comes from the route table. */
+  /* The trail: the case's story, the last agent that handed off, then this
+     one. The chain is navigation, so it comes from the route table. */
   const breadcrumb = [
     { label: "CLOSE", href: withCase(routes.closeCase, caseParam) },
+    { label: "CASE STORY", href: withCase(routes.story, caseParam) },
     ...chainStages(agentId, caseParam)
       .filter((stage) => stage.state === "complete")
-      .slice(-2)
+      .slice(-1)
       .map((stage) => ({
         label: stage.name.toUpperCase(),
         href: stage.href ?? undefined,

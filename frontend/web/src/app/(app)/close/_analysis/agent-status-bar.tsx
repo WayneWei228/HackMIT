@@ -4,6 +4,7 @@ import { motion } from "motion/react";
 
 import { RefreshIcon } from "@/components/ui/icons";
 import { easeOutSoft, transitions } from "@/lib/motion";
+import { AgentJsonButton } from "../_handoff/agent-json";
 import { useAnalysisData } from "./data-context";
 import { completedChecks } from "./types";
 import { PulseDot } from "./glyphs";
@@ -24,7 +25,7 @@ export function AgentStatusBar({
   narration: readonly string[];
   onReplay: () => void;
 }) {
-  const { data, agentLabel } = useAnalysisData();
+  const { data, agentId, agentLabel, caseParam } = useAnalysisData();
   const total = data.analysisChecks.length;
   const done = completedChecks(step, total);
   const status = narration.length
@@ -84,6 +85,7 @@ export function AgentStatusBar({
             className="absolute top-0 left-0 h-full w-[36%] bg-[linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,0.6),rgba(255,255,255,0))]"
           />
         </div>
+        <AgentJsonButton agentId={agentId} caseParam={caseParam} />
         <button
           type="button"
           onClick={onReplay}

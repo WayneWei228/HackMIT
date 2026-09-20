@@ -5,6 +5,7 @@ import { motion } from "motion/react";
 import { crossFade, transitions } from "@/lib/motion";
 
 import { agentChain } from "@/lib/routes";
+import { AgentJsonButton } from "../_handoff/agent-json";
 import { useIngestionData } from "./data-context";
 
 /**
@@ -24,7 +25,7 @@ export function AgentStatusBar({
   complete: boolean;
   selectedCount: number;
 }) {
-  const { data } = useIngestionData();
+  const { data, caseParam } = useIngestionData();
   const { FILES_LOADED_LABEL } = data;
   /* Stage 01 of the chain is the Evidence agent; `/close` is its intake
      view. The name is navigation, not content. */
@@ -65,6 +66,7 @@ export function AgentStatusBar({
         <span className="font-medium text-ink tabular-nums">
           {selectedCount} selected
         </span>
+        <AgentJsonButton agentId={agentChain[0].id} caseParam={caseParam} />
       </div>
     </div>
   );

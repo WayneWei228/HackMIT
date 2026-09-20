@@ -33,7 +33,7 @@ export function CaseHeader({ pulsing }: { pulsing: boolean }) {
       <Breadcrumb
         items={[
           { label: "CLOSE", href: withCase(routes.closeCase, caseParam) },
-          { label: "ACTIVE CASE", href: withCase(routes.closeCase, caseParam) },
+          { label: "CASE STORY", href: withCase(routes.story, caseParam) },
           ...(previous
             ? [
                 {

@@ -27,7 +27,7 @@ export function CaseHeader() {
       <Breadcrumb
         items={[
           { label: "CLOSE", href: closeHref },
-          { label: "ACTIVE CASE", href: closeHref },
+          { label: "CASE STORY", href: withCase(routes.story, caseParam) },
           { label: "EVIDENCE" },
         ]}
       />

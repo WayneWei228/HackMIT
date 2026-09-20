@@ -6,12 +6,10 @@ import { routes, withCase } from "@/lib/routes";
 import { useEstimationData } from "./data-context";
 import { SummaryStrip } from "./summary-strip";
 
-/** The four agents that ran before this one, then Estimation itself. */
+/** The case's story, the agent that handed off, then Estimation itself. */
 const CRUMBS = [
   { label: "CLOSE", href: routes.closeCase },
-  { label: "EVIDENCE", href: routes.evidence },
-  { label: "DETECTION", href: routes.detection },
-  { label: "INVOICE LOOKUP", href: routes.invoiceLookup },
+  { label: "CASE STORY", href: routes.story },
   { label: "CLASSIFICATION", href: routes.classification },
   { label: "ESTIMATION" },
 ];

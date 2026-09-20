@@ -14,6 +14,8 @@ export const routes = {
   documents: "/documents",
   vendors: "/vendors",
   closeCase: "/close",
+  /** One case told in the order it happened. */
+  story: "/close/story",
   evidence: "/close/evidence",
   detection: "/close/detection",
   invoiceLookup: "/close/invoice-lookup",

@@ -118,6 +118,35 @@ export function caseDetailPath(
   )}`;
 }
 
+/**
+ * `GET /api/cases/{period}/{case_key}/handoff` - the raw JSON every agent read
+ * and wrote for the case, each part named after the file it is in.
+ */
+export function handoffPath(
+  caseParam: string | null | undefined,
+): string | null {
+  const detail = caseDetailPath(caseParam);
+  return detail ? `${detail}/handoff` : null;
+}
+
+/**
+ * `GET /api/story` - one vendor's cases on one timeline, holding only what had
+ * happened by the end of `through` (a calendar month, `YYYY-MM`). A `case`
+ * stands in for the vendor when the reader arrives from a case's own screen.
+ */
+export function storyPath(
+  vendor: string | null | undefined,
+  caseParam: string | null | undefined,
+  through: string | null | undefined,
+): string | null {
+  if (!vendor && !caseParam) return null;
+  const query = new URLSearchParams();
+  if (vendor) query.set("vendor", vendor);
+  else if (caseParam) query.set("case", caseParam);
+  if (through) query.set("through", through);
+  return `/api/story?${query.toString()}`;
+}
+
 /** `GET /api/documents/{doc_id}` - one document's text and extracted record. */
 export function documentPath(docId: string | null | undefined): string | null {
   if (!docId) return null;

@@ -4,6 +4,7 @@ import { motion, useReducedMotion } from "motion/react";
 
 import { RefreshIcon } from "@/components/ui/icons";
 import { easeOutSoft } from "@/lib/motion";
+import { AgentJsonButton } from "../../_handoff/agent-json";
 import { completedChecks } from "../_data";
 import { LiveDot } from "./markers";
 import { useEstimationData } from "./data-context";
@@ -28,7 +29,8 @@ export function AgentBar({
   onReplay: () => void;
 }) {
   const reduced = useReducedMotion();
-  const { BUILD_STEPS, INPUTS } = useEstimationData().data;
+  const { data, caseParam } = useEstimationData();
+  const { BUILD_STEPS, INPUTS } = data;
   const total = BUILD_STEPS.length;
   const done = completedChecks(step, total);
   const pct = total === 0 ? 100 : (done / total) * 100;
@@ -84,6 +86,7 @@ export function AgentBar({
             />
           </div>
 
+          <AgentJsonButton agentId="estimation" caseParam={caseParam} />
           <button
             type="button"
             onClick={onReplay}

@@ -63,11 +63,39 @@ export type Fact = {
   at?: number;
 };
 
+/** One file the Evidence agent read, and whether this case kept it. */
+export type SelectionFile = {
+  docId: DocId;
+  /** The file's own name. Never a path - the backend strips it. */
+  fileName: string;
+  docType?: string | null;
+  /** The month folder the file arrived in. */
+  period?: string | null;
+  selected: boolean;
+  /** How a kept file ties to this case, in the backend's words. */
+  reason?: string | null;
+  /** The PO line a passed-over file belongs to instead, when it names one. */
+  belongsTo?: string | null;
+};
+
+/**
+ * The narrowing the agent did before it read anything closely: every file it
+ * had, down to the ones this case was decided on. The counts are the
+ * backend's, so the strip never adds up a list it may not have in full.
+ */
+export type FileSelection = {
+  total: number;
+  selected: number;
+  files: readonly SelectionFile[];
+};
+
 /** Everything the close API serves for screen `evidence`. */
 export type EvidenceData = {
   CASE: CaseSummary;
   FACTS: readonly Fact[];
   MATCH: MatchTarget | null;
+  /** Absent from an older backend, in which case the strip is not drawn. */
+  SELECTION?: FileSelection | null;
 };
 
 /**
@@ -168,6 +196,12 @@ export const HANDOFF_DELAY = 1600;
 
 /** The last step in the sequence - the finished state. */
 export const FINAL_STEP = SEQ.length - 1;
+
+/**
+ * Step at which the file strip narrows from every file to this case's own.
+ * It is the step `CHECKLIST[0]`, "Documents collected", ticks at.
+ */
+export const SELECTION_STEP = 1;
 
 /** Step at which the clause highlight sweeps in and the match flag appears. */
 export const MATCH_STEP = 4;

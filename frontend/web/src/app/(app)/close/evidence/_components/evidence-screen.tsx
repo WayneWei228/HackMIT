@@ -26,6 +26,7 @@ import { EvidenceDataProvider } from "./data-context";
 import { DocumentTabs } from "./document-tabs";
 import { DocumentViewer } from "./document-viewer";
 import { ExecutionRail } from "./execution-rail";
+import { FileSelection } from "./file-selection";
 import { CollapsedRail } from "./rail-collapsed";
 import { useDocumentViewer } from "./use-document-viewer";
 import { useEvidenceRun } from "./use-evidence-run";
@@ -182,6 +183,11 @@ function EvidenceWorkspace() {
         <div className="flex-none px-[34px] pt-[26px]">
           <CaseHeader />
           <CaseStats step={run.step} complete={run.complete} />
+          <FileSelection
+            step={run.step}
+            doc={viewer.doc}
+            onSelect={viewer.selectDoc}
+          />
           <DocumentTabs
             doc={viewer.doc}
             hasMatch={viewer.hasMatch}
