@@ -251,7 +251,7 @@ VENDOR_FIELDS = {"name", "id", "mark", "initials", "profile", "treatment", "work
 # returns is a bug. Copied by hand from the frontend, which is the contract.
 INGESTION_KEYS = {"CASE_VENDOR", "CASE_TITLE", "CASE_META", "CASE_STATS", "CASE_STATUS_VALUE",
                   "SOURCE_ORDER", "SOURCE_NAMES", "SOURCE_FOOTERS", "SOURCE_TABS", "FILES_LOADED_LABEL"}
-EVIDENCE_KEYS = {"CASE", "FACTS", "MATCH"}
+EVIDENCE_KEYS = {"CASE", "FACTS", "MATCH", "SELECTION"}
 ANALYSIS_KEYS = {"caseMeta", "headerStats", "evidenceInputsLabel", "sourceFacts", "factAttributes",
                  "sourceDocumentsLabel", "analysisIntro", "analysisChecks", "conclusion", "conclusionRows",
                  "railTasks", "handoffBlurb"}
@@ -295,11 +295,6 @@ def test_cases_are_typed_case_records(client):
         assert row["category"] in CASE_CATEGORIES and row["status"] in CASE_STATUSES and row["stage"] in CASE_STAGES
         assert isinstance(row["amount"], int) and isinstance(row["ts"], float) and 0 <= row["mark"] <= 4
         assert row["initials"] and row["item"] and row["date"] and row["time"]
-
-
-def test_href_is_the_url_encoded_case_id(client):
-    hrefs = {r["vendor"]: r["href"] for r in client.get("/api/cases").json()["CASES"]}
-    assert hrefs["Mintlify"] == "/close?case=2026-12%2FPO-001-001"
 
 
 def test_period_filter(client):
@@ -675,6 +670,31 @@ def test_evidence_facts_come_from_the_tables(client):
     assert [f["at"] for f in facts] == list(range(1, len(facts) + 1))
 
 
+def test_evidence_shows_the_files_it_chose_out_of_all_it_read(client):
+    picked = client.get(f"/api/cases/{P}/PO-001-001/screens/evidence").json()["SELECTION"]
+    assert (picked["total"], picked["selected"]) == (len(DOCUMENTS), 2)
+    by_id = {f["docId"]: f for f in picked["files"]}
+    assert by_id["CTR-001"]["selected"] and by_id["CTR-001"]["reason"] == "Sets this line's contract terms"
+    assert by_id["INV-MINT-DEC"]["reason"] == "Names this PO line"
+    assert by_id["USG-DEC"] == {"docId": "USG-DEC", "fileName": "", "docType": "USAGE_REPORT", "period": None,
+                                "selected": False, "reason": None, "belongsTo": "PO-002-001"}
+    body = client.get(f"/api/cases/{P}/PO-001-001").json()            # the same rule picks the dossier's documents
+    assert [d["doc_id"] for d in body["documents"]] == [f["docId"] for f in picked["files"] if f["selected"]]
+
+
+def test_a_file_from_a_later_month_was_not_there_to_choose_from(tmp_path, monkeypatch, pdfs):
+    later = [{**DOCUMENTS[2], "doc_id": "USG-JAN", "period": "2027-01"},                  # another line's, later
+             {**DOCUMENTS[1], "doc_id": "INV-MINT-JAN", "period": "2027-01"}]             # this line's, later: kept
+    root = write_run(tmp_path / "run")
+    (root / "db" / "documents.json").write_text(json.dumps(
+        [{**d, "period": P, "file": f"/somewhere/on/disk/{d['doc_id']}.pdf"} for d in DOCUMENTS] + later))
+    monkeypatch.setenv("TRUEUP_RUN_DIR", str(root))
+    picked = TestClient(api.app).get(f"/api/cases/{P}/PO-001-001/screens/evidence").json()["SELECTION"]
+    ids = [f["docId"] for f in picked["files"]]
+    assert "USG-JAN" not in ids and "INV-MINT-JAN" in ids
+    assert all("/" not in f["fileName"] for f in picked["files"]) and picked["files"][0]["fileName"] == "CTR-001.pdf"
+
+
 def test_dossier_carries_the_native_blocks(client):
     body = client.get(f"/api/cases/{P}/CAMPAIGN-004-001").json()
     assert body["case"]["status"] == "CLOSED" and body["case"]["estimate"]["estimator"] == "PO_BUDGET"
@@ -880,3 +900,368 @@ def test_a_runner_crash_is_reported_as_the_jobs_error(empty_client, monkeypatch)
     empty_client.post("/api/periods/2026-09/close")
     status = wait_for_job(empty_client)
     assert "bedrock said no" in status["error"] and status["result"] is None
+
+
+# --------------------------------------------------------------------------------------------------------------
+# The handoff: the raw JSON an agent read and wrote for one case, and the file each part lives in
+# --------------------------------------------------------------------------------------------------------------
+
+AGENTS = ["evidence", "detection", "invoice-lookup", "classification", "estimation", "outreach", "settlement"]
+
+
+def _parts(body, side):
+    return {(p["file"], p["label"]): p["data"] for p in body[side]}
+
+
+def _handoff(client, case_key, agent):
+    return client.get(f"/api/cases/{P}/{case_key}/handoff/{agent}")
+
+
+@pytest.mark.parametrize("agent", AGENTS)
+def test_a_handoff_names_real_files_and_carries_data(client, tmp_path, agent):
+    body = _handoff(client, "PO-001-001", agent).json()
+    assert body["agent"] == agent and body["case_id"] == f"{P}/PO-001-001"
+    for part in body["input"] + body["output"]:
+        assert set(part) == {"file", "label", "data"} and part["data"] not in (None, [], {})
+        if part["file"].endswith(".json"):
+            assert (tmp_path / "run" / part["file"]).is_file(), part["file"]
+
+
+def test_a_handoff_output_is_the_block_that_agent_wrote(client):
+    case = next(c for c in CASES if c["case_key"] == "PO-001-001")
+    wrote = {"detection": "obligation", "invoice-lookup": "invoice_match", "classification": "classification",
+             "estimation": "estimate", "settlement": "settlement"}
+    for agent, block in wrote.items():
+        out = _parts(_handoff(client, "PO-001-001", agent).json(), "output")
+        assert out[("state/cases.json", block)] == case[block]
+
+
+def test_a_handoff_keeps_each_agents_own_decisions(client):
+    out = _parts(_handoff(client, "PO-001-001", "classification").json(), "output")
+    assert [d["worker"] for d in out[("state/cases.json", "decision_log")]] == ["classifier"]
+
+
+def test_one_agents_output_is_the_next_agents_input(client):
+    case = next(c for c in CASES if c["case_key"] == "PO-003-001")
+    lookup_in = _parts(_handoff(client, "PO-003-001", "invoice-lookup").json(), "input")
+    assert lookup_in[("state/cases.json", "obligation")] == case["obligation"]
+    assert [i["invoice_id"] for i in lookup_in[("db/invoices.json", "invoices on this PO line")]] == ["INV-ASUS-DEC"]
+    estimation_in = _parts(_handoff(client, "PO-003-001", "estimation").json(), "input")
+    assert estimation_in[("state/cases.json", "invoice_match")] == case["invoice_match"]
+    assert estimation_in[("state/cases.json", "classification")] == case["classification"]
+
+
+def test_evidence_hands_off_the_rows_its_documents_wrote(client):
+    body = _handoff(client, "PO-003-001", "evidence").json()
+    out = _parts(body, "output")
+    assert [d["doc_id"] for d in out[("db/documents.json", "documents read for this case")]] == ["GR-ASUS-DEC"]
+    assert out[("db/goods_receipts.json", "rows written from these documents")] == RECEIPTS
+
+
+def test_a_handoff_names_a_documents_file_without_its_path(tmp_path, monkeypatch, pdfs):
+    root = write_run(tmp_path / "run")
+    rows = [{**d, "file": f"/Users/someone/pdf/2026-12/{d['doc_id']}.pdf"} for d in DOCUMENTS]
+    (root / "db" / "documents.json").write_text(json.dumps(rows))
+    monkeypatch.setenv("TRUEUP_RUN_DIR", str(root))
+    out = _parts(_handoff(TestClient(api.app), "PO-003-001", "evidence").json(), "output")
+    assert [d["file"] for d in out[("db/documents.json", "documents read for this case")]] == ["GR-ASUS-DEC.pdf"]
+
+
+def test_outreach_hands_off_the_cases_tickets(client):
+    out = _parts(_handoff(client, "PO-002-001", "outreach").json(), "output")
+    assert [t["ticket_id"] for t in out[("state/outreach.json", "tickets")]] == ["T-2026-12-PO-002-001-MISSING_DATA"]
+
+
+def test_a_handoff_leaves_out_what_was_never_written(tmp_path, monkeypatch, pdfs):
+    monkeypatch.setenv("TRUEUP_RUN_DIR", str(write_run(tmp_path / "run", cases=[_case("PO-002-001", "DETECTED")])))
+    body = _handoff(TestClient(api.app), "PO-002-001", "invoice-lookup").json()
+    assert body["output"] == []
+    assert ("state/cases.json", "obligation") in _parts(body, "input")
+
+
+def test_a_handoff_input_is_only_what_was_visible_when_the_agent_ran(tmp_path, monkeypatch, pdfs):
+    root = write_run(tmp_path / "run")
+    late = [{**i, "available_at": "2027-01-10"} if i["invoice_id"] == "INV-MINT-DEC" else i for i in INVOICES]
+    (root / "db" / "invoices.json").write_text(json.dumps(late))
+    monkeypatch.setenv("TRUEUP_RUN_DIR", str(root))
+    client, key = TestClient(api.app), ("db/invoices.json", "invoices on this PO line")
+    assert key not in _parts(_handoff(client, "PO-001-001", "estimation").json(), "input")   # closed 01-05
+    settled = _parts(_handoff(client, "PO-001-001", "settlement").json(), "input")          # settled 01-15
+    assert [i["invoice_id"] for i in settled[key]] == ["INV-MINT-DEC"]
+
+
+def _chain(client, case_key):
+    return client.get(f"/api/cases/{P}/{case_key}/handoff")
+
+
+def _steps(client, case_key):
+    return _chain(client, case_key).json()["steps"]
+
+
+def test_the_chain_is_the_agents_in_the_order_they_ran(client):
+    """With one timestamp and one entry per worker, the chain is the documents, then the log, in order."""
+    steps = _steps(client, "PO-001-001")
+    assert [s["agent"] for s in steps] == ["evidence", "detection", "invoice-lookup", "classification",
+                                           "estimation", "settlement"]
+    assert steps[0]["result"] == "CTR-001, INV-MINT-DEC"
+    alone = _handoff(client, "PO-001-001", "estimation").json()
+    assert steps[4]["input"] == alone["input"]
+    assert _parts(steps[4], "output")[("state/cases.json", "estimate")] == CASES[0]["estimate"]
+
+
+FEB2, FEB5 = "2027-02-02T12:00:00Z", "2027-02-05T12:00:00Z"
+REPLY = "REPLY-T-2026-12-PO-001-001-VARIANCE_UNEXPLAINED"
+EXPLAINED = "contract CTR-001 v2 sets 1400 from 2026-12-01: the vendor changed the price"
+
+
+def _entry(at, worker, question, answer, action=""):
+    return {"at": at, "worker": worker, "kind": "RULE", "question": question, "answer": answer,
+            "confidence": None, "action": action}
+
+
+def write_price_change(root):
+    """Mintlify's December: accrued at the contract's 1200, billed 1400, the vendor asked, the reply explains."""
+    log = [_entry(CLOSE_AT, "detection", "Is this PO line owed for the period?", ["PO validity covers period"]),
+           _entry(CLOSE_AT, "invoice_lookup", "Is there an invoice on the AP or in the queue?", "NO_INVOICE"),
+           _entry(CLOSE_AT, "classifier", "What do the PO columns say?", "RECURRING_FIXED"),
+           _entry(CLOSE_AT, "estimation", "Base formula for RECURRING_FIXED?", "1200", "CONTRACT_RATE"),
+           _entry(CLOSE_AT, "estimation", "1200.00 = 1200", "ESTIMATED", "ESTIMATE_REQUIRED -> ESTIMATED"),
+           _entry(CLOSE_AT, "runner", "period closed", "CLOSED", "JOURNALED -> CLOSED"),
+           _entry(FEB2, "settlement", "Why does the actual differ from the accrual?", "EXTERNAL_CHANGE",
+                  "true-up +200.00"),
+           _entry(FEB2, "settlement", "actual 1400.00 vs accrued 1200.00: EXTERNAL_CHANGE", "SETTLED",
+                  "CLOSED -> SETTLED"),
+           _entry(FEB5, "outreach", "Has T-2026-12-PO-001-001-VARIANCE_UNEXPLAINED been answered?", REPLY,
+                  "VARIANCE_UNEXPLAINED ANSWERED"),
+           _entry(FEB5, "settlement", "Does the answer explain the variance?", True, EXPLAINED)]
+    case = {**CASES[0], "decision_log": log,
+            "settlement": {**CASES[0]["settlement"], "settled_at": FEB2,
+                           "ticket_id": "T-2026-12-PO-001-001-VARIANCE_UNEXPLAINED"}}
+    ticket = {"ticket_id": "T-2026-12-PO-001-001-VARIANCE_UNEXPLAINED", "case_id": case["case_id"], "period": P,
+              "reason": "VARIANCE_UNEXPLAINED", "asked_of": "VENDOR", "to": "Mintlify", "question": "What changed?",
+              "message": None, "blocking": False, "deadline": "2027-02-12T12:00:00Z", "state": "ANSWERED",
+              "opened_at": FEB2, "answered_at": FEB5, "answered_by_doc": REPLY, "expired_at": None}
+    write_run(root, cases=[case], tickets=[ticket])
+    docs = [d for d in DOCUMENTS if d["po_line_id"] == "PO-001-001"]
+    docs = [{**d, "available_at": "2027-02-01"} if d["doc_id"] == "INV-MINT-DEC" else d for d in docs]
+    docs.append({"doc_id": REPLY, "doc_type": "AMENDMENT", "vendor_id": "V001", "po_line_id": "PO-001-001",
+                 "quality": "OK", "reasons": [], "applied_to": "contracts", "available_at": "2027-02-03",
+                 "record": {"monthly_rate": 1400.0}})
+    (root / "db" / "documents.json").write_text(json.dumps(docs))
+    contracts = [CONTRACTS[0], {**CONTRACTS[1], "source_doc": REPLY, "available_at": "2027-02-03"}]
+    (root / "db" / "contracts.json").write_text(json.dumps(contracts))
+    invoices = [{**i, "available_at": "2027-02-01"} if i["invoice_id"] == "INV-MINT-DEC" else i for i in INVOICES]
+    (root / "db" / "invoices.json").write_text(json.dumps(invoices))
+    return root
+
+
+@pytest.fixture
+def price_change(tmp_path, monkeypatch, pdfs):
+    monkeypatch.setenv("TRUEUP_RUN_DIR", str(write_price_change(tmp_path / "run")))
+    return TestClient(api.app)
+
+
+def test_the_chain_tells_a_variance_in_the_order_it_happened(price_change):
+    steps = _steps(price_change, "PO-001-001")
+    assert [(s["agent"], s["at"][:10], s["result"]) for s in steps] == [
+        ("evidence", CLOSE_AT[:10], "CTR-001"),
+        ("detection", "2027-01-05", "PO validity covers period"),
+        ("invoice-lookup", "2027-01-05", "NO_INVOICE"),
+        ("classification", "2027-01-05", "RECURRING_FIXED"),
+        ("estimation", "2027-01-05", "1200.00 = 1200"),
+        ("close", "2027-01-05", "period closed"),
+        ("evidence", "2027-02-01", "INV-MINT-DEC"),
+        ("settlement", "2027-02-02", "actual 1400.00 vs accrued 1200.00: EXTERNAL_CHANGE"),
+        ("outreach", "2027-02-02", "asked Mintlify: What changed?"),
+        ("evidence", "2027-02-03", REPLY),
+        ("outreach", "2027-02-05", "VARIANCE_UNEXPLAINED ANSWERED"),
+        ("settlement", "2027-02-05", EXPLAINED)]
+
+
+def test_a_step_reads_only_what_there_was_at_its_own_moment(price_change):
+    steps = _steps(price_change, "PO-001-001")
+    contracts = ("db/contracts.json", "contract versions of this line")
+    invoices = ("db/invoices.json", "invoices on this PO line")
+    estimation, first, asked, reply, _, second = steps[4], steps[7], steps[8], steps[9], steps[10], steps[11]
+    assert invoices not in _parts(estimation, "input")                    # the close never saw the 1400 invoice
+    assert [c["version"] for c in _parts(estimation, "input")[contracts]] == [1]
+    assert [c["version"] for c in _parts(first, "input")[contracts]] == [1]        # still 1200 when it rechecked
+    assert ("state/cases.json", "settlement") in _parts(asked, "input")   # the variance is why it asked
+    assert [r["version"] for r in _parts(reply, "output")[("db/contracts.json", "rows written from these documents")]] == [2]
+    assert [c["version"] for c in _parts(second, "input")[contracts]] == [1, 2]    # the reply brought v2
+    assert [d["doc_id"] for d in _parts(second, "input")[("db/documents.json", "replies received")]] == [REPLY]
+
+
+def test_a_step_writes_its_own_decisions_only(price_change):
+    steps = _steps(price_change, "PO-001-001")
+    first, second = steps[7], steps[11]
+    log = ("state/cases.json", "decision_log")
+    assert [d["at"] for d in _parts(first, "output")[log]] == [FEB2, FEB2]
+    assert [d["answer"] for d in _parts(second, "output")[log]] == [True]
+
+
+def test_each_step_carries_the_facts_a_reader_needs(price_change):
+    """The story page writes its sentences from these; nothing in them is wording."""
+    facts = [s["facts"] for s in _steps(price_change, "PO-001-001")]
+    arrived, _, lookup, classified, estimated, closed, invoice, variance, asked, reply, answered, explained = facts
+    assert [d["doc_id"] for d in arrived["documents"]] == ["CTR-001"] and arrived["documents"][0]["text"] is None
+    assert lookup == {"kind": "invoice-lookup", "result": "NO_INVOICE", "invoice_ids": [], "invoiced_amount": 0}
+    assert classified["final"] == "RECURRING_FIXED" and classified["label"] == "Recurring fixed"
+    assert estimated == {"kind": "estimation", "outcome": "ESTIMATED", "estimator": "CONTRACT_RATE",
+                         "estimator_label": "Contract rate", "calculation": "1200", "amount": 1200.0,
+                         "missing": None, "forced": False, "basis": None}
+    assert closed == {"kind": "close", "amount": 1200.0}
+    assert invoice["documents"][0]["doc_id"] == "INV-MINT-DEC"
+    assert variance["kind"] == "variance" and (variance["actual"], variance["accrued"], variance["true_up"]) == (
+        1400.0, 1200.0, 200.0)
+    assert variance["cause"] == "EXTERNAL_CHANGE" and variance["recheck"]["prior_invoice_amounts"] == [1200.0]
+    assert asked["kind"] == "ask" and (asked["to"], asked["asked_of"], asked["question"]) == (
+        "Mintlify", "VENDOR", "What changed?")
+    assert reply["documents"][0]["is_reply"] is True
+    assert answered == {"kind": "answer", "state": "ANSWERED", "to": "Mintlify", "asked_of": "VENDOR",
+                        "reason": "VARIANCE_UNEXPLAINED", "answered_by_doc": REPLY}
+    assert explained == {"kind": "explanation", "explained": True, "explanation": CASES[0]["settlement"]["explanation"]}
+
+
+def test_a_step_that_could_not_price_says_what_it_waits_for(tmp_path, monkeypatch, pdfs):
+    log = [_entry(CLOSE_AT, "estimation", "no amount yet: delivery report for the period", "OUTREACH_PENDING",
+                  "ESTIMATE_REQUIRED -> OUTREACH_PENDING"),
+           _entry(CLOSE_AT, "outreach", "Has T-2026-12-CAMPAIGN-004-001-MISSING_DATA been answered?", False,
+                  "MISSING_DATA EXPIRED"),
+           _entry(CLOSE_AT, "estimation", "30000.00 = 30000", "ESTIMATED", "FORCED_ESTIMATE -> ESTIMATED")]
+    monkeypatch.setenv("TRUEUP_RUN_DIR", str(write_run(tmp_path / "run", cases=[{**CASES[3], "decision_log": log}])))
+    waiting, _, chased, forced = [s["facts"] for s in _steps(TestClient(api.app), "CAMPAIGN-004-001")]
+    assert waiting["outcome"] == "OUTREACH_PENDING" and waiting["amount"] is None
+    assert waiting["missing"] == "delivery report for the period"
+    assert chased["kind"] == "answer" and chased["state"] == "EXPIRED"
+    assert forced["outcome"] == "ESTIMATED" and forced["forced"] is True and forced["basis"] == "PO budget (overall limit)"
+
+
+def test_the_chain_names_the_case_for_a_page_header(client):
+    body = _chain(client, "PO-001-001").json()
+    assert (body["vendor_name"], body["title"], body["period"]) == ("Mintlify", "December 2026 accrual", P)
+
+
+def test_an_ask_comes_before_outreach_checks_for_its_answer(tmp_path, monkeypatch, pdfs):
+    """Meta's December: the ticket was opened before the close ran, and the log says when it was chased."""
+    log = [_entry(CLOSE_AT, "estimation", "no amount yet: delivery report for the period", "OUTREACH_PENDING",
+                  "ESTIMATE_REQUIRED -> OUTREACH_PENDING"),
+           _entry(CLOSE_AT, "outreach", "Has T-2026-12-CAMPAIGN-004-001-MISSING_DATA been answered?", False,
+                  "MISSING_DATA EXPIRED"),
+           _entry(CLOSE_AT, "estimation", "30000.00 = 30000", "ESTIMATED", "FORCED_ESTIMATE -> ESTIMATED")]
+    case = {**CASES[3], "decision_log": log}
+    monkeypatch.setenv("TRUEUP_RUN_DIR", str(write_run(tmp_path / "run", cases=[case])))
+    steps = _steps(TestClient(api.app), "CAMPAIGN-004-001")
+    assert [(s["agent"], s["result"]) for s in steps] == [
+        ("estimation", "no amount yet: delivery report for the period"),
+        ("outreach", "asked maria.gomez: What was delivered?"),
+        ("outreach", "MISSING_DATA EXPIRED"),
+        ("estimation", "30000.00 = 30000")]
+
+
+def test_the_chain_carries_the_situation_and_its_numbers(client):
+    situation = _chain(client, "PO-001-001").json()["situation"]
+    assert situation == {"category": "RECURRING_FIXED", "label": "Recurring fixed", "estimator": "CONTRACT_RATE",
+                         "calculation": "1200", "amount": 1200.0, "missing": None, "flags": [],
+                         "accrued": 1200.0, "actual": 1400.0, "true_up": 200.0, "cause": "EXTERNAL_CHANGE",
+                         "numbers": [1200.0, 1400.0, 200.0]}
+
+
+def test_the_situations_numbers_are_read_off_the_calculation(tmp_path, monkeypatch, pdfs):
+    usage = _case("PO-002-001", "ESTIMATED", invoice_match=MATCH_NONE,
+                  classification=_classification("RECURRING_VARIABLE"),
+                  estimate=_estimate("RECURRING_VARIABLE", "USAGE_EXTRAPOLATED", 17360.0, "700000 / 25 * 31 * 0.02"))
+    goods = _case("PO-003-001", "ESTIMATED", invoice_match=MATCH_NONE,
+                  classification=_classification("ONE_TIME_FIXED"),
+                  estimate=_estimate("ONE_TIME_FIXED", "THREE_WAY_MATCH", 32000.0, "1600 * (20 - 0)"))
+    monkeypatch.setenv("TRUEUP_RUN_DIR", str(write_run(tmp_path / "run", cases=[usage, goods])))
+    client = TestClient(api.app)
+    assert _chain(client, "PO-002-001").json()["situation"]["numbers"] == [700000.0, 25.0, 31.0, 0.02, 17360.0]
+    assert _chain(client, "PO-003-001").json()["situation"]["numbers"] == [1600.0, 20.0, 32000.0]   # never 0
+
+
+def test_the_chain_lists_the_periods_cases_to_switch_between(client):
+    body = _chain(client, "PO-002-001").json()
+    assert [(c["case_id"], c["vendor_name"], c["category"]) for c in body["cases"]] == [
+        (f"{P}/CAMPAIGN-004-001", "Meta", "ONE_TIME_VARIABLE"), (f"{P}/PO-001-001", "Mintlify", "RECURRING_FIXED"),
+        (f"{P}/PO-002-001", "OpenAI", "RECURRING_VARIABLE"), (f"{P}/PO-003-001", "ASUS", "ONE_TIME_FIXED")]
+    assert all(c["label"] for c in body["cases"])
+    assert _chain(client, "NOPE-001").status_code == 404
+
+
+# --------------------------------------------------------------------------------------------------------------
+# The vendor story: every case of one vendor on one timeline, cut at the end of a calendar month
+# --------------------------------------------------------------------------------------------------------------
+
+
+def _story(client, **params):
+    return client.get("/api/story", params=params)
+
+
+def test_a_story_shows_nothing_dated_after_the_month_it_is_cut_at(price_change):
+    january = _story(price_change, vendor="V001", through="2027-01").json()
+    assert [s["agent"] for s in january["steps"]] == ["evidence", "detection", "invoice-lookup", "classification",
+                                                      "estimation", "close"]
+    assert all(s["at"][:7] <= "2027-01" for s in january["steps"]) and january["later"] == 6
+    assert (january["through"], january["through_day"], january["next_month"]) == ("2027-01", "2027-01-31", "2027-02")
+    february = _story(price_change, vendor="V001", through="2027-02").json()
+    assert len(february["steps"]) == 12 and february["later"] == 0 and february["next_month"] is None
+
+
+def test_a_story_knows_which_case_and_which_step_each_event_is(price_change):
+    steps = _story(price_change, vendor="V001", through="2027-02").json()["steps"]
+    assert {s["case_id"] for s in steps} == {f"{P}/PO-001-001"} and steps[0]["case_title"] == "December 2026 accrual"
+    assert [s["case_step"] for s in steps] == list(range(12))       # where the JSON drawer opens
+
+
+def test_a_story_says_where_the_vendor_stands_at_the_cut(price_change):
+    january = _story(price_change, vendor="V001", through="2027-01").json()["standing"]
+    assert january == {"accrued_open": 1200.0, "true_ups": 0, "open_questions": 0}
+    february = _story(price_change, vendor="V001", through="2027-02").json()["standing"]
+    assert february == {"accrued_open": 0, "true_ups": 200.0, "open_questions": 0}
+
+
+def test_a_story_offers_every_calendar_month_anything_happened_in(price_change):
+    body = _story(price_change, vendor="V001").json()
+    assert [m["month"] for m in body["months"]] == ["2027-01", "2027-02"]
+    assert body["months"][0]["label"] == "January 2027" and body["through"] == "2027-02"   # default: the latest
+
+
+def test_a_story_lists_the_vendors_for_its_panel(client):
+    body = _story(client, vendor="V002", through="2027-01").json()
+    assert [(v["vendor_id"], v["vendor_name"]) for v in body["vendors"]] == [
+        ("V003", "ASUS"), ("V004", "Meta"), ("V001", "Mintlify"), ("V002", "OpenAI")]
+    assert body["vendor_name"] == "OpenAI" and all(v["events"] > 0 for v in body["vendors"])
+    assert next(v for v in body["vendors"] if v["vendor_id"] == "V002")["open_questions"] == 1
+
+
+def test_a_document_arrives_once_however_many_months_cite_it(tmp_path, monkeypatch, pdfs):
+    november = {**CASES[0], "case_id": "2026-11/PO-001-001", "period": "2026-11", "as_of": "2026-12-05T12:00:00Z",
+                "decision_log": [_entry("2026-12-05T12:00:00Z", "detection", "owed?", ["covers period"])],
+                "settlement": None}
+    december = {**CASES[0], "decision_log": [_entry(CLOSE_AT, "detection", "owed?", ["covers period"])]}
+    monkeypatch.setenv("TRUEUP_RUN_DIR", str(write_run(tmp_path / "run", cases=[november, december], tickets=[])))
+    steps = _story(TestClient(api.app), vendor="V001").json()["steps"]
+    shown = [d["doc_id"] for s in steps if s["facts"]["kind"] == "documents" for d in s["facts"]["documents"]]
+    assert sorted(shown) == ["CTR-001", "INV-MINT-DEC"]
+    assert [s["case_id"][:7] for s in steps if s["agent"] == "detection"] == ["2026-11", "2026-12"]
+
+
+def test_a_story_opened_from_a_case_shows_that_case_whole(price_change):
+    body = _story(price_change, case=f"{P}/PO-001-001").json()
+    assert body["vendor_id"] == "V001" and body["through"] == "2027-02" and body["later"] == 0
+
+
+def test_a_story_of_nobody_is_a_404(client):
+    assert _story(client, vendor="V999").status_code == 404
+    assert _story(client).status_code == 404
+
+
+def test_a_case_row_opens_the_vendors_story_cut_at_the_rows_month(client):
+    rows = client.get("/api/cases").json()["CASES"]
+    assert next(r for r in rows if r["vendor"] == "Mintlify")["href"] == f"/close/story?vendor=V001&through={P}"
+
+
+def test_an_unknown_handoff_agent_is_a_404(client):
+    assert _handoff(client, "PO-001-001", "journal").status_code == 404
+    assert client.get(f"/api/cases/{P}/NOPE-001/handoff/detection").status_code == 404

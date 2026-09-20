@@ -278,15 +278,19 @@ once settlement has run for it AND it either trued something up or has no accrua
 the CLOSED cases still waiting for an actual, so December can be settled and still carry one open accrual.
 `try_run.py` is a thin CLI over it (`--fresh` = `runner.reset`).
 
-**A document lives in the month it arrived, and each close settles the months before it.** December's invoice
-reaches us in January, so it is filed in `2027-01/` and is stamped `<next>-01` - after December's cutoff
+**A document lives in the month it arrived, and each close settles the months before it.** A December document
+that reaches us in January (the final OpenAI usage, the Meta delivery report) is filed in `2027-01/` and is
+stamped `<next>-01` - after December's cutoff
 (`<next>-05`), so it can never be read back into the December close, and before January's first pass
 (`<next>-02`), so January sees it. Therefore every close pass, right after `evidence.run` for its own month,
 sweeps each earlier month that still has an accrual waiting for its actual or a variance nobody explained:
 `outreach` (answers) -> `settlement` (true-ups, vendor questions) -> `outreach` (word them), marking that month
 settled and refreshing its package. December's true-ups are booked by the January close; a month whose late
 documents never come (ASUS, invoiced by nobody) simply stays in `unsettled`. `run_settlement(period)` runs the
-same sweep on its own clock for whatever the period's own folder still brings.
+same sweep on its own clock (`<next>-15`, `<next>-25`) for whatever the period's own folder still brings, and
+that is how a question gets asked and answered inside one month: Mintlify's December invoice is filed in
+`2026-12/afterclose/` (known `<next>-12`) and the vendor's reply in `2026-12/afterclose/replies/` (known
+`<next>-20`), so the variance is found on January 15 and explained on January 25.
 
 ## Closing the loop (built after the five workers)
 

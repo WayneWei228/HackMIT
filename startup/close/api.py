@@ -10,6 +10,7 @@ The chart of accounts below is a DISPLAY DEFAULT for the UI, not company data: t
 """
 from __future__ import annotations
 
+import calendar
 import json
 import os
 import re
@@ -25,7 +26,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
-from . import evidence
+from . import evidence, store
 from .workspace import CLOSE_DIR, repo_root
 
 # --------------------------------------------------------------------------------------------------------------
@@ -129,13 +130,25 @@ def pdf_dir() -> Path:
     return (repo_root() or CLOSE_DIR) / "output" / "pdf" / "startup_minimal_data"
 
 
+_READ_CACHE: dict[str, tuple[tuple[int, int], Any]] = {}
+
+
 def _read(path: Path, default: Any) -> Any:
-    if not path.exists():
-        return default
+    """The file as it is on disk right now. Parsed once per version of the file: a story reads the same few
+    tables hundreds of times, and a run rewrites them, so the cache is keyed on the file's own stamp."""
     try:
-        return json.loads(path.read_text())
+        stat = path.stat()
+    except OSError:
+        return default
+    stamp, held = (stat.st_mtime_ns, stat.st_size), _READ_CACHE.get(str(path))
+    if held and held[0] == stamp:
+        return held[1]
+    try:
+        value = json.loads(path.read_text())
     except json.JSONDecodeError:
         return default
+    _READ_CACHE[str(path)] = (stamp, value)
+    return value
 
 
 def table(name: str) -> list[dict]:
@@ -330,21 +343,51 @@ def document_summary(row: dict) -> dict:
             "reasons": row.get("reasons") or []}
 
 
-def documents_of(case: dict) -> list[dict]:
-    """The documents this case was decided on: its own line's, its PO's order form, and its contract versions."""
+def document_link(case: dict, row: dict, po_number: str | None, contract_id: str | None,
+                  contract_docs: set) -> str | None:
+    """How a document belongs to this case, in words - or None when it does not."""
+    # Most specific first: the three are alternatives, and an order form or a contract usually names the line too.
+    if row.get("doc_type") == "PURCHASE_ORDER" and (row.get("record") or {}).get("po_number") == po_number:
+        return "This PO's order form"
+    if contract_id and row.get("doc_id") in contract_docs:
+        return "Sets this line's contract terms"
+    if row.get("po_line_id") == case.get("po_line_id"):
+        return "Names this PO line"
+    return None
+
+
+def linked_documents(case: dict) -> list[tuple[dict, str | None]]:
+    """Every document the Evidence worker read, once each, with its link to this case (None: not this case's)."""
     line = line_of(case)
     po_number, contract_id = line.get("po_number"), line.get("contract_id")
     contract_docs = {c.get("source_doc") for c in table("contracts") if c.get("contract_id") == contract_id}
     out, seen = [], set()
     for row in table("documents"):
-        mine = (row.get("po_line_id") == case.get("po_line_id")
-                or (row.get("doc_type") == "PURCHASE_ORDER" and (row.get("record") or {}).get("po_number")
-                    == po_number)
-                or (row.get("doc_id") in contract_docs and contract_id))
-        if mine and row.get("doc_id") not in seen:
+        if row.get("doc_id") not in seen:
             seen.add(row.get("doc_id"))
-            out.append(row)
+            out.append((row, document_link(case, row, po_number, contract_id, contract_docs)))
     return out
+
+
+def documents_of(case: dict) -> list[dict]:
+    """The documents this case was decided on: its own line's, its PO's order form, and its contract versions."""
+    return [row for row, link in linked_documents(case) if link]
+
+
+def file_selection(case: dict) -> dict:
+    """close/evidence/_data.ts `FileSelection` - every file read up to the case's month, and the ones kept for it.
+
+    A file from a later month folder was not there to choose from, so it is only listed when the case took it
+    anyway (the invoice that settled it). File names only: a path on this machine never reaches the UI.
+    """
+    files = []
+    for row, link in linked_documents(case):
+        if link or not row.get("period") or row["period"] <= case["period"]:
+            files.append({"docId": row.get("doc_id"), "fileName": Path(row.get("file") or "").name,
+                          "docType": row.get("doc_type"), "period": row.get("period"),
+                          "selected": link is not None, "reason": link,
+                          "belongsTo": None if link else row.get("po_line_id")})
+    return {"total": len(files), "selected": sum(f["selected"] for f in files), "files": files}
 
 
 def document_pages(text: str) -> list[str]:
@@ -411,7 +454,7 @@ def case_record(case: dict, marks: dict[str, int]) -> dict:
         "stage": stage_of(case, tickets_of(case)),
         "status": CASE_STATUS.get(case.get("status"), "Running"),
         "date": date, "time": time, "ts": stamp,
-        "href": f"/close?case={quote(case['case_id'], safe='')}",
+        "href": f"/close/story?vendor={quote(str(case.get('vendor_id')), safe='')}&through={case.get('period')}",
     }
 
 
@@ -694,6 +737,7 @@ def screen_evidence(case: dict, cases: list[dict]) -> dict:
         },
         "FACTS": evidence_facts(case),
         "MATCH": match_target(case),
+        "SELECTION": file_selection(case),
     }
 
 
@@ -1453,6 +1497,419 @@ SCREEN_BUILDERS = {
 }
 
 # --------------------------------------------------------------------------------------------------------------
+# The handoff: what one agent read and what it wrote for one case, as the raw JSON and the file it lives in
+# --------------------------------------------------------------------------------------------------------------
+#
+# Nothing here is reshaped for display. A part is `{file, label, data}`: `file` is relative to the run directory,
+# `data` is the rows or the block exactly as they are on disk, with one exception: a document row's `file` is
+# shown as the file's name, not the absolute path of the machine it was read on. An empty part is left out.
+# What an agent READ is time-gated the way the agent was: a row that only became visible after the close is not
+# among the close-time agents' input, however long it has been in the table since.
+
+# The tables Evidence fills from documents; every row carries the `source_doc` that wrote it.
+EVIDENCE_TABLES = ("po_headers", "po_lines", "contracts", "terminations", "invoices", "activity", "goods_receipts")
+
+# Agent -> the name it signs the decision log with.
+HANDOFF_WORKER = {"evidence": "evidence", "detection": "detection", "invoice-lookup": "invoice_lookup",
+                  "classification": "classifier", "estimation": "estimation", "outreach": "outreach",
+                  "settlement": "settlement"}
+
+
+def _part(file: str, label: str, data: Any) -> list[dict]:
+    return [{"file": file, "label": label, "data": data}] if data not in (None, [], {}) else []
+
+
+def _block(case: dict, name: str) -> list[dict]:
+    return _part("state/cases.json", name, case.get(name))
+
+
+def _seen(case: dict, rows: list[dict], as_of: str | None = None) -> list[dict]:
+    """The rows visible when the agent ran: at the case's close, unless a later `as_of` is given."""
+    moment = as_of or case.get("as_of")
+    return store.visible(rows, moment) if moment else rows
+
+
+def _doc_rows(rows: list[dict]) -> list[dict]:
+    return [{**r, "file": Path(r["file"]).name} if r.get("file") else r for r in rows]
+
+
+def _line_rows(case: dict, name: str, label: str, as_of: str | None = None) -> list[dict]:
+    rows = [r for r in table(name) if r.get("po_line_id") == case.get("po_line_id")]
+    return _part(f"db/{name}.json", label, _seen(case, rows, as_of))
+
+
+def _purchase_rows(case: dict) -> list[dict]:
+    return (_part("db/po_headers.json", "purchase order header", header_of(case))
+            + _part("db/po_lines.json", "purchase order line", line_of(case)))
+
+
+def _contract_rows(case: dict, as_of: str | None = None) -> list[dict]:
+    contract_id = line_of(case).get("contract_id")
+    rows = [c for c in table("contracts") if contract_id and c.get("contract_id") == contract_id]
+    return _part("db/contracts.json", "contract versions of this line", _seen(case, rows, as_of))
+
+
+def _at_or_before(moment: str | None, as_of: str | None) -> bool:
+    return not as_of or not moment or store.normalise_ts(moment) <= store.normalise_ts(as_of)
+
+
+def _replies(case: dict, as_of: str | None) -> list[dict]:
+    wanted = {f"REPLY-{t.get('ticket_id')}" for t in tickets_of(case)}
+    rows = [d for d in table("documents") if d.get("doc_id") in wanted]
+    return _part("db/documents.json", "replies received", _doc_rows(_seen(case, rows, as_of)))
+
+
+def _tickets(case: dict, as_of: str | None) -> list[dict]:
+    return _part("state/outreach.json", "tickets",
+                 [t for t in tickets_of(case) if _at_or_before(t.get("opened_at"), as_of)])
+
+
+def handoff_evidence(case: dict, as_of: str | None = None, docs: list[dict] | None = None) -> tuple[list, list]:
+    docs = documents_of(case) if docs is None else docs
+    ids = {d.get("doc_id") for d in docs}
+    files = [{"doc_id": d.get("doc_id"), "file_name": Path(d.get("file") or "").name, "period": d.get("period"),
+              "available_at": d.get("available_at")} for d in docs]
+    wrote = _part("db/documents.json", "documents read for this case", _doc_rows(docs))
+    for name in EVIDENCE_TABLES:
+        rows = [r for r in table(name) if r.get("source_doc") in ids]
+        wrote += _part(f"db/{name}.json", "rows written from these documents", rows)
+    return _part(f"{pdf_dir().name}/", "source files", files), wrote
+
+
+def handoff_detection(case: dict, as_of: str | None = None) -> tuple[list, list]:
+    identity = {k: case.get(k) for k in ("case_id", "case_key", "period", "kind", "vendor_id", "po_line_id")}
+    found = _block(case, "obligation")
+    return _purchase_rows(case), (_part("state/cases.json", "case", identity) if found else []) + found
+
+
+def handoff_invoice_lookup(case: dict, as_of: str | None = None) -> tuple[list, list]:
+    read = (_block(case, "obligation") + _line_rows(case, "invoices", "invoices on this PO line", as_of)
+            + _part("db/po_lines.json", "purchase order line", line_of(case)))
+    return read, _block(case, "invoice_match")
+
+
+def handoff_classification(case: dict, as_of: str | None = None) -> tuple[list, list]:
+    return _block(case, "obligation") + _purchase_rows(case), _block(case, "classification")
+
+
+def handoff_estimation(case: dict, as_of: str | None = None) -> tuple[list, list]:
+    read = (_block(case, "invoice_match") + _block(case, "classification")
+            + _part("db/po_lines.json", "purchase order line", line_of(case)) + _contract_rows(case, as_of)
+            + _line_rows(case, "activity", "usage and delivery on this PO line", as_of)
+            + _line_rows(case, "goods_receipts", "goods receipts on this PO line", as_of)
+            + _line_rows(case, "invoices", "invoices on this PO line", as_of))
+    return read, _block(case, "estimate") + _block(case, "flags")
+
+
+def handoff_outreach(case: dict, as_of: str | None = None) -> tuple[list, list]:
+    """Outreach asks about whatever stopped the case: a missing input at the close, a variance after it."""
+    settled = _at_or_before((case.get("settlement") or {}).get("settled_at"), as_of)
+    read = (_block(case, "estimate") + _block(case, "flags") + (_block(case, "settlement") if settled else [])
+            + _purchase_rows(case) + _replies(case, as_of))
+    return read, _tickets(case, as_of)
+
+
+def handoff_settlement(case: dict, as_of: str | None = None) -> tuple[list, list]:
+    later = as_of or (case.get("settlement") or {}).get("settled_at")  # settlement runs after the close, sees more
+    read = (_block(case, "estimate") + _line_rows(case, "invoices", "invoices on this PO line", later)
+            + _line_rows(case, "activity", "usage and delivery on this PO line", later)
+            + _contract_rows(case, later) + _tickets(case, later) + _replies(case, later))
+    return read, _block(case, "settlement")
+
+
+def handoff_close(case: dict, as_of: str | None = None) -> tuple[list, list]:
+    """The cutoff books the estimate as it stands; all it writes is the log."""
+    return _block(case, "estimate") + _block(case, "flags"), []
+
+
+HANDOFF_BUILDERS = {
+    "evidence": handoff_evidence, "detection": handoff_detection, "invoice-lookup": handoff_invoice_lookup,
+    "classification": handoff_classification, "estimation": handoff_estimation, "outreach": handoff_outreach,
+    "settlement": handoff_settlement,
+}
+
+
+def handoff(case: dict, agent: str) -> dict:
+    read, wrote = HANDOFF_BUILDERS[agent](case)
+    decisions = [d for d in case.get("decision_log") or [] if d.get("worker") == HANDOFF_WORKER[agent]]
+    return {"agent": agent, "case_id": case.get("case_id"), "status": case.get("status"),
+            "input": read, "output": wrote + _part("state/cases.json", "decision_log", decisions)}
+
+
+# --- the chain: the same handoffs, one per time an agent actually ran, in the order the case lived them ---------
+#
+# The decision log says who ran and when; a ticket says when somebody was asked; a document says when it arrived.
+# A case that loops - settlement finds a variance, outreach asks the vendor, the reply arrives, settlement
+# explains it - is told as that loop, and each step reads only what there was at its own moment.
+
+STEP_AGENT = {**{worker: agent for agent, worker in HANDOFF_WORKER.items()}, "runner": "close"}
+STEP_BUILDERS = {**HANDOFF_BUILDERS, "close": handoff_close}
+TRANSITION = re.compile(r"^\w+ -> \w+$")
+
+
+def _said(entries: list[dict]) -> str:
+    """A run in one line, off its last log entry: a transition's reason, else its answer, else what it did."""
+    last = entries[-1]
+    answer = last.get("answer")
+    if TRANSITION.match(last.get("action") or ""):
+        return str(last.get("question"))
+    if isinstance(answer, list):
+        return ", ".join(str(a) for a in answer)
+    if isinstance(answer, str) and len(answer) <= 40:
+        return answer
+    return last.get("action") or str(answer)
+
+
+def _not_after(step: dict, moment: str | None) -> bool:
+    return _at_or_before(step["at"], moment)
+
+
+def _document_facts(doc: dict) -> dict:
+    """A document as the story shows it; a reply also brings its words, because the words are the event."""
+    is_reply, path, text = str(doc.get("doc_id")).startswith("REPLY-"), Path(doc.get("file") or ""), None
+    if is_reply and path.name and path.is_file():
+        try:
+            text = evidence.doc_text(path)
+        except Exception:  # noqa: BLE001 - an unreadable file must not break the story
+            text = None
+    return {"doc_id": doc.get("doc_id"), "doc_type": doc.get("doc_type"), "file_name": path.name,
+            "period": doc.get("period"), "fields": document_fields(doc.get("record")), "is_reply": is_reply,
+            "text": text}
+
+
+def _ticket_in(case: dict, entries: list[dict]) -> dict:
+    asked = " ".join(str(e.get("question")) for e in entries)
+    return next((t for t in tickets_of(case) if str(t.get("ticket_id")) in asked), {})
+
+
+def step_facts(case: dict, step: dict, earlier: list[dict]) -> dict:
+    """What happened in one step, as values: the page writes the sentences, this only says what is true."""
+    agent, entries = step["agent"], step["entries"]
+    estimate, settlement = case.get("estimate") or {}, case.get("settlement") or {}
+    if "docs" in step:
+        return {"kind": "documents", "documents": [_document_facts(d) for d in step["docs"]]}
+    if "ticket" in step:
+        ticket, message = step["ticket"], step["ticket"].get("message") or {}
+        return {"kind": "ask", "to": ticket.get("to"), "asked_of": ticket.get("asked_of"),
+                "reason": ticket.get("reason"), "question": ticket.get("question"),
+                "subject": message.get("subject"), "body": message.get("body"), "deadline": ticket.get("deadline")}
+    if agent == "detection":
+        return {"kind": "detection", "reasons": (case.get("obligation") or {}).get("reasons") or []}
+    if agent == "invoice-lookup":
+        match = case.get("invoice_match") or {}
+        return {"kind": "invoice-lookup", "result": match.get("result"), "invoice_ids": match.get("invoice_ids") or [],
+                "invoiced_amount": match.get("invoiced_amount")}
+    if agent == "classification":
+        found = case.get("classification") or {}
+        return {"kind": "classification", "final": found.get("final"), "label": TREATMENT.get(found.get("final")),
+                "rules_why": found.get("rules_why"), "model": found.get("model"),
+                "model_confidence": found.get("model_confidence"), "agree": found.get("agree"),
+                "suggested": found.get("suggested")}
+    if agent == "estimation":
+        moved = [e.get("answer") for e in entries if TRANSITION.match(e.get("action") or "")]
+        outcome = moved[-1] if moved else None
+        priced = outcome in (None, "ESTIMATED")
+        forced = bool(priced and estimate.get("forced"))
+        return {"kind": "estimation", "outcome": outcome, "estimator": estimate.get("estimator") if priced else None,
+                "estimator_label": ESTIMATOR_LABEL.get(estimate.get("estimator")) if priced else None,
+                "calculation": estimate.get("calculation") if priced else None,
+                "amount": estimate.get("amount") if priced else None, "missing": estimate.get("missing"),
+                "forced": forced, "basis": (estimate.get("fallback") or {}).get("basis") if forced else None}
+    if agent == "close":
+        return {"kind": "close", "amount": estimate.get("amount")}
+    if agent == "outreach":
+        ticket = _ticket_in(case, entries)
+        state = ("ANSWERED" if ticket.get("answered_at") == step["at"] else
+                 "EXPIRED" if ticket.get("expired_at") == step["at"] else ticket.get("state"))
+        return {"kind": "answer", "state": state, "to": ticket.get("to"), "asked_of": ticket.get("asked_of"),
+                "reason": ticket.get("reason"), "answered_by_doc": ticket.get("answered_by_doc")}
+    if any(s["agent"] == "settlement" for s in earlier):  # settlement's second look: was the variance explained?
+        return {"kind": "explanation", "explained": settlement.get("explained"),
+                "explanation": settlement.get("explanation")}
+    return {"kind": "variance", "actual": settlement.get("actual"), "accrued": settlement.get("accrued"),
+            "true_up": settlement.get("true_up"), "cause": settlement.get("cause"),
+            "within_tolerance": settlement.get("within_tolerance"), "settled_by": settlement.get("settled_by") or [],
+            "recheck": settlement.get("recheck")}
+
+
+def handoff_steps(case: dict) -> list[dict]:
+    steps: list[dict] = []
+    for entry in case.get("decision_log") or []:                     # 1. the log, a step per consecutive run
+        agent = STEP_AGENT.get(entry.get("worker"))
+        if agent is None:
+            continue
+        if steps and steps[-1]["agent"] == agent and steps[-1]["at"] == entry.get("at"):
+            steps[-1]["entries"].append(entry)
+        else:
+            steps.append({"agent": agent, "at": entry.get("at"), "entries": [entry]})
+    for step in steps:
+        step["result"] = _said(step["entries"])
+
+    for ticket in sorted(tickets_of(case), key=lambda t: t.get("opened_at") or ""):   # 2. each ask
+        ask = {"agent": "outreach", "at": ticket.get("opened_at"), "entries": [], "ticket": ticket,
+               "result": f"asked {ticket.get('to')}: {ticket.get('question')}"}
+        chased = next((i for i, s in enumerate(steps) if s["agent"] == "outreach" and any(
+            str(ticket.get("ticket_id")) in str(e.get("question")) for e in s["entries"])), None)
+        if chased is None:  # nobody logged chasing it: it goes after whatever had run by then
+            earlier = [i for i, s in enumerate(steps) if _not_after(s, ticket.get("opened_at"))]
+            chased = earlier[-1] + 1 if earlier else len(steps)
+        steps.insert(chased, ask)
+
+    arrivals: dict[int, list[dict]] = {}                                              # 3. each arrival
+    for doc in documents_of(case):
+        slot = next((i for i, s in enumerate(steps) if doc.get("available_at") is None
+                     or _at_or_before(doc["available_at"], s["at"])), len(steps))
+        arrivals.setdefault(slot, []).append(doc)
+    for slot in sorted(arrivals, reverse=True):
+        docs = arrivals[slot]
+        dated = [d["available_at"] for d in docs if d.get("available_at")]
+        at = max(dated) if dated else (steps[slot]["at"] if slot < len(steps) else None)
+        steps.insert(slot, {"agent": "evidence", "at": at, "entries": [], "docs": docs,
+                            "result": ", ".join(str(d.get("doc_id")) for d in docs)})
+
+    out = []
+    for index, step in enumerate(steps):
+        if "docs" in step:
+            read, wrote = handoff_evidence(case, docs=step["docs"])
+        else:
+            read, wrote = STEP_BUILDERS[step["agent"]](case, step["at"])
+        if "ticket" in step:
+            wrote = _part("state/outreach.json", "ticket", step["ticket"])
+        wrote = wrote + _part("state/cases.json", "decision_log", step["entries"])
+        out.append({"agent": step["agent"], "at": step["at"], "result": step["result"],
+                    "facts": step_facts(case, step, steps[:index]), "input": read, "output": wrote})
+    return out
+
+
+# --- the vendor story: every case of one vendor on one timeline, cut at the end of a calendar month -----------
+#
+# A month's view holds what had happened by that month's last day and nothing later: December's accrual is
+# booked on January 5, so it belongs to January's view, and a variance found on January 15 and explained on
+# January 25 is whole in January and absent in December.
+
+
+def _day(at: str | None) -> str:
+    return (at or "")[:10]
+
+
+def vendor_steps(vendor_id: str, cases: list[dict]) -> list[dict]:
+    """The steps of all the vendor's cases in date order, each knowing its case and its place in that case's
+    chain. Inside one case the chain's own order holds even where a date runs backwards (a question sent on
+    the close's first pass is told after the reason the second pass logged), so a step is never dated before
+    the step that led to it. A document shows once, when it arrived, however many months cite it."""
+    rows = []
+    for case in sorted((c for c in cases if c.get("vendor_id") == vendor_id), key=lambda c: c.get("period", "")):
+        latest = ""
+        for index, step in enumerate(handoff_steps(case)):
+            latest = max(latest, _day(step["at"]))
+            rows.append({**step, "case_id": case.get("case_id"), "case_title": case_title(case),
+                         "period": case.get("period"), "case_step": index, "day": latest})
+    rows.sort(key=lambda r: (r["day"], r["period"] or "", r["case_step"]))
+    # Every month's case cites the contract and the order; the document belongs to the month it was filed
+    # under when that month has a case, and otherwise to the first case that saw it.
+    home: dict[str, str] = {}
+    for row in rows:
+        for doc in row["facts"].get("documents") or []:
+            if doc.get("period") == row["period"] or doc["doc_id"] not in home:
+                home[doc["doc_id"]] = row["case_id"]
+    out = []
+    for row in rows:
+        if row["facts"]["kind"] == "documents":
+            fresh = [d for d in row["facts"]["documents"] if home[d["doc_id"]] == row["case_id"]]
+            if not fresh:
+                continue
+            row = {**row, "facts": {**row["facts"], "documents": fresh},
+                   "result": ", ".join(str(d["doc_id"]) for d in fresh)}
+        out.append(row)
+    return out
+
+
+def standing_of(steps: list[dict]) -> dict:
+    """Where the vendor stands once these steps have happened: what is accrued and not yet met by an actual,
+    what has been trued up, and how many questions are still out."""
+    settled = {s["case_id"] for s in steps if s["facts"]["kind"] == "variance"}
+    accrued = sum(s["facts"]["amount"] for s in steps if s["facts"]["kind"] == "close"
+                  and s["facts"]["amount"] is not None and s["case_id"] not in settled)
+    true_ups = sum(s["facts"]["true_up"] or 0 for s in steps if s["facts"]["kind"] == "variance")
+    asked = sum(1 for s in steps if s["facts"]["kind"] == "ask")
+    closed = sum(1 for s in steps if s["facts"]["kind"] == "answer" and s["facts"]["state"] in ("ANSWERED", "EXPIRED"))
+    return {"accrued_open": accrued, "true_ups": true_ups, "open_questions": max(asked - closed, 0)}
+
+
+def _months_between(first: str, last: str) -> list[str]:
+    out, (year, month) = [], (int(first[:4]), int(first[5:7]))
+    while f"{year:04d}-{month:02d}" <= last:
+        out.append(f"{year:04d}-{month:02d}")
+        year, month = (year + 1, 1) if month == 12 else (year, month + 1)
+    return out
+
+
+def vendor_story(vendor_id: str | None, case_id: str | None, through: str | None) -> dict:
+    cases = all_cases()
+    opened_from = next((c for c in cases if c.get("case_id") == case_id), None) if case_id else None
+    vendor_id = vendor_id or (opened_from or {}).get("vendor_id")
+    names = {v.get("vendor_id"): v.get("vendor_name") for v in vendor_rows()}
+    if not vendor_id or not any(c.get("vendor_id") == vendor_id for c in cases):
+        raise HTTPException(404, f"no vendor {vendor_id!r} with a case in {run_dir()}")
+
+    everyone = {vid: vendor_steps(vid, cases) for vid in sorted({c.get("vendor_id") for c in cases if c.get("vendor_id")})}
+    days = sorted(s["day"] for steps in everyone.values() for s in steps if s["day"])
+    months = _months_between(days[0][:7], days[-1][:7]) if days else []
+    mine = everyone[vendor_id]
+    if not through:  # opened from a case: that case whole; otherwise everything there is
+        own = [s["day"] for s in mine if opened_from and s["case_id"] == opened_from["case_id"] and s["day"]]
+        through = (max(own)[:7] if own else (months[-1] if months else None))
+    cut = f"{through}-{calendar.monthrange(int(through[:4]), int(through[5:7]))[1]:02d}" if through else "9999-12-31"
+    shown = [s for s in mine if s["day"] <= cut]
+    later = [s for s in mine if s["day"] > cut]
+
+    panel = []
+    for vid, steps in everyone.items():
+        upto = [s for s in steps if s["day"] <= cut]
+        latest = max((c for c in cases if c.get("vendor_id") == vid), key=lambda c: c.get("period", ""))
+        panel.append({"vendor_id": vid, "vendor_name": names.get(vid) or vendor_of(latest),
+                      "label": TREATMENT.get((latest.get("classification") or {}).get("final")),
+                      "events": len(upto), **standing_of(upto)})
+    panel.sort(key=lambda v: str(v["vendor_name"]))
+    return {"vendor_id": vendor_id, "vendor_name": names.get(vendor_id) or vendor_id,
+            "label": next((v["label"] for v in panel if v["vendor_id"] == vendor_id), None),
+            "through": through, "through_day": cut if through else None,
+            "months": [{"month": m, "label": fmt_month(m)} for m in months],
+            "standing": standing_of(shown), "steps": shown, "later": len(later),
+            "next_month": later[0]["day"][:7] if later else None, "vendors": panel}
+
+
+def situation_of(case: dict) -> dict:
+    """Which of the four situations the case is, and the arithmetic it came to - every value read off its blocks.
+
+    `numbers` is what the UI marks wherever it appears in the JSON: the operands of the estimate's calculation,
+    then the amounts. Zero is left out - it is in every row and would mark them all."""
+    estimate, settlement = case.get("estimate") or {}, case.get("settlement") or {}
+    category = (case.get("classification") or {}).get("final")
+    operands = [float(n) for n in re.findall(r"\d+(?:\.\d+)?", estimate.get("calculation") or "")]
+    amounts = [estimate.get("amount"), settlement.get("actual"), settlement.get("true_up")]
+    numbers: list[float] = []
+    for number in operands + [float(a) for a in amounts if a is not None]:
+        if number and number not in numbers:
+            numbers.append(number)
+    return {"category": category, "label": TREATMENT.get(category), "estimator": estimate.get("estimator"),
+            "calculation": estimate.get("calculation"), "amount": estimate.get("amount"),
+            "missing": estimate.get("missing"), "flags": case.get("flags") or [],
+            "accrued": settlement.get("accrued"), "actual": settlement.get("actual"),
+            "true_up": settlement.get("true_up"), "cause": settlement.get("cause"), "numbers": numbers}
+
+
+def handoff_chain(case: dict, cases: list[dict]) -> dict:
+    """The whole chain for one case, and the period's other cases to compare it with."""
+    period = sorted((c for c in cases if c.get("period") == case.get("period")), key=lambda c: c.get("case_key", ""))
+    return {"case_id": case.get("case_id"), "status": case.get("status"), "vendor_name": vendor_of(case),
+            "title": case_title(case), "period": case.get("period"), "situation": situation_of(case), "steps": handoff_steps(case),
+            "cases": [{"case_id": c.get("case_id"), "vendor_name": vendor_of(c),
+                       "category": (c.get("classification") or {}).get("final"),
+                       "label": TREATMENT.get((c.get("classification") or {}).get("final"))} for c in period]}
+
+
+# --------------------------------------------------------------------------------------------------------------
 # The runner: months are closed and settled on demand, in a background thread
 # --------------------------------------------------------------------------------------------------------------
 #
@@ -1720,6 +2177,28 @@ def screen_endpoint(period: str, case_key: str, screen: str) -> dict:
         raise HTTPException(404, f"unknown screen {screen!r}; expected one of {', '.join(SCREENS)}")
     cases = all_cases()
     return SCREEN_BUILDERS[screen](find_case(period, case_key), cases)
+
+
+@app.get("/api/story")
+def story_endpoint(vendor: str | None = None, case: str | None = None, through: str | None = None) -> dict:
+    """One vendor's cases on one timeline, holding only what had happened by the end of `through` (YYYY-MM)."""
+    if through and not re.fullmatch(r"\d{4}-(0[1-9]|1[0-2])", through):
+        raise HTTPException(422, f"through must be YYYY-MM, not {through!r}")
+    return vendor_story(vendor, case, through)
+
+
+@app.get("/api/cases/{period}/{case_key:path}/handoff")
+def handoff_chain_endpoint(period: str, case_key: str) -> dict:
+    """Every agent's handoff for one case, what each concluded, and the situation the case is."""
+    return handoff_chain(find_case(period, case_key), all_cases())
+
+
+@app.get("/api/cases/{period}/{case_key:path}/handoff/{agent}")
+def handoff_endpoint(period: str, case_key: str, agent: str) -> dict:
+    """The raw JSON one agent read and wrote for one case, each part named after the file it lives in."""
+    if agent not in HANDOFF_BUILDERS:
+        raise HTTPException(404, f"unknown agent {agent!r}; expected one of {', '.join(HANDOFF_BUILDERS)}")
+    return handoff(find_case(period, case_key), agent)
 
 
 @app.get("/api/cases/{period}/{case_key:path}")

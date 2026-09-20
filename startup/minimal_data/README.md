@@ -98,10 +98,12 @@ A document is filed in the folder of the month it reached Orbit Labs, not the mo
 about. Everything about December that only turned up in January therefore sits in
 `2027-01/`, which is exactly when the close sees it: December closes in the first days of
 January on what `2026-12/` holds, and the January close - which runs in February - is where
-December's true-ups happen. (`<month>/afterclose/` and `<month>/afterclose/replies/` remain
-supported by the runner for documents that should surface between the two, and are simply
-unused by these fixtures.) `2027-01/replies/` holds a vendor's answer to a question the close
-sent out, and becomes readable on the third day of February, in time for the January cutoff.
+December's true-ups happen. The one exception is a document that has to surface between the
+two closes: `<month>/afterclose/` is read by that month's own settlement in the middle of the
+next month (known on the 12th, settled on the 15th), and `<month>/afterclose/replies/` holds a
+vendor's answer to a question settlement sent out (known on the 20th, read on the 25th). The
+Mintlify invoice and the reply to it are filed that way, so December's price question is asked
+and answered in January rather than waiting for the January close in February.
 
 - **OpenAI usage (partial then final).** `2026-12/USG-OPENAI-DEC.pdf` is a *partial* usage
   report covering only December 1-25, 2026 (700,000 units, $14,000.00 at $0.02/unit),
@@ -114,10 +116,11 @@ sent out, and becomes readable on the third day of February, in time for the Jan
   one month on.
 - **Mintlify invoice arrives late, at a higher price.** At the December close, only the
   $1,200/month `CTR-001` contract is known. The December invoice,
-  `2027-01/INV-MINTLIFY-DEC.pdf`, does not arrive until January 10, 2027 and bills the new
-  amended amount of $1,400.00. No amendment document is available in the December folder
-  itself. `2027-01/replies/REPLY-T-2026-12-PO-001-001-VARIANCE_UNEXPLAINED.txt` is
-  Mintlify's reply, dated January 18, 2027, to the variance question the close sent: it
+  `2026-12/afterclose/INV-MINTLIFY-DEC.pdf`, does not arrive until January 10, 2027 and bills
+  the new amended amount of $1,400.00, so December's settlement sees it on January 15 and asks
+  the vendor what changed. No amendment document is available in the December folder itself.
+  `2026-12/afterclose/replies/REPLY-T-2026-12-PO-001-001-VARIANCE_UNEXPLAINED.txt` is
+  Mintlify's reply, dated January 18, 2027, read on January 25, to that variance question: it
   explains that a signed contract amendment (`AMD-MINTLIFY-DEC`, signed December 15, 2026)
   raised the CTR-001 monthly fee from $1,200.00 to $1,400.00 effective December 1, 2026, and
   that all other terms are unchanged. The close reads that reply as the amendment it
@@ -144,6 +147,6 @@ to that document's `"lines"` array in `classification_input.json` and regenerati
 
 These placements are driven by an optional `"folder"` field on a document entry in
 `classification_input.json` (e.g. `"folder": "2027-01"` on a document about December, or
-`"folder": "2026-12/afterclose"` for the still-supported mid-close arrival), which
+`"folder": "2026-12/afterclose"` for an arrival between two closes), which
 `generate_pdfs.py`'s `month_of()` honors ahead of the default month-of-service-period
 placement.
