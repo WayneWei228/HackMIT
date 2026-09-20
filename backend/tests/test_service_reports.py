@@ -19,6 +19,12 @@ def api():
     return client
 
 
+def to_january(api):
+    """The clock is held until every case of the close has started, so start the rest first."""
+    assert api.post("/api/close/run").status_code == 200
+    assert api.post("/api/close/advance-to-january").status_code == 200
+
+
 def test_journal_report_has_only_posted_rows_and_filters_by_posting_period(api):
     # December opens with what the ledger posted on the 1st (November's reversals and invoices),
     # and with nothing from this close.
@@ -33,7 +39,7 @@ def test_journal_report_has_only_posted_rows_and_filters_by_posting_period(api):
         credit = sum(Decimal(line["amount"]) for line in row["lines"] if line["side"] == "Cr")
         assert debit == credit > 0
     assert api.get("/api/reports/journals?period=2027-01").json()["journals"] == []
-    api.post("/api/close/advance-to-january")
+    to_january(api)
     january = api.get("/api/reports/journals?period=2027-01").json()["journals"]
     assert any(row["entry_type"] == "ACCRUAL_REVERSAL" for row in january)
 
@@ -43,7 +49,7 @@ def test_a_reversed_accrual_stays_in_the_month_it_was_posted(api):
     accrual, december = f"JE-{MINTLIFY}-ACC", "/api/reports/journals?period=2026-12"
     api.post(f"/api/obligations/{MINTLIFY}/start")
     assert accrual in {row["entry_id"] for row in api.get(december).json()["journals"]}
-    api.post("/api/close/advance-to-january")
+    to_january(api)
     rows = {row["entry_id"]: row for row in api.get(december).json()["journals"]}
     assert rows[accrual]["status"] == "REVERSED"
     # The closed history months keep their accruals too, not only the reversals and invoices.
@@ -81,7 +87,7 @@ def test_december_story_does_not_change_when_january_and_february_arrive(api):
     december = api.get(f"{url}?through=2026-12").json()
     assert december["events"]
     assert all(event["at"][:7] <= "2026-12" for event in december["events"])
-    api.post("/api/close/advance-to-january")
+    to_january(api)
     january = api.get(f"{url}?through=2027-01").json()
     assert any(event["agent"] == "reconciliation" for event in january["events"])
     assert api.get(f"{url}?through=2026-12").json()["events"] == december["events"]
@@ -115,7 +121,7 @@ def test_the_story_carries_the_outreach_letters_and_december_never_sees_the_repl
     assert question["title"] and question["summary"] and question["payload"]["to"]["name"]
     assert question["agent"] == "outreach" and question["obligation_id"] == OPENAI
     # The answer arrives in January. December's story must not know it.
-    api.post("/api/close/advance-to-january")
+    to_january(api)
     assert letters("?through=2026-12") == december
     january = letters("?through=2027-01")
     assert [letter["payload"]["direction"] for letter in january] == ["OUT", "IN"]

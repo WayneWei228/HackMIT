@@ -44,6 +44,12 @@ def thread(api) -> dict:
     return threads[0]
 
 
+def to_january(api):
+    """The clock is held until every case of the close has started, so the whole close runs."""
+    assert api.post("/api/close/run").status_code == 200
+    assert api.post("/api/close/advance-to-january").status_code == 200
+
+
 def ask_the_vendor(api):
     response = api.post(
         f"/api/controller/{MINTLIFY}/decision",
@@ -66,8 +72,7 @@ def test_december_closes_on_the_agreement_on_file_and_nothing_hints_at_a_new_pri
 
 
 def test_the_january_invoice_leaves_200_that_no_record_explains(api):
-    api.post(f"/api/obligations/{MINTLIFY}/start")
-    assert api.post("/api/close/advance-to-january").status_code == 200
+    to_january(api)
     case = detail(api)
     graded = case["verification"]["reconciliation"]
     assert (graded["accrued"], graded["actual"], graded["variance"]) == (
@@ -83,8 +88,7 @@ def test_the_january_invoice_leaves_200_that_no_record_explains(api):
 
 
 def test_the_controller_has_the_vendor_asked_and_the_letter_cites_only_the_two_amounts(api):
-    api.post(f"/api/obligations/{MINTLIFY}/start")
-    api.post("/api/close/advance-to-january")
+    to_january(api)
     ask_the_vendor(api)
     sent = thread(api)
     assert sent["topic"] == "VARIANCE_EXPLANATION" and sent["status"] == "SENT"
@@ -98,8 +102,7 @@ def test_the_controller_has_the_vendor_asked_and_the_letter_cites_only_the_two_a
 
 
 def test_the_vendors_reply_explains_the_true_up_and_the_case_closes(api):
-    api.post(f"/api/obligations/{MINTLIFY}/start")
-    api.post("/api/close/advance-to-january")
+    to_january(api)
     ask_the_vendor(api)
     moved = api.post("/api/close/advance-to-vendor-reply").json()
     assert MINTLIFY in moved["obligation_ids"], moved
