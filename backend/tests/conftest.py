@@ -1,0 +1,27 @@
+import pytest
+
+from trueup.datagen import generator
+from trueup.db import get_engine, init_db
+
+
+@pytest.fixture(autouse=True)
+def no_external_keys(monkeypatch):
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("TYPESAFE_API_KEY", raising=False)
+    monkeypatch.delenv("NEATLOGS_API_KEY", raising=False)
+
+
+@pytest.fixture
+def engine(tmp_path):
+    eng = get_engine(str(tmp_path / "t.db"))
+    init_db(eng)
+    return eng
+
+
+@pytest.fixture
+def world(engine):
+    """Simulated company with invoices released through 2026-11 (service months up to 2026-10)."""
+    generator.generate(engine, seed=42)
+    for period in generator.PERIODS[:11]:
+        generator.release_invoices(engine, period)
+    return engine
