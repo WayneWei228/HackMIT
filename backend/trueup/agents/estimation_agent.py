@@ -422,9 +422,53 @@ def _load(session: Session, obligation: m.TrueUpObligation) -> Context:
 # ---- estimators: pure Decimal arithmetic over the loaded rows ---------------------------------
 
 
+def _document_monthly_fee(ctx: Context) -> tuple[m.TrueUpEvidence, Decimal] | None:
+    """A monthly fee verified from a document card, usable when the contract table lacks a rate."""
+    candidates: list[tuple[m.TrueUpEvidence, Decimal]] = []
+    for card in ctx.cards:
+        if (
+            card.evidence_type != e.EvidenceCardType.CONTRACT_TERM
+            or card.source_table != "document"
+        ):
+            continue
+        value = card.value_json or {}
+        if value.get("key") != "MONTHLY_FEE" or value.get("number") is None:
+            continue
+        try:
+            candidates.append((card, Decimal(str(value["number"]))))
+        except InvalidOperation:
+            continue
+    if not candidates:
+        return None
+    fees = {fee for _, fee in candidates}
+    if len(fees) > 1:
+        ids = ", ".join(card.evidence_id for card, _ in candidates)
+        amounts = ", ".join(_money(fee) for fee in sorted(fees))
+        raise Insufficient(
+            e.EvidenceStatus.CONFLICTING,
+            f"Documents give different monthly fees: {ids}: {amounts}.",
+            "controller",
+        )
+    card, fee = min(candidates, key=lambda pair: pair[0].evidence_id)
+    for other in ctx.cards:
+        if other.source_id != card.source_id:
+            continue
+        value = other.value_json or {}
+        if value.get("key") != "EFFECTIVE_DATE" or not value.get("date"):
+            continue
+        try:
+            effective = date.fromisoformat(str(value["date"]))
+        except ValueError:
+            continue
+        if effective > ctx.start:
+            return None
+    return card, fee
+
+
 def _fixed(ctx: Context) -> Estimate:
     days = [ctx.start + timedelta(n) for n in range((ctx.end - ctx.start).days + 1)]
     picks: list[m.CompanyContract] = []
+    uncovered: date | None = None
     for day in days:
         covering = [
             c
@@ -435,12 +479,43 @@ def _fixed(ctx: Context) -> Estimate:
             and (c.effective_end_date is None or day <= c.effective_end_date)
         ]
         if not covering:
+            uncovered = uncovered or day
+            continue
+        picks.append(max(covering, key=lambda c: c.contract_version))
+    if uncovered is not None:
+        found = _document_monthly_fee(ctx)
+        if found is None:
             raise Insufficient(
                 e.EvidenceStatus.MISSING_RATE,
-                f"No fixed-fee contract rate covers {day}.",
+                f"No fixed-fee contract rate covers {uncovered}.",
                 "controller",
             )
-        picks.append(max(covering, key=lambda c: c.contract_version))
+        card, fee = found
+        file = (card.value_json or {}).get("file") or card.source_id
+        total = len(days)
+        return Estimate(
+            method=e.EstimationMethod.FIXED_CONTRACT_RATE,
+            amount=_round(fee),
+            expression=f"{_money(fee)} x 1 month",
+            inputs={
+                "segments": [
+                    {
+                        "evidence_id": card.evidence_id,
+                        "monthly_rate": str(fee),
+                        "days": total,
+                    }
+                ],
+                "period_days": total,
+                "rate_source": "document",
+            },
+            source_ids=[card.evidence_id] + ([ctx.po.po_id] if ctx.po else []),
+            expected_cards={"MONTHLY_FEE": {fee}},
+            warnings=[
+                f"Monthly rate {_money(fee)} taken from {file} ({card.evidence_id}); "
+                "the contract table has no rate covering this period."
+            ]
+            + _stale_po_price(ctx, {fee}),
+        )
     if any(c.rate_unit != e.RateUnit.MONTH for c in picks):
         raise Insufficient(
             e.EvidenceStatus.MISSING_RATE, "The contract rate is not a monthly rate.", "controller"

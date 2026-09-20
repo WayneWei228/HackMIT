@@ -316,21 +316,98 @@ def test_prepaid_has_no_warning_when_the_bad_entry_is_voided(session):
     assert not [w for w in result.warnings if "expensed the full" in w]
 
 
-def card(obligation_id, key, number, evidence_id="EVD-T-01"):
+def card(
+    obligation_id,
+    key,
+    number,
+    evidence_id="EVD-T-01",
+    date=None,
+    source_id="FILE-T",
+    file="contract.pdf",
+):
+    value_json = {"key": key, "number": number, "date": date, "file": file}
     return m.TrueUpEvidence(
         evidence_id=evidence_id,
         obligation_id=obligation_id,
         evidence_type=e.EvidenceCardType.CONTRACT_TERM,
         source_table="document",
-        source_id="FILE-T",
+        source_id=source_id,
         fact=f"{key}: {number}",
-        value_json={"key": key, "number": number},
+        value_json=value_json,
         source_excerpt="quote",
         confidence=Decimal("1.00"),
         status=e.EvidenceCardStatus.VERIFIED,
         created_by_agent="evidence",
         created_at=NOW,
     )
+
+
+def no_contract_rate(session, vendor_id="VEN-MINTLIFY"):
+    for contract in session.scalars(select(m.CompanyContract)):
+        if contract.vendor_id == vendor_id:
+            contract.base_rate = None
+    session.flush()
+
+
+def test_missing_rate_is_filled_by_a_verified_contract_card(session):
+    obligation = ready(session, "VEN-MINTLIFY")
+    no_contract_rate(session)
+    session.add(card(obligation.obligation_id, "MONTHLY_FEE", "1400.00"))
+    session.flush()
+    result = estimate(session, obligation.obligation_id, now=NOW)
+    assert result.outcome == "ESTIMATED" and not result.conflicts
+    assert result.amount == Decimal("1400.00")
+    assert result.expression == "1400.00 x 1 month"
+    wp = wp_for(session, obligation)
+    inputs = wp.calculation_inputs_json
+    assert "EVD-T-01" in inputs["sources"]
+    assert inputs["rate_source"] == "document"
+    assert any("EVD-T-01" in w for w in result.warnings)
+    assert (obligation.workflow_stage, obligation.next_action) == POLICY
+
+
+def test_missing_rate_with_conflicting_contract_cards_goes_to_the_controller(session):
+    obligation = ready(session, "VEN-MINTLIFY")
+    no_contract_rate(session)
+    session.add(card(obligation.obligation_id, "MONTHLY_FEE", "1400.00"))
+    session.add(card(obligation.obligation_id, "MONTHLY_FEE", "1500.00", evidence_id="EVD-T-02"))
+    session.flush()
+    result = estimate(session, obligation.obligation_id, now=NOW)
+    assert result.outcome == "NEEDS_CONTROLLER" and result.workpaper_id is None
+    assert obligation.evidence_status == e.EvidenceStatus.CONFLICTING
+    assert (obligation.workflow_stage, obligation.next_action) == CONTROLLER
+
+
+def test_contract_card_not_yet_effective_is_not_used(session):
+    obligation = ready(session, "VEN-MINTLIFY")
+    no_contract_rate(session)
+    session.add(card(obligation.obligation_id, "MONTHLY_FEE", "1400.00"))
+    session.add(
+        card(
+            obligation.obligation_id,
+            "EFFECTIVE_DATE",
+            None,
+            evidence_id="EVD-T-02",
+            date="2027-01-01",
+        )
+    )
+    session.flush()
+    result = estimate(session, obligation.obligation_id, now=NOW)
+    assert result.outcome == "NEEDS_CONTROLLER" and result.workpaper_id is None
+    assert obligation.evidence_status == e.EvidenceStatus.MISSING_RATE
+    assert (obligation.workflow_stage, obligation.next_action) == CONTROLLER
+
+
+def test_table_rate_still_wins_when_present(session):
+    obligation = ready(session, "VEN-MINTLIFY")
+    session.add(card(obligation.obligation_id, "MONTHLY_FEE", "1400.00"))
+    session.flush()
+    result = estimate(session, obligation.obligation_id, now=NOW)
+    assert result.outcome == "ESTIMATED"
+    inputs = wp_for(session, obligation).calculation_inputs_json
+    assert "CON-MINTLIFY-V2" in inputs["sources"]
+    assert "EVD-T-01" not in inputs["sources"]
+    assert "rate_source" not in inputs
 
 
 def test_card_that_contradicts_the_tables_routes_to_the_controller(session):

@@ -369,6 +369,9 @@ def _kinds_cited(h: Handoff) -> set[e.EvidenceCardType]:
         for model, covers in _SOURCE_KIND.items():
             if h.session.get(model, source_id) is not None:
                 kinds.update(covers)
+        card = h.session.get(m.TrueUpEvidence, source_id)
+        if card is not None:
+            kinds.add(card.evidence_type)
     return kinds
 
 
@@ -438,6 +441,7 @@ def _source_exists(session: Session, source_id: str) -> bool:
         m.CompanyAPInvoice,
         m.CompanyGLEntry,
         m.CompanyNonPOSpend,
+        m.TrueUpEvidence,
     ):
         if session.get(model, source_id) is not None:
             return True

@@ -307,6 +307,7 @@ class _World:
             m.CompanyAPInvoice,
             m.CompanyGLEntry,
             m.CompanyNonPOSpend,
+            m.TrueUpEvidence,
         ):
             row = self.session.get(model, source_id)
             if row is not None:
@@ -838,6 +839,8 @@ def _inputs_match_sources(world: _World, case: _Case, rec: _Recorder) -> None:
             )
         elif method == e.EstimationMethod.FIXED_CONTRACT_RATE:
             for segment in i.get("segments") or []:
+                if not segment.get("contract_row_id"):
+                    continue
                 row = world.session.get(m.CompanyContract, segment["contract_row_id"])
                 if row is not None:
                     pairs.append(("monthly_rate", _dec(segment["monthly_rate"]), row.base_rate))
