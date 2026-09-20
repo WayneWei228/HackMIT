@@ -105,17 +105,26 @@ def settings(state: DemoState) -> CloseSettings:
     """Offline by default; with a model configured it reads the files and the rules back it up."""
     judge = state.judge
     if judge is None and llm.available():
-        judge = _model_or_rules
+        judge = _ModelOrRules()
     return CloseSettings(
         universe=universe(), seed_dir=SEED_DIR, judge=judge, file_overrides=dict(state.overrides)
     )
 
 
-def _model_or_rules(case: CaseEntry, cards: list[FileCard]) -> list[FileDecision]:
-    try:
-        return ingestion.llm_judge(case, cards)
-    except llm.LLMError:
-        return ingestion.rule_judge(case, cards)
+class _ModelOrRules:
+    """The model reads the files and the rules back it up; `__name__` records which one ran."""
+
+    def __init__(self) -> None:
+        self.__name__ = "llm_judge"
+
+    def __call__(self, case: CaseEntry, cards: list[FileCard]) -> list[FileDecision]:
+        try:
+            decisions = ingestion.llm_judge(case, cards)
+        except llm.LLMError:
+            self.__name__ = "rule_judge after a model error"
+            return ingestion.rule_judge(case, cards)
+        self.__name__ = "llm_judge"
+        return decisions
 
 
 def run_for(state: DemoState, session: Session) -> CloseRun:

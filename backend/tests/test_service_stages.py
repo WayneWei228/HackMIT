@@ -480,3 +480,24 @@ def test_an_unknown_file_is_refused_and_a_change_is_replayed_around_other_cases(
     cases = table(api)
     assert cases["Mintlify"][0] == "Close-ready" and cases["Notability"][0] == "Blocked"
     assert cases["ASUS"][0] == "Pending"
+
+
+def test_the_live_judge_records_whether_the_model_or_the_rules_picked_the_files(monkeypatch):
+    from trueup.agents import ingestion
+    from trueup.gateway import llm
+
+    picked = [FileDecision(file_id="F-1", selected=True, reason="model")]
+    fallback = [FileDecision(file_id="F-1", selected=False, reason="rules")]
+    monkeypatch.setattr(ingestion, "rule_judge", lambda case, cards: fallback)
+
+    judge = demo_state._ModelOrRules()
+    monkeypatch.setattr(ingestion, "llm_judge", lambda case, cards: picked)
+    assert judge(None, []) == picked
+    assert judge.__name__ == "llm_judge"
+
+    def refuse(case, cards):
+        raise llm.LLMError("model unavailable")
+
+    monkeypatch.setattr(ingestion, "llm_judge", refuse)
+    assert judge(None, []) == fallback
+    assert "llm_judge" not in judge.__name__ and "rule_judge" in judge.__name__
