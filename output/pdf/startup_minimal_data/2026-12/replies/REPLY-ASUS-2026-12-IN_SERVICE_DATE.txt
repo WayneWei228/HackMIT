@@ -1,0 +1,6 @@
+From: Taylor Morgan <taylor.morgan@northstar.example>
+To: Orbit Labs Accounts Payable <ap@orbitlabs.example>
+Date: January 4, 2027
+Subject: RE: December 2026 in-service date (ASUS-2026-12-IN_SERVICE_DATE)
+
+The laptops went out to the new engineers over the holidays. I do not have the exact in-service dates yet.

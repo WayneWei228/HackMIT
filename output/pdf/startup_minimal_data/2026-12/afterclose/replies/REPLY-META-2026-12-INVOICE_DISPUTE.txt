@@ -1,0 +1,9 @@
+From: Meta Ads Billing <ads-billing@meta.example>
+To: Orbit Labs Accounts Payable <ap@orbitlabs.example>
+Date: February 2, 2027
+Subject: RE: December 2026 invoice dispute (META-2026-12-INVOICE_DISPUTE)
+
+Hi, thanks for raising this. You are right: the campaign delivery report supports 24,700.00, and the 30,000.00 on invoice META-2027-001 was the campaign budget, not what ran. We are voiding that invoice and will issue a corrected invoice for 24,700.00 tomorrow.
+
+Sam Ortiz
+Ads Billing, Meta

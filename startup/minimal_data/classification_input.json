@@ -1,0 +1,798 @@
+{
+  "as_of_date": "2026-12-31",
+  "currency": "USD",
+  "cases": [
+    {
+      "case_id": "CASE-01",
+      "vendor_id": "V001",
+      "vendor_name": "Mintlify",
+      "documents": [
+        {
+          "document_type": "PURCHASE_ORDER",
+          "document_id": "PO-001",
+          "folder": "2026-09",
+          "issue_date": "2026-09-01",
+          "order_type": "FO",
+          "validity_start": "2026-09-01",
+          "validity_end": "2027-08-31",
+          "requester": "sam.lee",
+          "cost_center_owner": "priya.shah",
+          "contract_id": "CTR-001",
+          "approval_date": "August 28, 2026",
+          "lines": [
+            {
+              "po_line_id": "PO-001-001",
+              "item_category": "P",
+              "description": "Team documentation platform subscription, billed monthly",
+              "unit_price": 1200.0,
+              "unit_basis": "per month",
+              "gr_required": false
+            }
+          ]
+        },
+        {
+          "document_type": "CONTRACT",
+          "document_id": "CTR-001",
+          "text": "Tem adocumentation plan for a 12-month term. Fee is $1,200 per month, billed monthly."
+        },
+        {
+          "document_type": "INVOICE",
+          "document_id": "INV-MINTLIFY-SEP",
+          "invoice_date": "2026-09-30",
+          "service_period": "2026-09",
+          "description": "Team documentation plan",
+          "amount": 1200.0
+        },
+        {
+          "document_type": "INVOICE",
+          "document_id": "INV-MINTLIFY-OCT",
+          "invoice_date": "2026-10-31",
+          "service_period": "2026-10",
+          "description": "Team documentation plan",
+          "amount": 1200.0
+        },
+        {
+          "document_type": "INVOICE",
+          "document_id": "INV-MINTLIFY-NOV",
+          "invoice_date": "2026-11-30",
+          "service_period": "2026-11",
+          "description": "Team documentation plan",
+          "amount": 1200.0
+        },
+        {
+          "document_type": "INVOICE",
+          "document_id": "INV-MINTLIFY-DEC",
+          "invoice_date": "2027-01-10",
+          "service_period": "2026-12",
+          "description": "Team documentation plan (amended monthly fee)",
+          "amount": 1400.0,
+          "folder": "2026-12/afterclose"
+        }
+      ]
+    },
+    {
+      "case_id": "CASE-02",
+      "vendor_id": "V002",
+      "vendor_name": "OpenAI",
+      "documents": [
+        {
+          "document_type": "PURCHASE_ORDER",
+          "document_id": "PO-002",
+          "folder": "2026-09",
+          "issue_date": "2026-09-01",
+          "order_type": "FO",
+          "validity_start": "2026-09-01",
+          "validity_end": "2027-08-31",
+          "requester": "dana.kim",
+          "cost_center_owner": "raj.patel",
+          "contract_id": "CTR-002",
+          "approval_date": "August 28, 2026",
+          "lines": [
+            {
+              "po_line_id": "PO-002-001",
+              "item_category": "B",
+              "description": "AI API usage, billed monthly on metered units",
+              "overall_limit": 300000.0,
+              "gr_required": false
+            }
+          ]
+        },
+        {
+          "document_type": "CONTRACT",
+          "document_id": "CTR-002",
+          "text": "API service is billed monthly based on measured usage. Contracted rate is $0.02 per API usage unit."
+        },
+        {
+          "document_type": "INVOICE",
+          "document_id": "INV-OPENAI-SEP",
+          "invoice_date": "2026-09-30",
+          "service_period": "2026-09",
+          "description": "API usage",
+          "quantity": 710000,
+          "unit": "API usage unit",
+          "unit_rate": 0.02,
+          "amount": 14200.0
+        },
+        {
+          "document_type": "INVOICE",
+          "document_id": "INV-OPENAI-OCT",
+          "invoice_date": "2026-10-31",
+          "service_period": "2026-10",
+          "description": "API usage",
+          "quantity": 840000,
+          "unit": "API usage unit",
+          "unit_rate": 0.02,
+          "amount": 16800.0
+        },
+        {
+          "document_type": "INVOICE",
+          "document_id": "INV-OPENAI-NOV",
+          "invoice_date": "2026-11-30",
+          "service_period": "2026-11",
+          "description": "API usage",
+          "quantity": 775000,
+          "unit": "API usage unit",
+          "unit_rate": 0.02,
+          "amount": 15500.0
+        },
+        {
+          "document_type": "USAGE_REPORT",
+          "document_id": "USG-OPENAI-DEC",
+          "service_period": "2026-12",
+          "description": "API usage through December 25 (partial)",
+          "quantity": 700000,
+          "unit": "API usage unit",
+          "unit_rate": 0.02,
+          "amount": 14000.0,
+          "coverage_start": "2026-12-01",
+          "coverage_end": "2026-12-25",
+          "generated_on": "2026-12-26",
+          "status": "PARTIAL"
+        },
+        {
+          "document_type": "USAGE_REPORT",
+          "document_id": "USG-OPENAI-DEC-FINAL",
+          "service_period": "2026-12",
+          "description": "API usage through December 31 (final)",
+          "quantity": 930000,
+          "unit": "API usage unit",
+          "unit_rate": 0.02,
+          "amount": 18600.0,
+          "coverage_start": "2026-12-01",
+          "coverage_end": "2026-12-31",
+          "generated_on": "2027-01-08",
+          "status": "FINAL",
+          "replaces": "USG-OPENAI-DEC",
+          "folder": "2027-01"
+        },
+        {
+          "document_type": "USAGE_REPORT",
+          "document_id": "USG-OPENAI-JAN",
+          "service_period": "2027-01",
+          "description": "API usage through January 27 (partial)",
+          "quantity": 810000,
+          "unit": "API usage unit",
+          "unit_rate": 0.02,
+          "amount": 16200.0,
+          "coverage_start": "2027-01-01",
+          "coverage_end": "2027-01-27",
+          "generated_on": "2027-01-28",
+          "status": "PARTIAL",
+          "folder": "2027-01"
+        },
+        {
+          "document_type": "PRICING_SCHEDULE",
+          "document_id": "CTR-002-PRICING-SCHEDULE",
+          "folder": "2026-09",
+          "contract_id": "CTR-002",
+          "base_rate": "0.016",
+          "rate_basis": "per API call",
+          "escalator_percent": "25",
+          "escalator_effective_date": "2026-09-01",
+          "escalated_rate": "0.020",
+          "text": "3.1 Usage fees are $0.016 per API call. 3.2 Effective September 1, 2026, tier pricing increases all usage fees by 25 percent to $0.020 per API call."
+        },
+        {
+          "document_type": "REPLY",
+          "document_id": "REPLY-OPENAI-2026-12-USAGE_CONFIRMATION",
+          "folder": "2026-12/replies",
+          "from": "Riley Kim <riley.kim@northstar.example>",
+          "to": "Orbit Labs Accounts Payable <ap@orbitlabs.example>",
+          "date": "January 2, 2027",
+          "subject": "RE: December 2026 usage confirmation (OPENAI-2026-12-USAGE_CONFIRMATION)",
+          "body": "Riley here. The full December export is in: 930,000 API calls for December 1 through December 31."
+        }
+      ]
+    },
+    {
+      "case_id": "CASE-03",
+      "vendor_id": "V003",
+      "vendor_name": "ASUS",
+      "documents": [
+        {
+          "document_type": "PURCHASE_ORDER",
+          "document_id": "PO-003",
+          "issue_date": "2026-12-10",
+          "order_type": "NB",
+          "requester": "alex.chen",
+          "cost_center_owner": "priya.shah",
+          "expected_delivery_date": "2026-12-28",
+          "approval_date": "December 10, 2026",
+          "lines": [
+            {
+              "po_line_id": "PO-003-001",
+              "item_category": "",
+              "description": "Laptop packages for new hires",
+              "quantity_ordered": 25,
+              "unit_price": 1600.0,
+              "gr_required": true
+            }
+          ]
+        },
+        {
+          "document_type": "GOODS_RECEIPT",
+          "document_id": "GR-ASUS-DEC",
+          "receipt_date": "2026-12-28",
+          "description": "Laptop packages received and accepted",
+          "received_quantity": 20,
+          "ordered_quantity": 25
+        },
+        {
+          "document_type": "REPLY",
+          "document_id": "REPLY-ASUS-2026-12-IN_SERVICE_DATE",
+          "folder": "2026-12/replies",
+          "from": "Taylor Morgan <taylor.morgan@northstar.example>",
+          "to": "Orbit Labs Accounts Payable <ap@orbitlabs.example>",
+          "date": "January 4, 2027",
+          "subject": "RE: December 2026 in-service date (ASUS-2026-12-IN_SERVICE_DATE)",
+          "body": "The laptops went out to the new engineers over the holidays. I do not have the exact in-service dates yet."
+        }
+      ]
+    },
+    {
+      "case_id": "CASE-04",
+      "vendor_id": "V004",
+      "vendor_name": "Meta",
+      "documents": [
+        {
+          "document_type": "CAMPAIGN_ORDER",
+          "document_id": "CAMPAIGN-004",
+          "start_date": "2026-12-01",
+          "end_date": "2026-12-31",
+          "order_type": "NB",
+          "validity_start": "2026-12-01",
+          "validity_end": "2026-12-31",
+          "requester": "maria.gomez",
+          "cost_center_owner": "tom.baker",
+          "approved_by": "Avery Patel, VP Marketing",
+          "approval_date": "November 28, 2026",
+          "pricing_text": "Final charge is based on advertising actually delivered during the campaign.",
+          "lines": [
+            {
+              "po_line_id": "CAMPAIGN-004-001",
+              "item_category": "B",
+              "description": "Product-launch advertising campaign, charged on delivery",
+              "overall_limit": 30000.0,
+              "gr_required": false
+            }
+          ]
+        },
+        {
+          "document_type": "DELIVERY_REPORT",
+          "document_id": "META-DELIVERY-DEC",
+          "service_period": "2026-12",
+          "description": "Advertising delivered for the product-launch campaign",
+          "delivered_amount": 24700.0,
+          "folder": "2027-01"
+        },
+        {
+          "document_type": "REPLY",
+          "document_id": "REPLY-META-2026-12-INVOICE_DISPUTE",
+          "folder": "2026-12/afterclose/replies",
+          "from": "Meta Ads Billing <ads-billing@meta.example>",
+          "to": "Orbit Labs Accounts Payable <ap@orbitlabs.example>",
+          "date": "February 2, 2027",
+          "subject": "RE: December 2026 invoice dispute (META-2026-12-INVOICE_DISPUTE)",
+          "body": "Hi, thanks for raising this. You are right: the campaign delivery report supports 24,700.00, and the 30,000.00 on invoice META-2027-001 was the campaign budget, not what ran. We are voiding that invoice and will issue a corrected invoice for 24,700.00 tomorrow.\n\nSam Ortiz\nAds Billing, Meta"
+        }
+      ]
+    },
+    {
+      "case_id": "CASE-05",
+      "vendor_id": "V005",
+      "vendor_name": "Notability",
+      "documents": [
+        {
+          "document_type": "CONTRACT",
+          "document_id": "CTR-003",
+          "folder": "2026-11",
+          "effective_date": "December 1, 2026",
+          "signed_on": "November 24, 2026",
+          "invoice_timing": "The annual fee is invoiced once, in advance, at the start of the service term.",
+          "text": "Team plan, 12 months, $21,600 billed annually in advance. Service term December 1, 2026 through November 30, 2027."
+        },
+        {
+          "document_type": "INVOICE",
+          "document_id": "INV-NOTABILITY-ANNUAL",
+          "folder": "2026-11",
+          "invoice_date": "2026-11-24",
+          "service_period": "2026-12-01 to 2027-11-30",
+          "description": "Notability team subscription, December 2026 to November 2027",
+          "quantity": 12,
+          "unit": "month",
+          "unit_rate": 1800.0,
+          "amount": 21600.0
+        }
+      ]
+    }
+  ],
+  "company_documents": [
+    {
+      "document_type": "POLICY",
+      "document_id": "POLICY-ORBIT-CLOSE",
+      "folder": "2026-09",
+      "issue_date": "2026-09-01",
+      "reporting_currency": "USD",
+      "accounting_basis": "ACCRUAL",
+      "close_cycle": "CALENDAR_MONTH",
+      "chart_of_accounts": [
+        {
+          "account_code": "610100",
+          "name": "SaaS Expense",
+          "type": "EXPENSE"
+        },
+        {
+          "account_code": "610200",
+          "name": "Cloud & Data Expense",
+          "type": "EXPENSE"
+        },
+        {
+          "account_code": "610300",
+          "name": "Consulting Expense",
+          "type": "EXPENSE"
+        },
+        {
+          "account_code": "610400",
+          "name": "Office & Supplies Expense",
+          "type": "EXPENSE"
+        },
+        {
+          "account_code": "610500",
+          "name": "Marketing & Travel Expense",
+          "type": "EXPENSE"
+        },
+        {
+          "account_code": "610600",
+          "name": "Depreciation Expense",
+          "type": "EXPENSE"
+        },
+        {
+          "account_code": "150100",
+          "name": "Prepaid Expenses",
+          "type": "ASSET"
+        },
+        {
+          "account_code": "150200",
+          "name": "Fixed Assets - Computer Equipment",
+          "type": "ASSET"
+        },
+        {
+          "account_code": "150290",
+          "name": "Accumulated Depreciation",
+          "type": "CONTRA_ASSET"
+        },
+        {
+          "account_code": "210100",
+          "name": "Accrued Expenses",
+          "type": "LIABILITY"
+        },
+        {
+          "account_code": "210200",
+          "name": "Accrued Card Expenses",
+          "type": "LIABILITY"
+        },
+        {
+          "account_code": "200100",
+          "name": "Accounts Payable",
+          "type": "LIABILITY"
+        }
+      ],
+      "thresholds": [
+        {
+          "threshold": "Controller review above",
+          "key": "controller_review_above_usd",
+          "amount": 25000.0
+        },
+        {
+          "threshold": "Mandatory review above",
+          "key": "mandatory_review_above_usd",
+          "amount": 100000.0
+        },
+        {
+          "threshold": "De minimis",
+          "key": "de_minimis_threshold_usd",
+          "amount": 5000.0
+        }
+      ],
+      "capitalization": {
+        "threshold_usd": 5000.0,
+        "useful_life_months": 36,
+        "text": "Equipment purchases are capitalized when a single order of like items costs $5,000 or more and the items have a useful life beyond one year. Capitalized equipment is depreciated straight-line over 36 months, starting when the asset is placed in service. Only units actually received are recorded as assets."
+      },
+      "policy_rules": [
+        {
+          "rule_id": "POL-01",
+          "text": "Never auto-post a case that requires Controller review"
+        },
+        {
+          "rule_id": "POL-02",
+          "text": "Never accrue when a matching AP invoice exists"
+        },
+        {
+          "rule_id": "POL-03",
+          "text": "Require evidence of service receipt for receipt or usage-based spend"
+        },
+        {
+          "rule_id": "POL-04",
+          "text": "Require an open accounting period"
+        },
+        {
+          "rule_id": "POL-05",
+          "text": "Require a balanced journal entry"
+        },
+        {
+          "rule_id": "POL-06",
+          "text": "Require an active contract or PO, or an approved fallback"
+        },
+        {
+          "rule_id": "POL-07",
+          "text": "Capitalize equipment over the threshold and depreciate it over its life"
+        },
+        {
+          "rule_id": "POL-08",
+          "text": "Record prepaid services as an asset and expense them over the term"
+        }
+      ],
+      "roles": [
+        {
+          "role_key": "Controller",
+          "person_id": "CONTROLLER-001",
+          "name": "Rudraksh Awasthi",
+          "title": "Controller",
+          "email": "rudraksh.awasthi@northstar.example"
+        },
+        {
+          "role_key": "Default AP owner",
+          "person_id": "AP-001",
+          "name": "Jordan Patel",
+          "title": "AP Specialist",
+          "email": "jordan.patel@northstar.example"
+        }
+      ]
+    },
+    {
+      "document_type": "GL_EXTRACT",
+      "document_id": "GL-ACCRUALS-2026-10",
+      "folder": "2026-10",
+      "posting_month": "2026-10",
+      "generated_on": "2026-10-31",
+      "entries": [
+        {
+          "gl_entry_id": "GL-OPENAI-2026-09",
+          "posting_date": "2026-10-01",
+          "period": "2026-10",
+          "vendor_name": "OpenAI",
+          "entry_type": "AP_INVOICE",
+          "status": "POSTED",
+          "description": "OpenAI API usage, September 2026 (OA-2026-001)",
+          "lines": [
+            {
+              "account_code": "610200",
+              "debit": 14600.0,
+              "credit": 0.0
+            },
+            {
+              "account_code": "200100",
+              "debit": 0.0,
+              "credit": 14600.0
+            }
+          ]
+        },
+        {
+          "gl_entry_id": "GL-MINTLIFY-2026-09",
+          "posting_date": "2026-10-02",
+          "period": "2026-10",
+          "vendor_name": "Mintlify",
+          "entry_type": "AP_INVOICE",
+          "status": "POSTED",
+          "description": "Mintlify Standard Workspace subscription, September 2026 (MINT-2026-001)",
+          "lines": [
+            {
+              "account_code": "610100",
+              "debit": 1200.0,
+              "credit": 0.0
+            },
+            {
+              "account_code": "200100",
+              "debit": 0.0,
+              "credit": 1200.0
+            }
+          ]
+        },
+        {
+          "gl_entry_id": "GL-OPENAI-2026-10-ACCRUAL",
+          "posting_date": "2026-10-31",
+          "period": "2026-10",
+          "vendor_name": "OpenAI",
+          "entry_type": "ACCRUAL",
+          "status": "REVERSED",
+          "description": "OpenAI October 2026 accrual",
+          "lines": [
+            {
+              "account_code": "610200",
+              "debit": 11840.0,
+              "credit": 0.0
+            },
+            {
+              "account_code": "210100",
+              "debit": 0.0,
+              "credit": 11840.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "document_type": "GL_EXTRACT",
+      "document_id": "GL-ACCRUALS-2026-11",
+      "folder": "2026-11",
+      "posting_month": "2026-11",
+      "generated_on": "2026-11-30",
+      "entries": [
+        {
+          "gl_entry_id": "GL-OPENAI-2026-10",
+          "posting_date": "2026-11-01",
+          "period": "2026-11",
+          "vendor_name": "OpenAI",
+          "entry_type": "AP_INVOICE",
+          "status": "POSTED",
+          "description": "OpenAI API usage, October 2026 (OA-2026-002)",
+          "lines": [
+            {
+              "account_code": "610200",
+              "debit": 14800.0,
+              "credit": 0.0
+            },
+            {
+              "account_code": "200100",
+              "debit": 0.0,
+              "credit": 14800.0
+            }
+          ]
+        },
+        {
+          "gl_entry_id": "GL-OPENAI-2026-10-ACCRUAL-REV",
+          "posting_date": "2026-11-01",
+          "period": "2026-11",
+          "vendor_name": "OpenAI",
+          "entry_type": "ACCRUAL_REVERSAL",
+          "status": "POSTED",
+          "description": "Reverse OpenAI October 2026 accrual",
+          "reversal_of": "GL-OPENAI-2026-10-ACCRUAL",
+          "lines": [
+            {
+              "account_code": "210100",
+              "debit": 11840.0,
+              "credit": 0.0
+            },
+            {
+              "account_code": "610200",
+              "debit": 0.0,
+              "credit": 11840.0
+            }
+          ]
+        },
+        {
+          "gl_entry_id": "GL-MINTLIFY-2026-10",
+          "posting_date": "2026-11-02",
+          "period": "2026-11",
+          "vendor_name": "Mintlify",
+          "entry_type": "AP_INVOICE",
+          "status": "POSTED",
+          "description": "Mintlify Standard Workspace subscription, October 2026 (MINT-2026-002)",
+          "lines": [
+            {
+              "account_code": "610100",
+              "debit": 1200.0,
+              "credit": 0.0
+            },
+            {
+              "account_code": "200100",
+              "debit": 0.0,
+              "credit": 1200.0
+            }
+          ]
+        },
+        {
+          "gl_entry_id": "GL-NOTABILITY-2026-12",
+          "posting_date": "2026-11-25",
+          "period": "2026-11",
+          "vendor_name": "Notability",
+          "entry_type": "AP_INVOICE",
+          "status": "POSTED",
+          "description": "Notability annual subscription prepaid (NOTE-2026-001)",
+          "lines": [
+            {
+              "account_code": "150100",
+              "debit": 21600.0,
+              "credit": 0.0
+            },
+            {
+              "account_code": "200100",
+              "debit": 0.0,
+              "credit": 21600.0
+            }
+          ]
+        },
+        {
+          "gl_entry_id": "GL-MINTLIFY-2026-11-ACCRUAL",
+          "posting_date": "2026-11-30",
+          "period": "2026-11",
+          "vendor_name": "Mintlify",
+          "entry_type": "ACCRUAL",
+          "status": "REVERSED",
+          "description": "Mintlify November 2026 accrual",
+          "lines": [
+            {
+              "account_code": "610100",
+              "debit": 1200.0,
+              "credit": 0.0
+            },
+            {
+              "account_code": "210100",
+              "debit": 0.0,
+              "credit": 1200.0
+            }
+          ]
+        },
+        {
+          "gl_entry_id": "GL-OPENAI-2026-11-ACCRUAL",
+          "posting_date": "2026-11-30",
+          "period": "2026-11",
+          "vendor_name": "OpenAI",
+          "entry_type": "ACCRUAL",
+          "status": "REVERSED",
+          "description": "OpenAI November 2026 accrual",
+          "lines": [
+            {
+              "account_code": "610200",
+              "debit": 12480.0,
+              "credit": 0.0
+            },
+            {
+              "account_code": "210100",
+              "debit": 0.0,
+              "credit": 12480.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "document_type": "GL_EXTRACT",
+      "document_id": "GL-ACCRUALS-2026-12",
+      "folder": "2026-12",
+      "posting_month": "2026-12",
+      "generated_on": "2026-12-01",
+      "entries": [
+        {
+          "gl_entry_id": "GL-MINTLIFY-2026-11",
+          "posting_date": "2026-12-01",
+          "period": "2026-12",
+          "vendor_name": "Mintlify",
+          "entry_type": "AP_INVOICE",
+          "status": "POSTED",
+          "description": "Mintlify Standard Workspace subscription, November 2026 (MINT-2026-003)",
+          "lines": [
+            {
+              "account_code": "610100",
+              "debit": 1200.0,
+              "credit": 0.0
+            },
+            {
+              "account_code": "200100",
+              "debit": 0.0,
+              "credit": 1200.0
+            }
+          ]
+        },
+        {
+          "gl_entry_id": "GL-MINTLIFY-2026-11-ACCRUAL-REV",
+          "posting_date": "2026-12-01",
+          "period": "2026-12",
+          "vendor_name": "Mintlify",
+          "entry_type": "ACCRUAL_REVERSAL",
+          "status": "POSTED",
+          "description": "Reverse Mintlify November 2026 accrual",
+          "reversal_of": "GL-MINTLIFY-2026-11-ACCRUAL",
+          "lines": [
+            {
+              "account_code": "210100",
+              "debit": 1200.0,
+              "credit": 0.0
+            },
+            {
+              "account_code": "610100",
+              "debit": 0.0,
+              "credit": 1200.0
+            }
+          ]
+        },
+        {
+          "gl_entry_id": "GL-NOTABILITY-2026-12-MANUAL",
+          "posting_date": "2026-12-01",
+          "period": "2026-12",
+          "vendor_name": "Notability",
+          "entry_type": "MANUAL_ADJUSTMENT",
+          "status": "POSTED",
+          "description": "Expense Notability annual subscription in full",
+          "lines": [
+            {
+              "account_code": "610100",
+              "debit": 21600.0,
+              "credit": 0.0
+            },
+            {
+              "account_code": "150100",
+              "debit": 0.0,
+              "credit": 21600.0
+            }
+          ]
+        },
+        {
+          "gl_entry_id": "GL-OPENAI-2026-11",
+          "posting_date": "2026-12-01",
+          "period": "2026-12",
+          "vendor_name": "OpenAI",
+          "entry_type": "AP_INVOICE",
+          "status": "POSTED",
+          "description": "OpenAI API usage, November 2026 (OA-2026-003)",
+          "lines": [
+            {
+              "account_code": "610200",
+              "debit": 15600.0,
+              "credit": 0.0
+            },
+            {
+              "account_code": "200100",
+              "debit": 0.0,
+              "credit": 15600.0
+            }
+          ]
+        },
+        {
+          "gl_entry_id": "GL-OPENAI-2026-11-ACCRUAL-REV",
+          "posting_date": "2026-12-01",
+          "period": "2026-12",
+          "vendor_name": "OpenAI",
+          "entry_type": "ACCRUAL_REVERSAL",
+          "status": "POSTED",
+          "description": "Reverse OpenAI November 2026 accrual",
+          "reversal_of": "GL-OPENAI-2026-11-ACCRUAL",
+          "lines": [
+            {
+              "account_code": "210100",
+              "debit": 12480.0,
+              "credit": 0.0
+            },
+            {
+              "account_code": "610200",
+              "debit": 0.0,
+              "credit": 12480.0
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

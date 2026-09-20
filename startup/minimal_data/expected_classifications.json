@@ -1,0 +1,59 @@
+{
+  "expected_results": [
+    {
+      "case_id": "CASE-01",
+      "vendor_id": "V001",
+      "recurrence": "RECURRING",
+      "amount_type": "FIXED",
+      "category": "RECURRING_FIXED",
+      "expected_amount": 1200.0,
+      "key_evidence": [
+        "12-month contract",
+        "monthly billing clause",
+        "four consecutive $1,200 invoices"
+      ]
+    },
+    {
+      "case_id": "CASE-02",
+      "vendor_id": "V002",
+      "recurrence": "RECURRING",
+      "amount_type": "VARIABLE",
+      "category": "RECURRING_VARIABLE",
+      "expected_amount": 18600.0,
+      "calculation": "930000 * 0.02",
+      "key_evidence": [
+        "monthly billing clause",
+        "three consecutive usage invoices",
+        "December usage report",
+        "contracted usage rate"
+      ]
+    },
+    {
+      "case_id": "CASE-03",
+      "vendor_id": "V003",
+      "recurrence": "ONE_TIME",
+      "amount_type": "FIXED",
+      "category": "ONE_TIME_FIXED",
+      "expected_amount": 32000.0,
+      "calculation": "40000 * 20 / 25",
+      "key_evidence": [
+        "one-time purchase order",
+        "fixed $40,000 order total",
+        "20 of 25 laptop packages received"
+      ]
+    },
+    {
+      "case_id": "CASE-04",
+      "vendor_id": "V004",
+      "recurrence": "ONE_TIME",
+      "amount_type": "VARIABLE",
+      "category": "ONE_TIME_VARIABLE",
+      "expected_amount": 24700.0,
+      "key_evidence": [
+        "one-time campaign dates",
+        "$30,000 is only a maximum budget",
+        "$24,700 of advertising was delivered"
+      ]
+    }
+  ]
+}

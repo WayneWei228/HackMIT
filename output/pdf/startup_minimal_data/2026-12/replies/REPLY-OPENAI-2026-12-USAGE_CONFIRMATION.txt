@@ -1,0 +1,6 @@
+From: Riley Kim <riley.kim@northstar.example>
+To: Orbit Labs Accounts Payable <ap@orbitlabs.example>
+Date: January 2, 2027
+Subject: RE: December 2026 usage confirmation (OPENAI-2026-12-USAGE_CONFIRMATION)
+
+Riley here. The full December export is in: 930,000 API calls for December 1 through December 31.
