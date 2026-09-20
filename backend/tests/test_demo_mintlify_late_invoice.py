@@ -85,6 +85,12 @@ def test_the_january_invoice_leaves_200_that_no_record_explains(api):
     # repeat every month, so a person sees it instead of it being learned and closed.
     assert case["header"]["workflow_stage"] == "AWAITING_CONTROLLER"
     assert case["outreach_threads"] == []
+    # The ribbon across the case says the same thing: the Controller can ask the vendor, and
+    # nothing claims the accrual matched an invoice that is $200 above it.
+    ribbon = {step["key"]: step for step in case["ribbon"]}
+    assert "ask the vendor to explain" in ribbon["CONTROLLER"]["detail"]
+    assert ribbon["LEARNING"]["state"] == "UPCOMING"
+    assert ribbon["LEARNING"]["headline"] != "Nothing to learn"
 
 
 def test_the_controller_has_the_vendor_asked_and_the_letter_cites_only_the_two_amounts(api):

@@ -37,12 +37,14 @@ DECISIONS = {
     "REJECT": "Rejected",
     "REQUEST_MORE_EVIDENCE": "Asked for more evidence",
     "DISPUTE_WITH_VENDOR": "Raised with the vendor",
+    "ASK_VENDOR_TO_EXPLAIN": "Asked the vendor to explain",
 }
 CAN = {
     "APPROVE": "approve it",
     "REJECT": "reject it",
     "REQUEST_MORE_EVIDENCE": "ask for more evidence",
     "DISPUTE_WITH_VENDOR": "raise it with the vendor",
+    "ASK_VENDOR_TO_EXPLAIN": "ask the vendor to explain",
 }
 
 
@@ -394,6 +396,30 @@ def _learning(
                 if waiting
                 else "The invoice was not accepted, so no estimate is blamed."
             ),
+        )
+    if recon.root_cause == "UNKNOWN":
+        # The invoice is accepted but nothing explains the variance, so there is no lesson yet.
+        waiting = dispute is not None and dispute.get("status") == "RAISED"
+        return _step(
+            "LEARNING",
+            label,
+            "CURRENT",
+            headline="Waiting for the vendor" if waiting else "Nothing learned yet",
+            detail=(
+                "The vendor has been asked what changed."
+                if waiting
+                else "No record explains the variance, so no estimate is blamed."
+            ),
+        )
+    if recon.root_cause is not None:
+        return _step(
+            "LEARNING",
+            label,
+            "DONE",
+            tone="OK",
+            headline="True-up recorded",
+            detail=f"{CAUSES.get(recon.root_cause, recon.root_cause)}; no rule was proposed.",
+            at=recon.reconciled_at,
         )
     return _step(
         "LEARNING",
