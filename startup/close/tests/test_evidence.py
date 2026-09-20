@@ -132,3 +132,35 @@ def test_invoice_pdf_lands_in_invoices_and_feed_status_wins(tmp_path):
     evidence.run(ws, llm(), FakeJev(good(None)), "2026-12")
     (row,) = store.load_table(ws, "invoices")
     assert row["status"] == "POSTED" and row["po_line_id"] == "PO-001-001" and row["source_doc"] == "INV-DEC"
+
+
+def test_goods_receipt_updates_quantity_received_on_the_po_line(tmp_path):
+    RECORDS["GR-1"] = {"document_type": "GOODS_RECEIPT", "vendor_name": "OpenAI", "po_number": "PO-002", "quantity": 20, "received_date": "2026-12-28"}
+    ws = world(tmp_path, [("GR-1", "2026-12-28")])
+    evidence.run(ws, llm(), FakeJev(good(None)), "2026-12")
+    lines = {l["po_line_id"]: l for l in store.load_table(ws, "po_lines")}
+    assert lines["PO-002-001"]["quantity_received"] == 20.0 and "quantity_received" not in lines["PO-001-001"]
+    evidence.run(ws, llm(), FakeJev(good(None)), "2026-12")  # feeds are re-copied: the quantity must survive
+    assert {l["po_line_id"]: l for l in store.load_table(ws, "po_lines")}["PO-002-001"]["quantity_received"] == 20.0
+
+
+def test_only_the_current_months_documents_are_read(tmp_path):
+    ws = world(tmp_path, [("CTR-001", None), ("USG-DEC", None)])
+    write_world(ws, "documents/index", [{"doc_id": "CTR-001", "file": "CTR-001.txt", "period": "2026-09"},
+                                        {"doc_id": "USG-DEC", "file": "USG-DEC.txt", "period": "2026-12"}])
+    model = llm()
+    assert [d["doc_id"] for d in evidence.run(ws, model, FakeJev(good(None)), "2026-09")] == ["CTR-001"]
+    assert [d["doc_id"] for d in evidence.run(ws, model, FakeJev(good(None)), "2026-12")] == ["USG-DEC"]
+    assert len(model.calls) == 2 and len(store.load_table(ws, "contracts")) == 1  # September's contract is still in the db
+
+
+def test_rerunning_an_earlier_month_does_not_see_later_receipts(tmp_path):
+    RECORDS["GR-2"] = {"document_type": "GOODS_RECEIPT", "vendor_name": "OpenAI", "po_number": "PO-002", "quantity": 20, "received_date": "2026-12-28"}
+    ws = world(tmp_path, [])
+    write_world(ws, "documents/index", [{"doc_id": "GR-2", "file": "GR-2.txt", "period": "2026-12"}])
+    write_document(ws, "GR-2.txt", "text of GR-2")
+    evidence.run(ws, llm(), FakeJev(good(None)), "2026-12")
+    assert store.load_table(ws, "goods_receipts")[0]["available_at"] == "2026-12-01"
+    for as_of, earlier in (("2026-10-05T12:00:00Z", "2026-09"), ("2026-12-05T12:00:00Z", "2026-11")):  # Nov closes after Dec 1
+        evidence.run(ws.at(as_of), llm(), FakeJev(good(None)), earlier)
+        assert "quantity_received" not in {l["po_line_id"]: l for l in store.load_table(ws, "po_lines")}["PO-002-001"]

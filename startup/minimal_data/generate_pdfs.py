@@ -425,6 +425,15 @@ def make_delivery_report(vendor: str, doc: dict, path: Path):
     document(path, "CAMPAIGN DELIVERY REPORT", f"{vendor}  |  {doc['document_id']}", story)
 
 
+def month_of(case: dict, source: dict) -> str:
+    """The month folder a document belongs to. Contracts go in the first month the case is billed."""
+    if source["document_type"] == "CONTRACT":
+        return min(d["service_period"] for d in case["documents"] if d.get("service_period"))
+    if source.get("service_period"):
+        return source["service_period"]
+    return re.search(r"\d{4}-\d{2}", json.dumps(source)).group(0)
+
+
 def main() -> None:
     data = json.loads(INPUT.read_text())
     OUTPUT.mkdir(parents=True, exist_ok=True)
@@ -432,7 +441,7 @@ def main() -> None:
     for case in data["cases"]:
         vendor = case["vendor_name"]
         for source in case["documents"]:
-            path = OUTPUT / safe_name(source["document_id"])
+            path = OUTPUT / month_of(case, source) / safe_name(source["document_id"])
             kind = source["document_type"]
             if kind == "CONTRACT":
                 make_contract(vendor, source, path)

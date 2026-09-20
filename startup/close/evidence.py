@@ -12,6 +12,7 @@ from typesafe_sdk import Choice, Noul
 
 from . import events, policy, safe_math, store
 from .jev import JevUnavailable
+from .workspace import period_bounds
 
 # System feeds copied as-is (already structured). The MERGED tables also receive rows from documents;
 # on the same key the feed row wins, because the ERP knows the posting status and the PDF does not.
@@ -56,15 +57,34 @@ def doc_text(path: Path) -> str:
 
 
 def pull_feeds(ws) -> None:
-    """Copy the structured system feeds visible at ws.as_of into the db."""
+    """Copy the structured system feeds visible at ws.as_of into the db. Later workers read only the db."""
+    if store.company(ws):  # optional: entity id, materiality, de minimis threshold
+        store.save_table(ws, "company", [store.company(ws)])
     for name in COPIED:
-        store.save_table(ws, name, store.world(ws, name))
+        if (ws.world_dir / f"{name}.json").exists():  # no feed, no table
+            store.save_table(ws, name, store.world(ws, name))
     for name, key in MERGED.items():
         rows = store.load_table(ws, name)
         for row in store.world(ws, name):
             old = next((r for r in rows if r.get(key) == row[key]), {})
             store.upsert(rows, {**old, **row}, (key,))
-        store.save_table(ws, name, rows)
+        if rows:
+            store.save_table(ws, name, rows)
+
+
+def sync_received(ws, period: str) -> None:
+    """Keep po_lines.quantity_received in step with the goods received by the end of the period, as the warehouse log would."""
+    end = period_bounds(period)[1]
+    received: dict[str, float] = {}
+    for g in store.visible(store.load_table(ws, "goods_receipts"), ws.as_of):
+        if (g.get("received_date") or "") > end:
+            continue  # arrived after the period being closed
+        received[g["po_line_id"]] = received.get(g["po_line_id"], 0) + (g.get("quantity") or 0)
+    lines = store.load_table(ws, "po_lines")
+    for line in lines:
+        if line["po_line_id"] in received:
+            line["quantity_received"] = max(line.get("quantity_received") or 0, received[line["po_line_id"]])
+    store.save_table(ws, "po_lines", lines)
 
 
 def clean(raw: dict) -> dict:
@@ -259,14 +279,20 @@ def missing_fields(record: dict) -> list[str]:
 
 
 def run(ws, llm, jev, period: str) -> list[dict]:
-    """Process every document visible at ws.as_of that is new or changed. Returns the rows it (re)wrote."""
+    """Process this period's documents only (new or changed, visible at ws.as_of). Returns the rows it (re)wrote.
+
+    Earlier months are never re-read: what they established is already in the db."""
     pull_feeds(ws)
     documents = store.load_table(ws, "documents")
     seen = {d["doc_id"]: d for d in documents}
     vendor_names = [v["vendor_name"] for v in store.load_table(ws, "vendors")]
     done = []
     for entry in sorted(store.world(ws, "documents/index"), key=lambda e: (e.get("available_at") or "", e["doc_id"])):
+        if entry.get("period", period) != period:
+            continue
         doc_id = entry["doc_id"]
+        # a month-folder document cannot be known before its month: keeps a re-run of an earlier month clean
+        available_at = entry.get("available_at") or (f"{entry['period']}-01" if entry.get("period") else None)
         text = doc_text(ws.world_dir / "documents" / entry["file"])
         digest = hashlib.sha256(text.encode()).hexdigest()
         old = seen.get(doc_id)
@@ -283,9 +309,9 @@ def run(ws, llm, jev, period: str) -> list[dict]:
             reasons.append("UNRESOLVED_PO_LINE")
         reasons += [f"MISSING_{k.upper()}" for k in missing_fields(record)]
         quality = "NEEDS_REVIEW" if reasons else "OK"
-        applied_to = apply(ws, doc_id, record, vendor, line_id, entry.get("available_at")) if quality == "OK" else None
+        applied_to = apply(ws, doc_id, record, vendor, line_id, available_at) if quality == "OK" else None
         row = {
-            "doc_id": doc_id, "file": entry["file"], "hash": digest, "available_at": entry.get("available_at"),
+            "doc_id": doc_id, "file": entry["file"], "hash": digest, "period": entry.get("period"), "available_at": available_at,
             "doc_type": record["document_type"], "vendor_id": vendor and vendor["vendor_id"], "po_line_id": line_id,
             "record": record, "checks": answers, "quality": quality, "reasons": reasons, "applied_to": applied_to,
         }
@@ -294,4 +320,5 @@ def run(ws, llm, jev, period: str) -> list[dict]:
         events.log(ws, "evidence", f"{doc_id}: {record['document_type']} {quality}"
                    + (f" -> {applied_to}" if applied_to else "") + (f" [{'; '.join(reasons)}]" if reasons else ""), period)
     store.save_table(ws, "documents", documents)
+    sync_received(ws, period)
     return done
