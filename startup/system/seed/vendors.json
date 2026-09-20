@@ -1,0 +1,7 @@
+[
+  {"Vendor_ID": "V001", "Vendor_Name": "Mintlify"},
+  {"Vendor_ID": "V002", "Vendor_Name": "OpenAI"},
+  {"Vendor_ID": "V003", "Vendor_Name": "ASUS"},
+  {"Vendor_ID": "V004", "Vendor_Name": "Meta"},
+  {"Vendor_ID": "V005", "Vendor_Name": "Twilio"}
+]

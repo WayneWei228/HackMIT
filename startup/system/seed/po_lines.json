@@ -1,0 +1,67 @@
+[
+  {
+    "PO_Line_ID": "PO-001-001",
+    "PO_Number": "PO-001",
+    "Item_Category": "P",
+    "Contract_ID": "CTR-001",
+    "GR_Based_IV": false,
+    "GL_Account_Code": "610200",
+    "Quantity_Ordered": null,
+    "Unit_Price": 1200,
+    "Quantity_Received": null,
+    "Quantity_Billed": 0,
+    "Line_Description": "Team documentation platform subscription, billed monthly"
+  },
+  {
+    "PO_Line_ID": "PO-002-001",
+    "PO_Number": "PO-002",
+    "Item_Category": "B",
+    "Contract_ID": "CTR-002",
+    "GR_Based_IV": false,
+    "GL_Account_Code": "610300",
+    "Quantity_Ordered": null,
+    "Unit_Price": 25000,
+    "Quantity_Received": null,
+    "Quantity_Billed": 0,
+    "Line_Description": "API usage, billed monthly on measured units, monthly limit"
+  },
+  {
+    "PO_Line_ID": "PO-003-001",
+    "PO_Number": "PO-003",
+    "Item_Category": "",
+    "Contract_ID": null,
+    "GR_Based_IV": true,
+    "GL_Account_Code": "150100",
+    "Quantity_Ordered": 25,
+    "Unit_Price": 1600,
+    "Quantity_Received": 0,
+    "Quantity_Billed": 0,
+    "Line_Description": "Laptop packages for new engineers, one shipment"
+  },
+  {
+    "PO_Line_ID": "CAMPAIGN-004-001",
+    "PO_Number": "CAMPAIGN-004",
+    "Item_Category": "B",
+    "Contract_ID": null,
+    "GR_Based_IV": false,
+    "GL_Account_Code": "620100",
+    "Quantity_Ordered": null,
+    "Unit_Price": 30000,
+    "Quantity_Received": null,
+    "Quantity_Billed": 0,
+    "Line_Description": "Product-launch advertising campaign, charged on delivery up to budget"
+  },
+  {
+    "PO_Line_ID": "PO-005-001",
+    "PO_Number": "PO-005",
+    "Item_Category": "",
+    "Contract_ID": null,
+    "GR_Based_IV": true,
+    "GL_Account_Code": "610400",
+    "Quantity_Ordered": 1,
+    "Unit_Price": 5000,
+    "Quantity_Received": 1,
+    "Quantity_Billed": 0,
+    "Line_Description": "Monthly SMS usage charges billed per message sent"
+  }
+]
