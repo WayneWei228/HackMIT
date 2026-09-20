@@ -422,18 +422,42 @@ def _load(session: Session, obligation: m.TrueUpObligation) -> Context:
 # ---- estimators: pure Decimal arithmetic over the loaded rows ---------------------------------
 
 
+@dataclass(frozen=True)
+class _FeeCandidate:
+    card: m.TrueUpEvidence
+    fee: Decimal
+    effective: date
+    own: bool
+
+
+def _obligation_currency(ctx: Context) -> str:
+    return (ctx.po.currency if ctx.po else None) or ctx.vendor.default_currency
+
+
 def _document_fee_for(ctx: Context, day: date) -> tuple[m.TrueUpEvidence, Decimal] | None:
     """The monthly fee a verified document card gives for one day, or None if none applies.
 
-    An EFFECTIVE_DATE card with the same source_id dates the fee; undated fees apply from the
-    start of time. When several fees apply, the one with the latest effective date wins.
+    A fee's effective date is its card's own date, else the source's EFFECTIVE_DATE when the
+    source carries no dated fee of its own, else undated. When several fees apply, the one with
+    the latest effective date wins; a card with its own date beats one that inherited it.
     """
-    return _pick_document_fee(_document_fee_candidates(ctx, day), day)
+    candidates, rejected = _document_fee_candidates(ctx, day)
+    if not candidates:
+        if rejected:
+            card, currency = rejected[0]
+            raise Insufficient(
+                e.EvidenceStatus.CONFLICTING,
+                f"Document fee {card.evidence_id} is stated in "
+                f"{currency or 'an unknown currency'}, not {_obligation_currency(ctx)}.",
+                "controller",
+            )
+        return None
+    return _pick_document_fee(candidates, day)
 
 
 def _document_fee_candidates(
     ctx: Context, day: date
-) -> list[tuple[m.TrueUpEvidence, Decimal, date, bool]]:
+) -> tuple[list[_FeeCandidate], list[tuple[m.TrueUpEvidence, str | None]]]:
     effective_by_source: dict[str, date] = {}
     for card in ctx.cards:
         value = card.value_json or {}
@@ -445,7 +469,7 @@ def _document_fee_candidates(
             continue
         if effective > effective_by_source.get(card.source_id, date.min):
             effective_by_source[card.source_id] = effective
-    candidates: list[tuple[m.TrueUpEvidence, Decimal, date, bool]] = []
+    fees: list[tuple[m.TrueUpEvidence, Decimal]] = []
     for card in ctx.cards:
         if (
             card.evidence_type != e.EvidenceCardType.CONTRACT_TERM
@@ -459,39 +483,56 @@ def _document_fee_candidates(
             fee = Decimal(str(value["number"]))
         except InvalidOperation:
             continue
-        effective = effective_by_source.get(card.source_id)
-        own = False
-        if value.get("date"):
-            try:
-                effective = date.fromisoformat(str(value["date"]))
-                own = True
-            except ValueError:
-                pass
+        fees.append((card, fee))
+    dated_sources = {card.source_id for card, _fee in fees if _own_date(card) is not None}
+    currency = _obligation_currency(ctx)
+    candidates: list[_FeeCandidate] = []
+    rejected: list[tuple[m.TrueUpEvidence, str | None]] = []
+    for card, fee in fees:
+        value = card.value_json or {}
+        unit = value.get("unit")
+        stated = unit.split("/")[0].strip().upper() if isinstance(unit, str) else None
+        if stated != currency:
+            rejected.append((card, stated))
+            continue
+        effective = _own_date(card)
+        own = effective is not None
+        if effective is None and card.source_id not in dated_sources:
+            effective = effective_by_source.get(card.source_id)
         if effective is not None and effective > day:
             continue
-        candidates.append((card, fee, effective or date.min, own))
-    return candidates
+        candidates.append(_FeeCandidate(card, fee, effective or date.min, own))
+    return candidates, rejected
+
+
+def _own_date(card: m.TrueUpEvidence) -> date | None:
+    value = (card.value_json or {}).get("date")
+    if not value:
+        return None
+    try:
+        return date.fromisoformat(str(value))
+    except ValueError:
+        return None
 
 
 def _pick_document_fee(
-    candidates: list[tuple[m.TrueUpEvidence, Decimal, date, bool]], day: date
+    candidates: list[_FeeCandidate], day: date
 ) -> tuple[m.TrueUpEvidence, Decimal] | None:
     if not candidates:
         return None
-    latest = max((effective, own) for _, _, effective, own in candidates)
-    winners = [
-        (card, fee) for card, fee, effective, own in candidates if (effective, own) == latest
-    ]
-    fees = {fee for _, fee in winners}
+    latest = max((c.effective, c.own) for c in candidates)
+    winners = [c for c in candidates if (c.effective, c.own) == latest]
+    fees = {c.fee for c in winners}
     if len(fees) > 1:
-        ids = ", ".join(card.evidence_id for card, _ in winners)
+        ids = ", ".join(c.card.evidence_id for c in winners)
         amounts = ", ".join(_money(fee) for fee in sorted(fees))
         raise Insufficient(
             e.EvidenceStatus.CONFLICTING,
             f"Documents give different monthly fees for {day}: {ids}: {amounts}.",
             "controller",
         )
-    return min(winners, key=lambda pair: pair[0].evidence_id)
+    winner = min(winners, key=lambda c: c.card.evidence_id)
+    return winner.card, winner.fee
 
 
 def _rate_source_id(row: m.CompanyContract | m.TrueUpEvidence) -> str:
@@ -563,9 +604,7 @@ def _fixed(ctx: Context) -> Estimate:
     if card_warnings:
         inputs["rate_source"] = "document"
         # A card that an amendment superseded is not a conflict: it documented the old fee.
-        rates |= {
-            fee for day in days for _card, fee, _eff, _own in _document_fee_candidates(ctx, day)
-        }
+        rates |= {c.fee for day in days for c in _document_fee_candidates(ctx, day)[0]}
     return Estimate(
         method=e.EstimationMethod.FIXED_CONTRACT_RATE,
         amount=_round(raw),

@@ -324,8 +324,9 @@ def card(
     date=None,
     source_id="FILE-T",
     file="contract.pdf",
+    unit="USD/month",
 ):
-    value_json = {"key": key, "number": number, "date": date, "file": file}
+    value_json = {"key": key, "number": number, "date": date, "file": file, "unit": unit}
     return m.TrueUpEvidence(
         evidence_id=evidence_id,
         obligation_id=obligation_id,
@@ -505,6 +506,60 @@ def test_dated_fee_from_a_price_change_sentence_wins(session):
     assert result.outcome == "ESTIMATED" and not result.conflicts
     assert result.amount == Decimal("1400.00")
     assert result.expression == "1400.00 x 1 month"
+
+
+def test_mid_period_price_change_prorates_old_and_new_fee(session):
+    obligation = ready(session, "VEN-MINTLIFY")
+    no_contract_rate(session)
+    session.add(card(obligation.obligation_id, "MONTHLY_FEE", "1200.00", evidence_id="EVD-1200"))
+    session.add(
+        card(
+            obligation.obligation_id,
+            "MONTHLY_FEE",
+            "1400.00",
+            evidence_id="EVD-1400",
+            date="2026-12-16",
+        )
+    )
+    session.add(
+        card(
+            obligation.obligation_id,
+            "EFFECTIVE_DATE",
+            None,
+            evidence_id="EVD-T-03",
+            date="2026-12-16",
+        )
+    )
+    session.flush()
+    result = estimate(session, obligation.obligation_id, now=NOW)
+    assert result.outcome == "ESTIMATED" and not result.conflicts
+    expected = (Decimal("1200") * 15 / 31 + Decimal("1400") * 16 / 31).quantize(Decimal("0.01"))
+    assert result.amount == expected
+    assert result.expression == "1200.00 x 15/31 + 1400.00 x 16/31"
+    inputs = wp_for(session, obligation).calculation_inputs_json
+    assert inputs["sources"][:2] == ["EVD-1200", "EVD-1400"]
+
+
+def test_document_fee_in_another_currency_goes_to_the_controller(session):
+    obligation = ready(session, "VEN-MINTLIFY")
+    no_contract_rate(session)
+    session.add(card(obligation.obligation_id, "MONTHLY_FEE", "1400.00", unit="EUR/month"))
+    session.flush()
+    result = estimate(session, obligation.obligation_id, now=NOW)
+    assert result.outcome == "NEEDS_CONTROLLER" and result.workpaper_id is None
+    assert obligation.evidence_status == e.EvidenceStatus.CONFLICTING
+    assert "EUR" in result.uncertainties[0]
+
+
+def test_document_fee_without_a_currency_goes_to_the_controller(session):
+    obligation = ready(session, "VEN-MINTLIFY")
+    no_contract_rate(session)
+    session.add(card(obligation.obligation_id, "MONTHLY_FEE", "1400.00", unit=None))
+    session.flush()
+    result = estimate(session, obligation.obligation_id, now=NOW)
+    assert result.outcome == "NEEDS_CONTROLLER" and result.workpaper_id is None
+    assert obligation.evidence_status == e.EvidenceStatus.CONFLICTING
+    assert "unknown currency" in result.uncertainties[0]
 
 
 def test_amendment_in_force_beats_the_original(session):
