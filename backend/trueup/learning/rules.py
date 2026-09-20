@@ -20,6 +20,7 @@ from collections.abc import Iterable
 from datetime import date
 from decimal import Decimal
 from enum import StrEnum
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from sqlalchemy import select
@@ -48,6 +49,16 @@ class RulePredicate(BaseModel):
     requires_escalator_by_period_end: bool = True
 
 
+class RuleLifecycle(BaseModel):
+    """How much live evidence backs an approved rule: provisional until confirmed 3 times."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    stage: Literal["PROVISIONAL", "CONFIRMED"] = "PROVISIONAL"
+    uses: int = 0
+    contradictions: int = 0
+
+
 class CandidateRule(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -55,6 +66,13 @@ class CandidateRule(BaseModel):
     predicate: RulePredicate
     description: str
     provenance: list[str] = Field(default_factory=list)
+    lifecycle: RuleLifecycle | None = None
+
+    def signature(self) -> tuple[str, tuple[str, ...], bool]:
+        """Two rules with the same signature are the same rule, whoever proposed them."""
+        predicate = self.predicate
+        types = tuple(sorted(t.value for t in predicate.purchase_types))
+        return (self.kind.value, types, predicate.requires_escalator_by_period_end)
 
     @model_validator(mode="after")
     def _no_vendor_ids(self) -> CandidateRule:

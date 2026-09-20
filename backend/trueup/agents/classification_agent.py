@@ -262,6 +262,16 @@ def _load(session: Session, obligation: m.TrueUpObligation):
     return contract, po, service_rows, non_po_rows, cards
 
 
+def structural_facts_for(session: Session, obligation: m.TrueUpObligation) -> StructuralFacts:
+    """The structured facts the rules read for an obligation, without writing anything.
+
+    `obligation` may be transient (unsaved): only its vendor, window, PO, contract and period
+    are read.
+    """
+    contract, po, service_rows, non_po_rows, _cards = _load(session, obligation)
+    return _facts(contract, po, service_rows, non_po_rows)
+
+
 def _facts(contract, po, service_rows, non_po_rows) -> StructuralFacts:
     lines = list(po.line_items_json or []) if po else []
     window = 0

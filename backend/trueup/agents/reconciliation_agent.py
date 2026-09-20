@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 from typing import Any
 
 from pydantic import BaseModel
@@ -26,6 +26,9 @@ from trueup.store.workflow import IllegalTransitionError, advance
 AGENT_NAME = "reconciliation"
 TOLERANCE = Decimal("0.01")
 RATE_TOLERANCE = Decimal("0.00001")
+# An invoice with no line items has no stated rate, so the rate is implied as total / quantity,
+# rounded half up to six places (finer than any contract rate in the data).
+IMPLIED_RATE_PLACES = Decimal("0.000001")
 _WAIT = (e.WorkflowStage.AWAITING_ACTUAL_INVOICE, e.NextAction.WAIT_FOR_INVOICE)
 _RECONCILE = (e.WorkflowStage.RECONCILING, e.NextAction.MATCH_AND_TRUE_UP)
 _LEARN = (e.WorkflowStage.RECONCILING, e.NextAction.EVALUATE_LEARNING)
@@ -301,14 +304,27 @@ def _diagnose(
         quantity = _dec(inputs.get("quantity"))
         rate = _dec(inputs.get("unit_rate"))
         if quantity is not None and rate is not None:
+            implied = False
+            if price is None and quantity > 0:
+                price = (actual / quantity).quantize(IMPLIED_RATE_PLACES, ROUND_HALF_UP)
+                implied = True
             if price is not None and _differs(price, rate):
-                if _in(price, rate_candidates) and abs(actual - quantity * price) <= TOLERANCE:
+                contract_rate = next((c for c in rate_candidates if not _differs(price, c)), None)
+                if (
+                    contract_rate is not None
+                    and abs(actual - quantity * contract_rate) <= TOLERANCE
+                ):
+                    source = "implied invoice rate" if implied else "invoice rate"
                     return Diagnosis(
                         cause.MISSED_ESCALATOR,
                         True,
-                        f"The invoice rate {price} is a contract rate the estimate did not use "
+                        f"The {source} {price} is a contract rate the estimate did not use "
                         f"({rate}).",
-                        ["usage purchase", "invoice rate differs", "rate is a contract rate"],
+                        [
+                            "usage purchase",
+                            "implied rate differs" if implied else "invoice rate differs",
+                            "rate is a contract rate",
+                        ],
                     )
             elif qty is not None and qty != quantity and abs(actual - qty * rate) <= TOLERANCE:
                 return Diagnosis(
@@ -338,6 +354,17 @@ def _diagnose(
         f"The variance of {_money(variance)} is not explained by quantity, rate or delivery.",
         ["no rule explains the variance"],
     )
+
+
+def matching_invoices(
+    session: Session, ob: m.TrueUpObligation, *, now: datetime
+) -> list[m.CompanyAPInvoice]:
+    """Invoices that match an obligation's vendor, window and references as of `now`.
+
+    `ob` may be a transient (unsaved) obligation: only its vendor, service window, PO and
+    contract are read. Nothing is written.
+    """
+    return _matching_invoices(session, ob, _utc(now))[0]
 
 
 def _matching_invoices(

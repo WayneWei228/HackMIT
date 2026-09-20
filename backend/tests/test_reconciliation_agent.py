@@ -385,6 +385,38 @@ def test_rate_the_estimate_missed_is_a_missed_escalator(session):
     assert (ob.workflow_stage, ob.next_action) == LEARN
 
 
+def test_invoice_without_line_items_implies_the_rate_and_diagnoses_a_missed_escalator(session):
+    """The seed OpenAI invoices carry no line items, so the rate is total divided by quantity."""
+    ob = obligation(
+        session,
+        "VEN-OPENAI",
+        amount="14880.00",
+        method=M.USAGE_TIMES_RATE,
+        inputs=usage_inputs(rate="0.016", quantity="930000"),
+        contract_id="CON-OPENAI",
+    )
+    invoice(session, "VEN-OPENAI", "18600.00", contract_id="CON-OPENAI")
+    result = run(session, ob)
+    assert result.root_cause == e.RootCause.MISSED_ESCALATOR
+    assert result.variance == Decimal("3720.00")
+    assert "implied invoice rate 0.020000" in result.explanation
+    assert "implied rate differs" in result.path
+    assert (ob.workflow_stage, ob.next_action) == LEARN
+
+
+def test_an_implied_rate_that_is_no_contract_rate_stays_unknown(session):
+    ob = obligation(
+        session,
+        "VEN-OPENAI",
+        amount="14880.00",
+        method=M.USAGE_TIMES_RATE,
+        inputs=usage_inputs(rate="0.016", quantity="930000"),
+        contract_id="CON-OPENAI",
+    )
+    invoice(session, "VEN-OPENAI", "17000.00", contract_id="CON-OPENAI")
+    assert run(session, ob).root_cause == e.RootCause.UNKNOWN
+
+
 def test_fixed_fee_that_equals_another_contract_rate_is_a_missed_escalator(session):
     ob = obligation(
         session,

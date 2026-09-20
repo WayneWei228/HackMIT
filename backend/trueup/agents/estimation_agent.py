@@ -151,6 +151,57 @@ def estimate(session: Session, obligation_id: str, *, now: datetime) -> Estimati
     return result
 
 
+@dataclass
+class Computation:
+    estimate: Estimate
+    debit_account: str
+    credit_account: str
+    cost_center: str
+    currency: str
+
+
+def compute(
+    session: Session,
+    obligation: m.TrueUpObligation,
+    *,
+    rules: list[tuple[str, CandidateRule]] | None = None,
+) -> Computation:
+    """Recompute an obligation's estimate under an explicit rule set, writing nothing.
+
+    `rules=None` uses the ACTIVE rules in the database; `rules=[]` is the baseline playbook. The
+    Learning agent uses this to rebuild history and to replay a candidate rule. Raises
+    `Insufficient` when the evidence cannot support an estimate.
+    """
+    ctx = _load(session, obligation)
+    if rules is not None:
+        ctx.rules = rules
+    method = METHOD_BY_TYPE.get(obligation.purchase_type)
+    if method is None:
+        raise Insufficient(
+            None,
+            f"Purchase type {obligation.purchase_type.value} has no estimator here.",
+            "controller",
+        )
+    est = _COMPUTE[method](ctx)
+    if est.amount <= ZERO:
+        raise Insufficient(
+            None, f"The computed amount is {est.amount}; nothing to accrue.", "controller"
+        )
+    credit = _find_account(
+        ctx,
+        "Prepaid Expenses"
+        if method == e.EstimationMethod.PREPAID_AMORTIZATION
+        else "Accrued Expenses",
+    )
+    return Computation(
+        estimate=est,
+        debit_account=_debit_account(ctx, method),
+        credit_account=credit,
+        cost_center=(ctx.po.cost_center if ctx.po else None) or "UNASSIGNED",
+        currency=(ctx.po.currency if ctx.po else None) or ctx.vendor.default_currency,
+    )
+
+
 def _estimate_and_write(session: Session, ctx: Context, now: datetime) -> EstimationResult:
     obligation = ctx.obligation
     method = METHOD_BY_TYPE.get(obligation.purchase_type)
