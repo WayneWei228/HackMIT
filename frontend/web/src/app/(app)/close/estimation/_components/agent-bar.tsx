@@ -4,8 +4,9 @@ import { motion, useReducedMotion } from "motion/react";
 
 import { RefreshIcon } from "@/components/ui/icons";
 import { easeOutSoft } from "@/lib/motion";
-import { CHK_DONE, STATUS, completedChecks } from "../_data";
+import { CHK_DONE, completedChecks, statusLines } from "../_data";
 import { LiveDot } from "./markers";
+import { useEstimationScreen } from "./screen-context";
 
 /**
  * The narration strip between the case header and the working columns: who is
@@ -21,6 +22,8 @@ export function AgentBar({
   onReplay: () => void;
 }) {
   const reduced = useReducedMotion();
+  const { closing, inputs } = useEstimationScreen();
+  const inputCount = inputs.length;
   const done = completedChecks(step);
   const pct = (done / CHK_DONE.length) * 100;
 
@@ -34,12 +37,12 @@ export function AgentBar({
             Estimation agent
           </span>
           <span className="truncate text-ui leading-[normal] whitespace-nowrap text-faint-3">
-            {STATUS[step]}
+            {statusLines(closing)[step]}
           </span>
         </div>
 
         <div className="flex flex-none items-center gap-3.5 text-sm leading-[normal]">
-          <span className="whitespace-nowrap text-faint-2">4 inputs</span>
+          <span className="whitespace-nowrap text-faint-2">{inputCount} inputs</span>
           <span aria-hidden="true" className="text-line-mute">
             |
           </span>

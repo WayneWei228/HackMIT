@@ -9,6 +9,7 @@ export const routes = {
   home: "/",
   cases: "/cases",
   vendors: "/vendors",
+  learning: "/learning",
   closeCase: "/close",
   evidence: "/close/evidence",
   obligation: "/close/obligation",

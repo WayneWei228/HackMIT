@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { motion } from "motion/react";
 
 import { ChevronDownIcon } from "@/components/ui/icons";
@@ -8,13 +9,13 @@ import { easeOutSoft, transitions } from "@/lib/motion";
 import {
   type AnalysisCheck,
   type MarkerState,
-  analysisChecks,
-  analysisIntro,
   checkStates,
   subCheckStates,
 } from "../_data";
 import { CheckMarker, SubCheckMarker } from "./glyphs";
 import { Panel, PanelHeading } from "./panel";
+import { buildChecks } from "../_view";
+import { useObligationScreen } from "./screen-context";
 
 /**
  * Middle column: the four accounting checks, ticking over as the agent
@@ -29,6 +30,8 @@ export function AnalysisPanel({
   openIndex: number;
   onToggle: (index: number) => void;
 }) {
+  const { narrative, intro } = useObligationScreen();
+  const checks = useMemo(() => buildChecks(narrative), [narrative]);
   const states = checkStates(step);
   const subStates = subCheckStates(step);
 
@@ -36,11 +39,11 @@ export function AnalysisPanel({
     <Panel className="px-[22px] pt-5 pb-[22px]">
       <PanelHeading>Obligation analysis</PanelHeading>
       <p className="mt-1.5 text-sm leading-[1.6] text-pretty text-faint">
-        {analysisIntro}
+        {intro}
       </p>
 
       <div className="mt-5">
-        {analysisChecks.map((check, i) => (
+        {checks.map((check, i) => (
           <CheckRow
             key={check.label}
             check={check}
@@ -49,7 +52,7 @@ export function AnalysisPanel({
             state={states[i]}
             subStates={subStates}
             open={openIndex === i}
-            last={i === analysisChecks.length - 1}
+            last={i === checks.length - 1}
             onToggle={onToggle}
           />
         ))}

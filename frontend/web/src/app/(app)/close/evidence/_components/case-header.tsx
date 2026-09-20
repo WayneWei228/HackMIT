@@ -2,22 +2,24 @@
 
 import { motion } from "motion/react";
 
+import type { Header } from "@/lib/api-types";
 import { MoreIcon } from "@/components/ui/icons";
 import { Breadcrumb, Button, PageTitle } from "@/components/ui/primitives";
 import { transitions } from "@/lib/motion";
+import { useCaseHref } from "@/lib/case-context";
 import { routes } from "@/lib/routes";
 
-import { CASE } from "../_data";
 import { CaseNotesIcon } from "./evidence-icons";
 
 /** Breadcrumb, case title and the two header actions. */
-export function CaseHeader() {
+export function CaseHeader({ header }: { header: Header }) {
+  const caseHref = useCaseHref();
   return (
     <header>
       <Breadcrumb
         items={[
-          { label: "CLOSE", href: routes.closeCase },
-          { label: "ACTIVE CASE", href: routes.closeCase },
+          { label: "CLOSE", href: caseHref(routes.closeCase) },
+          { label: "ACTIVE CASE", href: caseHref(routes.closeCase) },
           { label: "EVIDENCE" },
         ]}
       />
@@ -30,7 +32,7 @@ export function CaseHeader() {
               so the comp's `font:400 13.5px/1` has to be restated on the
               button too. */}
           <PageTitle className="mt-0 text-[46px] leading-[1.02]">
-            {CASE.vendor}
+            {header.vendor_name}
           </PageTitle>
 
           <motion.div
@@ -39,12 +41,12 @@ export function CaseHeader() {
             transition={{ ...transitions.slow, delay: 0.04 }}
             className="font-display mt-[2px] text-4xl leading-[1.1] tracking-tight text-ink-deep"
           >
-            {CASE.title}
+            {header.title}
           </motion.div>
 
-          <div className="mt-[15px] flex items-center gap-[15px] text-lead text-muted-4">
-            {CASE.meta.map((item, i) => (
-              <span key={item} className="flex items-center gap-[15px]">
+          <div className="mt-[15px] flex flex-wrap items-center gap-x-[15px] gap-y-1 text-lead text-muted-4">
+            {header.chips.map((item, i) => (
+              <span key={item} className="flex items-center gap-[15px] whitespace-nowrap">
                 {i > 0 && (
                   <span className="text-line-dark" aria-hidden="true">
                     |

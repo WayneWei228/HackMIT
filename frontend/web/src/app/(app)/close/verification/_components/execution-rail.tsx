@@ -4,6 +4,7 @@ import Link from "next/link";
 import { motion } from "motion/react";
 
 import { cn } from "@/lib/cn";
+import { useCaseHref } from "@/lib/case-context";
 import { CaretLeftIcon, CaretRightIcon, PageIcon } from "@/components/ui/icons";
 import { easeOutSoft, riseIn, staggerParent, transitions } from "@/lib/motion";
 import { routes } from "@/lib/routes";
@@ -51,9 +52,10 @@ function ChainLink({
   href: string;
   first: boolean;
 }) {
+  const caseHref = useCaseHref();
   return (
     <Link
-      href={href}
+      href={caseHref(href)}
       className={cn(
         "-mx-2 flex items-center gap-[14px] rounded-lg px-2 py-1.5 text-ink transition-colors duration-[160ms] ease-[var(--ease-out-soft)] hover:bg-[#F1F1EB]",
         !first && "mt-5",

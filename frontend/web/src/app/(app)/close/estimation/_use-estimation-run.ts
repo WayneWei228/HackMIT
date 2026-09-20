@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useReducedMotion } from "motion/react";
 
+import { useCaseHref } from "@/lib/case-context";
 import { routes } from "@/lib/routes";
 import { CLOCK_START, DELAYS, FINAL_STEP } from "./_data";
 
@@ -42,6 +43,7 @@ export function useEstimationRun({
 }: EstimationRunOptions = {}): EstimationRun {
   const reduced = useReducedMotion();
   const router = useRouter();
+  const caseHref = useCaseHref();
   const [rawStep, setStep] = useState(0);
   const [seconds, setSeconds] = useState(CLOCK_START);
   const [runId, setRunId] = useState(0);
@@ -66,11 +68,11 @@ export function useEstimationRun({
     });
     if (autoAdvance) {
       timers.push(
-        setTimeout(() => router.push(routes.verification), elapsed + 1600),
+        setTimeout(() => router.push(caseHref(routes.verification)), elapsed + 1600),
       );
     }
     return () => timers.forEach(clearTimeout);
-  }, [autoplay, autoAdvance, reduced, router, runId]);
+  }, [autoplay, autoAdvance, reduced, router, runId, caseHref]);
 
   const replay = useCallback(() => {
     setStep(0);

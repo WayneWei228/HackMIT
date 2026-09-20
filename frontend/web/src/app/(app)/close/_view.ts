@@ -1,0 +1,113 @@
+import type { Header, ObligationDetail, Preview, SourceFile } from "@/lib/api-types";
+
+import type { SourceGlyph, TabGlyph } from "./_data";
+
+/** What each kind of file is called in a tab. */
+export const KIND_LABELS: Record<string, string> = {
+  agreement: "Agreement",
+  ap: "AP history",
+  prior: "Prior close",
+  vendor: "Vendor master",
+  gl: "General ledger",
+  invoice: "Invoice",
+  po: "PO / Order form",
+  email: "Email thread",
+  slack: "Slack export",
+  usage: "Usage report",
+  receipt: "Goods receipt",
+  policy: "Policy memo",
+  order: "Campaign order",
+  delivery: "Delivery report",
+  brief: "Creative brief",
+  report: "Performance report",
+  packing: "Packing slip",
+  register: "Asset register",
+  payment: "Payment record",
+};
+
+const TAB_GLYPHS: Record<string, TabGlyph> = {
+  agreement: "document",
+  ap: "spreadsheet",
+  prior: "memo",
+  vendor: "record",
+  gl: "ledger",
+};
+
+/** Only this many kinds get their own tab; the rest live under "All sources". */
+const MAX_KIND_TABS = 5;
+
+export type SourceCardData = {
+  id: string;
+  name: string;
+  kind: string;
+  kindLabel: string;
+  format: string;
+  detail: string;
+  glyph: SourceGlyph;
+  /** The Ingestion agent kept this file for the Evidence agent. */
+  picked: boolean;
+  reason: string | null;
+  preview: Preview;
+};
+
+export type SourceTabData = { id: string; label: string; glyph: TabGlyph };
+
+export type CloseCaseView = {
+  obligationId: string;
+  header: Header;
+  cards: SourceCardData[];
+  tabs: SourceTabData[];
+  available: boolean;
+  filesLoaded: number;
+  judge: string | null;
+  summary: string | null;
+};
+
+function glyphFor(file: SourceFile): SourceGlyph {
+  if (file.kind === "email") return "mail";
+  if (file.kind === "slack") return "chat";
+  return "page";
+}
+
+export function buildCloseView(detail: ObligationDetail): CloseCaseView {
+  const { ingestion, header } = detail;
+  const cards = ingestion.files.map<SourceCardData>((file) => ({
+    id: file.file_id,
+    name: file.name,
+    kind: file.kind,
+    kindLabel: KIND_LABELS[file.kind] ?? file.kind,
+    format: file.format,
+    detail: file.size_label,
+    glyph: glyphFor(file),
+    picked: file.selected,
+    reason: file.reason,
+    preview: file.preview,
+  }));
+
+  // The kinds the agent picked come first, so its choices get the tabs.
+  const kinds = [...cards]
+    .sort((a, b) => Number(b.picked) - Number(a.picked))
+    .map((card) => card.kind)
+    .filter((kind, index, all) => all.indexOf(kind) === index)
+    .slice(0, MAX_KIND_TABS);
+
+  const tabs: SourceTabData[] = [
+    { id: "all", label: `All sources (${cards.length})`, glyph: "sources" },
+    ...kinds.map<SourceTabData>((kind) => ({
+      id: kind,
+      label: `${KIND_LABELS[kind] ?? kind} (${cards.filter((c) => c.kind === kind).length})`,
+      glyph: TAB_GLYPHS[kind] ?? "document",
+    })),
+  ];
+
+  return {
+    obligationId: header.obligation_id,
+    header,
+    cards,
+    tabs,
+    available: ingestion.available,
+    filesLoaded: ingestion.files_loaded,
+    judge: ingestion.judge,
+    summary: ingestion.summary,
+  };
+}

@@ -23,6 +23,7 @@ export function CaseTable({
   onSort,
   onClearFilters,
   animateRows = true,
+  noCases = false,
 }: {
   rows: CaseRecord[];
   sortKey: SortKey;
@@ -30,6 +31,7 @@ export function CaseTable({
   onSort: (key: SortKey) => void;
   onClearFilters: () => void;
   animateRows?: boolean;
+  noCases?: boolean;
 }) {
   const reduceMotion = useReducedMotion();
 
@@ -62,7 +64,7 @@ export function CaseTable({
 
       {rows.map((row, index) => (
         <CaseRow
-          key={`${row.vendor}-${row.item}`}
+          key={row.obligationId}
           row={row}
           entrance={
             settled
@@ -76,7 +78,11 @@ export function CaseTable({
       ))}
 
       {rows.length === 0 && (
-        <CasesEmptyState onClear={onClearFilters} instant={!!reduceMotion} />
+        <CasesEmptyState
+          onClear={onClearFilters}
+          instant={!!reduceMotion}
+          noCases={noCases}
+        />
       )}
     </div>
   );

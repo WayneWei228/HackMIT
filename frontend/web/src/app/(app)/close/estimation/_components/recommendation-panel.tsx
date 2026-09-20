@@ -4,13 +4,8 @@ import { motion } from "motion/react";
 
 import { MoreIcon } from "@/components/ui/icons";
 import { stagger, timing } from "../_motion";
-import {
-  ACCRUAL_AMOUNT,
-  JOURNAL,
-  RECOMMENDATION_NOTE,
-  RECOMMENDATION_ROWS,
-} from "../_data";
 import { ConfirmIcon } from "./icons";
+import { useEstimationScreen } from "./screen-context";
 
 /** Right column: the number the agent lands on and the entry it implies. */
 export function RecommendationPanel({
@@ -20,6 +15,7 @@ export function RecommendationPanel({
   step: number;
   complete: boolean;
 }) {
+  const { amount, recommendation, note, journal } = useEstimationScreen();
   const settled = step >= 12;
   const rowsIn = step >= 13;
 
@@ -45,19 +41,19 @@ export function RecommendationPanel({
           transition={timing.dash}
           className="font-display absolute top-0 left-0 text-[44px] leading-[1.1] text-[#C4C8BE]"
         >
-          —
+          -
         </motion.span>
         <motion.span
           animate={{ opacity: settled ? 1 : 0, y: settled ? 0 : 8 }}
           transition={timing.settle}
           className="font-display absolute top-0 left-0 text-[44px] leading-[1.1] whitespace-nowrap text-ink-deep"
         >
-          {ACCRUAL_AMOUNT}
+          {amount}
         </motion.span>
       </div>
 
       <div className="mt-[18px] flex flex-col">
-        {RECOMMENDATION_ROWS.map((row, i) => (
+        {recommendation.map((row, i) => (
           <motion.div
             key={row.label}
             animate={{ opacity: rowsIn ? 1 : 0, y: rowsIn ? 0 : 5 }}
@@ -83,7 +79,7 @@ export function RecommendationPanel({
       >
         <ConfirmIcon className="mt-px flex-none" />
         <div className="text-meta leading-[1.65] text-pretty text-accent-slate">
-          {RECOMMENDATION_NOTE}
+          {note}
         </div>
       </motion.div>
 
@@ -94,8 +90,8 @@ export function RecommendationPanel({
       >
         <div className="text-ui leading-[normal] text-ink-2">Journal preview</div>
         <div className="mt-3 grid grid-cols-[22px_1fr_auto] gap-2.5 text-sm leading-[normal] text-ink">
-          {JOURNAL.map((line) => (
-            <div key={line.side} className="contents">
+          {journal.map((line) => (
+            <div key={`${line.side}-${line.account}`} className="contents">
               <span className="text-faint-2">{line.side}</span>
               <span>{line.account}</span>
               <span className="text-right tabular-nums">{line.amount}</span>

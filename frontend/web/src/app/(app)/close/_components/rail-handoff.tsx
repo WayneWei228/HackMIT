@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
 
+import { caseHref } from "@/lib/case-nav";
 import { riseIn, transitions } from "@/lib/motion";
 import { routes } from "@/lib/routes";
 
@@ -12,7 +13,6 @@ import {
   HANDOFF_BLURB,
   HANDOFF_FROM,
   HANDOFF_TO,
-  type SourceId,
 } from "../_data";
 import { SourcePageIcon } from "./close-icons";
 import { RailLabel } from "./rail-label";
@@ -26,10 +26,12 @@ import { RailLabel } from "./rail-label";
  */
 export function RailHandoff({
   files,
+  obligationId,
   complete,
   autoAdvance,
 }: {
-  files: { id: SourceId; name: string }[];
+  files: { id: string; name: string }[];
+  obligationId: string;
   complete: boolean;
   autoAdvance: boolean;
 }) {
@@ -60,7 +62,7 @@ export function RailHandoff({
                 height={17}
                 className="flex-none text-faint-3"
               />
-              <span className="text-ui text-ink">{file.name}</span>
+              <span className="min-w-0 truncate text-ui text-ink">{file.name}</span>
             </motion.button>
           ))}
         </AnimatePresence>
@@ -71,7 +73,7 @@ export function RailHandoff({
         <RailLabel>NEXT HANDOFF</RailLabel>
       </div>
       <Link
-        href={routes.evidence}
+        href={caseHref(routes.evidence, obligationId)}
         className="-mx-2 mt-[13px] flex items-center gap-3 rounded-lg px-2 py-1.5 text-ink transition-colors duration-[160ms] ease-[var(--ease-out-soft)] hover:bg-[#F1F1EB] hover:text-ink"
       >
         <SourcePageIcon width={15} height={17} className="flex-none text-faint-3" />
@@ -91,7 +93,7 @@ export function RailHandoff({
         className="mt-4"
       >
         <Link
-          href={routes.evidence}
+          href={caseHref(routes.evidence, obligationId)}
           className="relative block w-full overflow-hidden rounded-xl border border-accent bg-accent px-3.5 py-[11px] text-center text-ui font-medium text-accent-on transition-colors duration-[160ms] ease-[var(--ease-out-soft)] hover:bg-accent-deep hover:text-accent-on"
         >
           <span className="relative z-[2]">

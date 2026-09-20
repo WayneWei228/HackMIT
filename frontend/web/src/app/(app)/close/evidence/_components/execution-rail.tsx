@@ -13,6 +13,7 @@ import { ExecutionSteps } from "./execution-steps";
 import { ExtractedFacts } from "./extracted-facts";
 import { NextHandoff } from "./next-handoff";
 import { PulseDot } from "./pulse-dot";
+import type { FactRow } from "../_view";
 import type { EvidenceRun } from "./use-evidence-run";
 
 /**
@@ -21,6 +22,7 @@ import type { EvidenceRun } from "./use-evidence-run";
  */
 export function ExecutionRail({
   run,
+  facts,
   width,
   dragging,
   autoAdvance,
@@ -28,6 +30,7 @@ export function ExecutionRail({
   onCollapse,
 }: {
   run: EvidenceRun;
+  facts: readonly FactRow[];
   width: number;
   dragging: boolean;
   autoAdvance: boolean;
@@ -80,7 +83,7 @@ export function ExecutionRail({
           complete={run.complete}
         />
 
-        <ExtractedFacts step={run.step} />
+        <ExtractedFacts facts={facts} step={run.step} />
 
         <NextHandoff complete={run.complete} autoAdvance={autoAdvance} />
       </div>

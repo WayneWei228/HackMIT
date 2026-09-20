@@ -5,28 +5,27 @@ import { motion } from "motion/react";
 
 import { cn } from "@/lib/cn";
 import { timing } from "../_motion";
-import {
-  INPUTS,
-  INPUTS_FOOTNOTE,
-  INPUTS_FOOTNOTE_AT,
-  type EstimationInput,
-} from "../_data";
+import { useCaseHref } from "@/lib/case-context";
+import { INPUTS_FOOTNOTE_AT } from "../_data";
+import type { InputCardView } from "../_view";
 import { ConfirmIcon, InputCalendarIcon, InputDocIcon } from "./icons";
+import { useEstimationScreen } from "./screen-context";
 
 /** Left column: the facts the estimate is built from, revealed as they load. */
 export function InputsPanel({ step }: { step: number }) {
+  const { inputs, footnote } = useEstimationScreen();
   return (
     <section className="flex min-h-full flex-col rounded-xl border border-divider bg-panel px-5 pt-5 pb-[18px] shadow-[var(--shadow-tile)]">
       <div className="font-display border-b border-divider-3 pb-3.5 text-2xl leading-[normal] text-ink-deep">
         Inputs
       </div>
 
-      {INPUTS.map((input, i) => (
+      {inputs.map((input, i) => (
         <InputCard
           key={input.label}
           input={input}
           shown={step >= input.revealAt}
-          last={i === INPUTS.length - 1}
+          last={i === inputs.length - 1}
         />
       ))}
 
@@ -41,7 +40,7 @@ export function InputsPanel({ step }: { step: number }) {
         className="mt-4 flex items-center gap-2.5 rounded-lg bg-accent-tint px-[13px] py-[11px]"
       >
         <ConfirmIcon />
-        <span className="text-meta leading-[normal] text-accent-slate">{INPUTS_FOOTNOTE}</span>
+        <span className="text-meta leading-[normal] text-accent-slate">{footnote}</span>
       </motion.div>
     </section>
   );
@@ -52,11 +51,12 @@ function InputCard({
   shown,
   last,
 }: {
-  input: EstimationInput;
+  input: InputCardView;
   shown: boolean;
   last: boolean;
 }) {
   const Glyph = input.icon === "calendar" ? InputCalendarIcon : InputDocIcon;
+  const caseHref = useCaseHref();
   return (
     <motion.div
       animate={{ opacity: shown ? 1 : 0, y: shown ? 0 : 6 }}
@@ -67,7 +67,7 @@ function InputCard({
       )}
     >
       <div
-        className={`text-ui text-ink-2 ${input.multiline ? "leading-[1.4]" : "leading-[normal]"}`}
+        className="text-ui leading-[normal] text-ink-2"
       >
         {input.label}
       </div>
@@ -78,9 +78,9 @@ function InputCard({
             {input.value}
           </div>
           {input.sub &&
-            (input.href ? (
+            (input.linkTo ? (
               <Link
-                href={input.href}
+                href={caseHref(input.linkTo)}
                 className="mt-[5px] inline-block text-micro leading-[normal] text-faint-2 transition-colors duration-[160ms] ease-[var(--ease-out-soft)] hover:text-accent-link"
               >
                 {input.sub}

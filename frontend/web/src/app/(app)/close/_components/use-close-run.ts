@@ -5,18 +5,17 @@ import { useRouter } from "next/navigation";
 import { useReducedMotion } from "motion/react";
 
 import { routes } from "@/lib/routes";
+import { caseHref } from "@/lib/case-nav";
 import {
   DELAYS,
   HANDOFF_DELAY_MS,
-  SELECT_AT,
-  SOURCE_NAMES,
-  SOURCE_ORDER,
-  STATUS,
+  SELECT_STEPS,
   STEPS,
   TASK_DONE,
   TOTAL_RUN_MS,
-  type SourceId,
+  statusAt,
 } from "../_data";
+import type { CloseCaseView } from "../_view";
 
 export type TaskState = "done" | "active" | "pending";
 
@@ -29,18 +28,20 @@ export type CloseRun = {
   clock: string;
   /** Marker state for each of the five ingestion tasks. */
   taskStates: TaskState[];
-  selected: SourceId[];
-  selectedFiles: { id: SourceId; name: string }[];
-  isSelected: (id: SourceId) => boolean;
-  toggle: (id: SourceId) => void;
+  selected: string[];
+  selectedFiles: { id: string; name: string }[];
+  isSelected: (id: string) => boolean;
+  toggle: (id: string) => void;
 };
 
 function pad(n: number) {
   return n < 10 ? `0${n}` : `${n}`;
 }
 
-/** What the run has picked by the time it finishes: the first three sources. */
-const FINISHED_SELECTION: readonly SourceId[] = SOURCE_ORDER.slice(0, 3);
+/** The step at which the run pins its n-th pick: the first three are spread out, the rest land together. */
+function pinStep(index: number): number {
+  return SELECT_STEPS[index] ?? SELECT_STEPS[SELECT_STEPS.length - 1];
+}
 
 /**
  * The scripted ingestion run.
@@ -52,10 +53,12 @@ const FINISHED_SELECTION: readonly SourceId[] = SOURCE_ORDER.slice(0, 3);
  * nothing animates and no state is written on mount.
  */
 export function useCloseRun({
+  view,
   autoplay = true,
   autoAdvance = false,
   liveTimer = true,
 }: {
+  view: CloseCaseView;
   autoplay?: boolean;
   autoAdvance?: boolean;
   liveTimer?: boolean;
@@ -66,13 +69,18 @@ export function useCloseRun({
 
   const [timelineStep, setTimelineStep] = useState(0);
   /** `null` until either the run or the viewer touches the selection. */
-  const [picked, setPicked] = useState<SourceId[] | null>(null);
+  const [picked, setPicked] = useState<string[] | null>(null);
   const [seconds, setSeconds] = useState(3);
 
   const step = skipTimeline ? STEPS : timelineStep;
-  const baseline = useMemo<SourceId[]>(
-    () => (skipTimeline ? [...FINISHED_SELECTION] : []),
-    [skipTimeline],
+  /** The files the agent really kept, in the order the grid lists them. */
+  const agentPicks = useMemo(
+    () => view.cards.filter((card) => card.picked).map((card) => card.id),
+    [view.cards],
+  );
+  const baseline = useMemo<string[]>(
+    () => (skipTimeline ? [...agentPicks] : []),
+    [skipTimeline, agentPicks],
   );
   const selected = picked ?? baseline;
 
@@ -95,31 +103,31 @@ export function useCloseRun({
       timers.push(
         setTimeout(() => {
           setTimelineStep(next);
-          const add = SELECT_AT[next];
-          if (!add) return;
+          const pins = agentPicks.filter((_, index) => pinStep(index) === next);
+          if (pins.length === 0) return;
           setPicked((current) => {
             const base = current ?? [];
-            return base.includes(add) ? base : [...base, add];
+            return [...base, ...pins.filter((id) => !base.includes(id))];
           });
         }, acc),
       );
     });
 
     return () => timers.forEach(clearTimeout);
-  }, [skipTimeline]);
+  }, [skipTimeline, agentPicks]);
 
   /* Handoff to the evidence agent - opt-in, so the app stays navigable. */
   useEffect(() => {
     if (!autoAdvance || skipTimeline) return;
     const id = setTimeout(
-      () => router.push(routes.evidence),
+      () => router.push(caseHref(routes.evidence, view.obligationId)),
       TOTAL_RUN_MS + HANDOFF_DELAY_MS,
     );
     return () => clearTimeout(id);
-  }, [autoAdvance, skipTimeline, router]);
+  }, [autoAdvance, skipTimeline, router, view.obligationId]);
 
   const toggle = useCallback(
-    (id: SourceId) => {
+    (id: string) => {
       setPicked((current) => {
         const base = current ?? baseline;
         return base.includes(id)
@@ -131,7 +139,7 @@ export function useCloseRun({
   );
 
   const isSelected = useCallback(
-    (id: SourceId) => selected.includes(id),
+    (id: string) => selected.includes(id),
     [selected],
   );
 
@@ -153,17 +161,16 @@ export function useCloseRun({
 
   const selectedFiles = useMemo(
     () =>
-      SOURCE_ORDER.filter((id) => selected.includes(id)).map((id) => ({
-        id,
-        name: SOURCE_NAMES[id],
-      })),
-    [selected],
+      view.cards
+        .filter((card) => selected.includes(card.id))
+        .map((card) => ({ id: card.id, name: card.name })),
+    [view.cards, selected],
   );
 
   return {
     step,
     complete,
-    statusText: STATUS[Math.min(step, STATUS.length - 1)],
+    statusText: statusAt(step, selected.length),
     clock: `${pad(Math.floor(seconds / 60))}:${pad(seconds % 60)}`,
     taskStates,
     selected,

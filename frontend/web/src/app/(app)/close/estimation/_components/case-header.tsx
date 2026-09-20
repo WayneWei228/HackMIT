@@ -4,41 +4,44 @@ import { Fragment } from "react";
 
 import { Breadcrumb, Button, PageTitle } from "@/components/ui/primitives";
 import { MoreIcon } from "@/components/ui/icons";
+import { useCaseHref } from "@/lib/case-context";
 import { routes } from "@/lib/routes";
-import { CASE } from "../_data";
 import { CaseNotesIcon } from "./icons";
+import { useEstimationScreen } from "./screen-context";
 import { SummaryStrip } from "./summary-strip";
 
-const CRUMBS = [
-  { label: "CLOSE", href: routes.closeCase },
-  { label: "EVIDENCE", href: routes.evidence },
-  { label: "OBLIGATION", href: routes.obligation },
-  { label: "ESTIMATION" },
-];
 
 /** Breadcrumb, case title, the two header actions, and the summary numbers. */
-export function CaseHeader({ pulsing }: { pulsing: boolean }) {
+export function CaseHeader() {
+  const { header } = useEstimationScreen();
+  const caseHref = useCaseHref();
+  const crumbs = [
+    { label: "CLOSE", href: caseHref(routes.closeCase) },
+    { label: "EVIDENCE", href: caseHref(routes.evidence) },
+    { label: "OBLIGATION", href: caseHref(routes.obligation) },
+    { label: "ESTIMATION" },
+  ];
   return (
     <div className="flex-none px-[34px] pt-[26px] leading-[normal]">
-      <Breadcrumb items={CRUMBS} />
+      <Breadcrumb items={crumbs} />
 
       <div className="mt-3.5 flex items-start justify-between gap-6">
         <div className="min-w-0">
           <PageTitle className="mt-0 text-[46px] leading-[1.02]">
-            {CASE.vendor}
+            {header.vendor_name}
           </PageTitle>
           <div className="font-display mt-0.5 text-4xl leading-[1.1] tracking-tight text-ink-deep">
-            {CASE.title}
+            {header.title}
           </div>
-          <div className="mt-[15px] flex items-center gap-[15px] text-lead leading-[normal] text-muted-4">
-            {CASE.meta.map((item, i) => (
+          <div className="mt-[15px] flex flex-wrap items-center gap-x-[15px] gap-y-1 text-lead leading-[normal] text-muted-4">
+            {header.chips.map((item, i) => (
               <Fragment key={item}>
                 {i > 0 && (
                   <span aria-hidden="true" className="text-line-dark">
                     |
                   </span>
                 )}
-                <span>{item}</span>
+                <span className="whitespace-nowrap">{item}</span>
               </Fragment>
             ))}
           </div>
@@ -59,7 +62,7 @@ export function CaseHeader({ pulsing }: { pulsing: boolean }) {
         </div>
       </div>
 
-      <SummaryStrip pulsing={pulsing} />
+      <SummaryStrip />
     </div>
   );
 }

@@ -1,14 +1,10 @@
-import {
-  Breadcrumb,
-  Button,
-  PageSubtitle,
-  PageTitle,
-} from "@/components/ui/primitives";
-import { PlusIcon } from "@/components/ui/icons";
+import { Breadcrumb, PageSubtitle, PageTitle } from "@/components/ui/primitives";
+import { CloseControls } from "@/components/close/close-controls";
+import type { CloseView } from "@/lib/api-types";
 import { routes } from "@/lib/routes";
 
-/** Page title block: where you are, what this list is, and how to add to it. */
-export function CasesHeader() {
+/** Page title block: where you are, what this list is, and how to move the close along. */
+export function CasesHeader({ close }: { close: CloseView }) {
   return (
     <div className="flex-none px-[34px] pt-[26px]">
       <div className="flex items-start justify-between gap-6">
@@ -27,10 +23,7 @@ export function CasesHeader() {
             Monitor vendor-related close workflows across the December close.
           </PageSubtitle>
         </div>
-        <Button variant="primary" className="flex-none text-[13.5px]/[1]">
-          <PlusIcon />
-          Create case
-        </Button>
+        <CloseControls close={close} />
       </div>
     </div>
   );

@@ -1,5 +1,11 @@
+import { getClose } from "@/lib/api";
+
 import { CasesHeader } from "./_components/cases-header";
 import { CasesWorkspace } from "./_components/cases-workspace";
+import { toCaseRecords } from "./_records";
+
+/** Every screen shows live backend state, so nothing here is prerendered at build time. */
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "All cases - TrueUp",
@@ -15,11 +21,12 @@ export const metadata = {
  * stat captions - about 13px down the page. Belongs on `body` in globals.css;
  * see the report.
  */
-export default function CasesPage() {
+export default async function CasesPage() {
+  const close = await getClose();
   return (
     <main className="flex min-w-[900px] flex-1 flex-col overflow-hidden leading-[normal]">
-      <CasesHeader />
-      <CasesWorkspace />
+      <CasesHeader close={close} />
+      <CasesWorkspace cases={toCaseRecords(close.cases)} />
     </main>
   );
 }

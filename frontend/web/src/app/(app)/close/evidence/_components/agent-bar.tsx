@@ -5,7 +5,7 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { RefreshIcon } from "@/components/ui/icons";
 import { easeOutSoft, transitions } from "@/lib/motion";
 
-import { AGENT_LABEL, MATCH_STEP, SOURCES_LABEL, TOTALS_STEP } from "../_data";
+import { AGENT_LABEL, MATCH_STEP, TOTALS_STEP } from "../_data";
 import { PulseDot } from "./pulse-dot";
 
 function progressFor(step: number) {
@@ -19,15 +19,17 @@ export function AgentBar({
   step,
   status,
   complete,
+  sourceCount,
   onReplay,
 }: {
+  sourceCount: number;
   step: number;
   status: string;
   complete: boolean;
   onReplay: () => void;
 }) {
   const reduced = useReducedMotion();
-  const reviewed = step >= TOTALS_STEP ? "3 / 3 reviewed" : "2 / 3 reviewed";
+  const reviewed = `${step >= TOTALS_STEP ? sourceCount : Math.max(sourceCount - 1, 0)} / ${sourceCount} reviewed`;
 
   return (
     <div className="flex flex-none items-center justify-between gap-5 px-[34px] py-[13px]">
@@ -51,7 +53,7 @@ export function AgentBar({
       </div>
 
       <div className="flex flex-none items-center gap-[14px] text-sm">
-        <span className="whitespace-nowrap text-faint-2">{SOURCES_LABEL}</span>
+        <span className="whitespace-nowrap text-faint-2">{sourceCount} sources</span>
         <span className="text-line-mute" aria-hidden="true">
           |
         </span>

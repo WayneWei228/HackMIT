@@ -4,7 +4,7 @@ import { motion } from "motion/react";
 
 import { crossFade, transitions } from "@/lib/motion";
 
-import { AGENT_NAME, FILES_LOADED_LABEL } from "../_data";
+import { AGENT_NAME } from "../_data";
 
 /**
  * The single line of agent narration between the filters and the card grid.
@@ -18,10 +18,12 @@ export function AgentStatusBar({
   statusText,
   complete,
   selectedCount,
+  filesLoaded,
 }: {
   statusText: string;
   complete: boolean;
   selectedCount: number;
+  filesLoaded: number;
 }) {
   return (
     <div className="flex flex-none items-center justify-between gap-5 px-[34px] py-[13px]">
@@ -51,7 +53,7 @@ export function AgentStatusBar({
       </div>
 
       <div className="flex flex-none items-center gap-3.5 text-sm">
-        <span className="text-faint-2">{FILES_LOADED_LABEL}</span>
+        <span className="text-faint-2">{filesLoaded} files loaded</span>
         <span aria-hidden="true" className="text-line-mute">
           |
         </span>

@@ -9,6 +9,7 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 
+import { useCaseHref } from "@/lib/case-context";
 import { routes } from "@/lib/routes";
 import {
   DELAYS,
@@ -74,6 +75,7 @@ export function useObligationRun({
   showExecutionPanel = true,
 }: ObligationRunOptions = {}) {
   const router = useRouter();
+  const caseHref = useCaseHref();
   const reducedMotion = usePrefersReducedMotion();
 
   const [rawStep, setStep] = useState(0);
@@ -108,11 +110,11 @@ export function useObligationRun({
     });
     if (autoAdvance) {
       timers.push(
-        window.setTimeout(() => router.push(routes.estimation), acc + 1600),
+        window.setTimeout(() => router.push(caseHref(routes.estimation)), acc + 1600),
       );
     }
     return () => timers.forEach((id) => window.clearTimeout(id));
-  }, [autoplay, autoAdvance, reducedMotion, router, runToken]);
+  }, [autoplay, autoAdvance, reducedMotion, router, runToken, caseHref]);
 
   const replay = useCallback(() => {
     setOpenState({ open: 2, userOpened: false });

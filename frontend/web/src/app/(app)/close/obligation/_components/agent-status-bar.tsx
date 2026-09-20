@@ -4,13 +4,9 @@ import { motion } from "motion/react";
 
 import { RefreshIcon } from "@/components/ui/icons";
 import { easeOutSoft, transitions } from "@/lib/motion";
-import {
-  CHK_DONE,
-  STATUS,
-  completedChecks,
-  evidenceInputsLabel,
-} from "../_data";
+import { CHK_DONE, completedChecks, statusLines } from "../_data";
 import { PulseDot } from "./glyphs";
+import { useObligationScreen } from "./screen-context";
 
 /**
  * The narration strip under the header: what the agent is doing right now,
@@ -25,8 +21,10 @@ export function AgentStatusBar({
   complete: boolean;
   onReplay: () => void;
 }) {
+  const { closing, evidenceInputsLabel } = useObligationScreen();
   const done = completedChecks(step);
-  const status = STATUS[Math.min(step, STATUS.length - 1)];
+  const lines = statusLines(closing);
+  const status = lines[Math.min(step, lines.length - 1)];
 
   return (
     <div className="flex flex-none items-center justify-between gap-5 px-[34px] py-[13px]">

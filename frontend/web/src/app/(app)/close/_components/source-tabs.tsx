@@ -7,7 +7,7 @@ import { cn } from "@/lib/cn";
 import { ChevronDownIcon, SearchIcon } from "@/components/ui/icons";
 import { transitions } from "@/lib/motion";
 
-import { SOURCE_TABS, type TabId } from "../_data";
+import type { SourceTabData } from "../_view";
 import { TabGlyphIcon } from "./close-icons";
 
 /**
@@ -18,11 +18,13 @@ import { TabGlyphIcon } from "./close-icons";
  * measured rather than assumed.
  */
 export function SourceTabs({
+  tabs,
   value,
   onChange,
 }: {
-  value: TabId;
-  onChange: (id: TabId) => void;
+  tabs: readonly SourceTabData[];
+  value: string;
+  onChange: (id: string) => void;
 }) {
   const scroller = useRef<HTMLDivElement>(null);
   const [overflowing, setOverflowing] = useState(false);
@@ -50,7 +52,7 @@ export function SourceTabs({
             "[-webkit-mask-image:linear-gradient(to_right,#000_calc(100%-36px),rgba(0,0,0,0))]",
         )}
       >
-        {SOURCE_TABS.map((tab) => {
+        {tabs.map((tab) => {
           const active = tab.id === value;
           return (
             <button

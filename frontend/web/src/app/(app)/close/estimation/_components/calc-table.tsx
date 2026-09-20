@@ -3,10 +3,12 @@
 import { motion } from "motion/react";
 
 import { stagger, timing } from "../_motion";
-import { CALC_AT, CALC_ROWS, CALC_TOTAL, calcText } from "../_data";
+import { CALC_AT } from "../_data";
+import { useEstimationScreen } from "./screen-context";
 
 /** Body of build step 3: the arithmetic behind the base accrual. */
 export function CalcTable({ step }: { step: number }) {
+  const { calc } = useEstimationScreen();
   const shown = step >= CALC_AT;
   const reveal = (delay: number) => ({
     animate: { opacity: shown ? 1 : 0, y: shown ? 0 : 4 },
@@ -16,10 +18,10 @@ export function CalcTable({ step }: { step: number }) {
   return (
     <div className="pt-[7px] pr-1 pl-[27px]">
       <div className="text-sm leading-[1.65] text-pretty text-muted-4">
-        {calcText(step)}
+        {step >= 8 ? calc.done : "Computing base amount from rate and coverage..."}
       </div>
       <div className="mt-3 rounded-lg bg-rail-alt px-[15px] py-[13px]">
-        {CALC_ROWS.map((row, i) => (
+        {calc.rows.map((row, i) => (
           <motion.div
             key={row.label}
             {...reveal(i * 0.08)}
@@ -40,10 +42,10 @@ export function CalcTable({ step }: { step: number }) {
           className="flex items-center justify-between gap-3.5"
         >
           <span className="text-sm leading-[normal] font-medium text-ink">
-            {CALC_TOTAL.label}
+            {calc.total.label}
           </span>
           <span className="font-display text-[17px] leading-[normal] text-ink-deep">
-            {CALC_TOTAL.value}
+            {calc.total.value}
           </span>
         </motion.div>
       </div>

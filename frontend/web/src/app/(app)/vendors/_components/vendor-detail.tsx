@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 
 import { CaretRightIcon, CheckCircleIcon, PageIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/cn";
+import { caseHref } from "@/lib/case-nav";
 import { AGENT_HREFS, type Vendor } from "../_data";
 import { VendorMark } from "./vendor-mark";
 
@@ -188,7 +189,7 @@ export function VendorDetail({
           {vendor.agents.map((use) => (
             <Link
               key={use.agent}
-              href={AGENT_HREFS[use.agent]}
+              href={caseHref(AGENT_HREFS[use.agent], vendor.obligationId)}
               className="-mx-2 grid grid-cols-[18px_132px_1fr] items-center gap-x-3 rounded-md p-2 text-ink transition-colors duration-[160ms] ease-[var(--ease-out-soft)] hover:bg-[#F1F1EB] hover:text-ink"
             >
               <CheckCircleIcon size={16} className="text-accent" />

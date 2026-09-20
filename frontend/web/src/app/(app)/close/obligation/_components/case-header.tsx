@@ -11,22 +11,32 @@ import {
 import { MoreIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/cn";
 import { riseIn, staggerParent, transitions } from "@/lib/motion";
+import { CaseStatusValue } from "@/components/close/case-status-value";
+import { useCaseHref } from "@/lib/case-context";
+import { formatMoney, formatSigned } from "@/lib/money";
 import { routes } from "@/lib/routes";
-import { caseMeta, headerStats } from "../_data";
-import { CaseNotesIcon, PulseDot } from "./glyphs";
+import { CaseNotesIcon } from "./glyphs";
+import { useObligationScreen } from "./screen-context";
 
 /**
  * Case identity: where we are in the close, which vendor and period, and the
  * four numbers the whole screen is arguing about.
  */
-export function CaseHeader({ pulsing }: { pulsing: boolean }) {
+export function CaseHeader() {
+  const { header } = useObligationScreen();
+  const caseHref = useCaseHref();
+  const stats = [
+    { label: "PREVIOUS ACCRUAL", value: formatMoney(header.previous_accrual), tone: "ink" },
+    { label: "SUPPORTED", value: formatMoney(header.supported), tone: "ink" },
+    { label: "DIFFERENCE", value: formatSigned(header.difference), tone: "accent" },
+  ];
   return (
     <div className="flex-none px-[34px] pt-[26px]">
       <Breadcrumb
         items={[
-          { label: "CLOSE", href: routes.closeCase },
-          { label: "ACTIVE CASE", href: routes.closeCase },
-          { label: "EVIDENCE", href: routes.evidence },
+          { label: "CLOSE", href: caseHref(routes.closeCase) },
+          { label: "ACTIVE CASE", href: caseHref(routes.closeCase) },
+          { label: "EVIDENCE", href: caseHref(routes.evidence) },
           { label: "OBLIGATION" },
         ]}
       />
@@ -37,7 +47,7 @@ export function CaseHeader({ pulsing }: { pulsing: boolean }) {
               custom size tokens as colours and drops them when a primitive
               merges them against its own text colour. */}
           <PageTitle className="mt-0 text-[46px] leading-[1.02]">
-            {caseMeta.vendor}
+            {header.vendor_name}
           </PageTitle>
           <motion.div
             initial={{ opacity: 0, y: 8 }}
@@ -45,11 +55,11 @@ export function CaseHeader({ pulsing }: { pulsing: boolean }) {
             transition={{ ...transitions.slow, delay: 0.04 }}
             className="font-display mt-0.5 text-4xl leading-[1.1] tracking-tight text-ink-deep"
           >
-            {caseMeta.period}
+            {header.title}
           </motion.div>
-          <div className="mt-[15px] flex items-center gap-[15px] text-lead text-muted-4">
-            {caseMeta.attributes.map((attribute, i) => (
-              <span key={attribute} className="flex items-center gap-[15px]">
+          <div className="mt-[15px] flex flex-wrap items-center gap-x-[15px] gap-y-1 text-lead text-muted-4">
+            {header.chips.map((attribute, i) => (
+              <span key={attribute} className="flex items-center gap-[15px] whitespace-nowrap">
                 {i > 0 && (
                   <span aria-hidden="true" className="text-line-dark">
                     |
@@ -85,36 +95,31 @@ export function CaseHeader({ pulsing }: { pulsing: boolean }) {
         animate="visible"
         className="mt-[26px] grid grid-cols-4 pb-[22px]"
       >
-        {headerStats.map((stat, i) => (
+        {stats.map((stat, i) => (
           <motion.div
             key={stat.label}
             variants={riseIn}
-            className={cn(
-              i === 0 ? "pr-6" : "border-l border-line px-6",
-            )}
+            className={cn(i === 0 ? "pr-6" : "border-l border-line px-6")}
           >
             <SectionLabel className="text-[10.5px] text-faint">
               {stat.label}
             </SectionLabel>
-            {stat.kind === "amount" ? (
-              <div
-                className={cn(
-                  "font-display mt-[9px] text-3xl leading-none",
-                  stat.tone === "accent" ? "text-accent" : "text-ink-deep",
-                )}
-              >
-                {stat.value}
-              </div>
-            ) : (
-              <div className="mt-[9px] flex items-center gap-2.5">
-                <PulseDot halo pulsing={pulsing} />
-                <span className="font-display text-[24px] leading-none text-ink-deep">
-                  {stat.value}
-                </span>
-              </div>
-            )}
+            <div
+              className={cn(
+                "font-display mt-[9px] text-3xl leading-none",
+                stat.tone === "accent" ? "text-accent" : "text-ink-deep",
+              )}
+            >
+              {stat.value}
+            </div>
           </motion.div>
         ))}
+        <motion.div variants={riseIn} className="border-l border-line px-6">
+          <SectionLabel className="text-[10.5px] text-faint">STATUS</SectionLabel>
+          <div className="mt-[9px]">
+            <CaseStatusValue status={header.status} />
+          </div>
+        </motion.div>
       </motion.div>
     </div>
   );

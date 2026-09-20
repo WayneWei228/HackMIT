@@ -2,18 +2,11 @@
 
 import { useCallback, useMemo, useState } from "react";
 
-import {
-  DOC_TABS,
-  MATCH_DOC,
-  MATCH_PAGE,
-  ZOOM_SCALES,
-  ZOOMS,
-  type DocId,
-  type Zoom,
-} from "../_data";
+import { ZOOM_SCALES, ZOOMS, type Zoom } from "../_data";
+import type { EvidenceScreenView } from "../_view";
 
 export type DocumentViewer = {
-  doc: DocId;
+  doc: string | null;
   page: number;
   maxPage: number;
   pageLabel: string;
@@ -23,7 +16,7 @@ export type DocumentViewer = {
   search: boolean;
   canPrev: boolean;
   canNext: boolean;
-  selectDoc: (id: DocId) => void;
+  selectDoc: (id: string) => void;
   prevPage: () => void;
   nextPage: () => void;
   jumpToMatch: () => void;
@@ -32,52 +25,49 @@ export type DocumentViewer = {
   toggleSearch: () => void;
 };
 
-const pagesFor = (doc: DocId) =>
-  DOC_TABS.find((tab) => tab.id === doc)?.pages ?? 1;
-
-const opensAt = (doc: DocId) =>
-  DOC_TABS.find((tab) => tab.id === doc)?.openAt ?? 1;
-
 /**
  * Which document is on screen, at which page and zoom, plus the two toolbar
  * affordances that slide open. The cross-fade between documents is handled by
- * `AnimatePresence` in the viewer rather than by a `fade` flag here.
+ * `AnimatePresence` in the viewer rather than by a `fade` flag here. It opens
+ * on the page that holds the first quoted fact.
  */
-export function useDocumentViewer(): DocumentViewer {
-  const [doc, setDoc] = useState<DocId>(MATCH_DOC);
-  const [page, setPage] = useState(MATCH_PAGE);
+export function useDocumentViewer(view: EvidenceScreenView): DocumentViewer {
+  const [doc, setDoc] = useState<string | null>(
+    view.match?.docId ?? view.tabs[0]?.id ?? null,
+  );
+  const [page, setPage] = useState(view.match?.page ?? 1);
   const [zoomIndex, setZoomIndex] = useState(0);
   const [thumbs, setThumbs] = useState(true);
   const [search, setSearch] = useState(false);
 
+  const pagesFor = useCallback(
+    (id: string | null) => view.tabs.find((tab) => tab.id === id)?.pages.length ?? 1,
+    [view.tabs],
+  );
   const maxPage = pagesFor(doc);
 
   const selectDoc = useCallback(
-    (id: DocId) => {
+    (id: string) => {
       if (id === doc) return;
       setDoc(id);
-      setPage(opensAt(id));
+      setPage(1);
     },
     [doc],
   );
 
   const prevPage = useCallback(() => setPage((p) => Math.max(1, p - 1)), []);
-
   const nextPage = useCallback(
     () => setPage((p) => Math.min(pagesFor(doc), p + 1)),
-    [doc],
+    [doc, pagesFor],
   );
 
   const jumpToMatch = useCallback(() => {
-    setDoc(MATCH_DOC);
-    setPage(MATCH_PAGE);
-  }, []);
+    if (!view.match) return;
+    setDoc(view.match.docId);
+    setPage(view.match.page);
+  }, [view.match]);
 
-  const cycleZoom = useCallback(
-    () => setZoomIndex((z) => (z + 1) % ZOOMS.length),
-    [],
-  );
-
+  const cycleZoom = useCallback(() => setZoomIndex((z) => (z + 1) % ZOOMS.length), []);
   const toggleThumbs = useCallback(() => setThumbs((t) => !t), []);
   const toggleSearch = useCallback(() => setSearch((s) => !s), []);
 
@@ -103,20 +93,6 @@ export function useDocumentViewer(): DocumentViewer {
       toggleThumbs,
       toggleSearch,
     }),
-    [
-      doc,
-      page,
-      maxPage,
-      zoom,
-      thumbs,
-      search,
-      selectDoc,
-      prevPage,
-      nextPage,
-      jumpToMatch,
-      cycleZoom,
-      toggleThumbs,
-      toggleSearch,
-    ],
+    [doc, page, maxPage, zoom, thumbs, search, selectDoc, prevPage, nextPage, jumpToMatch, cycleZoom, toggleThumbs, toggleSearch],
   );
 }

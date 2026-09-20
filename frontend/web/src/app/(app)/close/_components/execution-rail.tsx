@@ -22,11 +22,13 @@ import { useRailResize, type RailResize } from "./use-rail-resize";
  */
 export function ExecutionRail({
   run,
+  obligationId,
   open,
   onToggle,
   autoAdvance,
 }: {
   run: CloseRun;
+  obligationId: string;
   open: boolean;
   onToggle: () => void;
   autoAdvance: boolean;
@@ -37,6 +39,7 @@ export function ExecutionRail({
   return open ? (
     <FullRail
       run={run}
+      obligationId={obligationId}
       onToggle={onToggle}
       autoAdvance={autoAdvance}
       resize={resize}
@@ -76,11 +79,13 @@ function MiniRail({ onToggle }: { onToggle: () => void }) {
 
 function FullRail({
   run,
+  obligationId,
   onToggle,
   autoAdvance,
   resize,
 }: {
   run: CloseRun;
+  obligationId: string;
   onToggle: () => void;
   autoAdvance: boolean;
   resize: RailResize;
@@ -126,10 +131,15 @@ function FullRail({
           <div className="text-sm text-faint tabular-nums">{run.clock}</div>
         </div>
 
-        <ExecutionStages complete={run.complete} taskStates={run.taskStates} />
+        <ExecutionStages
+          complete={run.complete}
+          taskStates={run.taskStates}
+          obligationId={obligationId}
+        />
 
         <RailHandoff
           files={run.selectedFiles}
+          obligationId={obligationId}
           complete={run.complete}
           autoAdvance={autoAdvance}
         />

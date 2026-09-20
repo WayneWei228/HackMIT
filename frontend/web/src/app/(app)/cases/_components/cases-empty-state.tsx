@@ -14,9 +14,12 @@ import { riseIn } from "@/lib/motion";
 export function CasesEmptyState({
   onClear,
   instant = false,
+  noCases = false,
 }: {
   onClear: () => void;
   instant?: boolean;
+  /** The close has opened nothing yet, as opposed to filters hiding everything. */
+  noCases?: boolean;
 }) {
   return (
     <motion.div
@@ -27,16 +30,20 @@ export function CasesEmptyState({
       className="flex flex-col items-center justify-center gap-2.5 px-5 py-16"
     >
       <div className="font-display text-[22px] text-ink-deep">
-        No cases match
+        {noCases ? "No cases yet" : "No cases match"}
       </div>
       <div className="text-ui text-faint">
-        Try a different search term or clear the filters.
+        {noCases
+          ? "Run the December close to open one case for each vendor."
+          : "Try a different search term or clear the filters."}
       </div>
       {/* `cn` drops the custom `text-ui` token when a colour merges over it,
           so the comp's 13.5px/1 is restated here. See the port report. */}
-      <Button className="mt-1.5 py-[9px] text-[13.5px]/[1]" onClick={onClear}>
-        Clear filters
-      </Button>
+      {!noCases && (
+        <Button className="mt-1.5 py-[9px] text-[13.5px]/[1]" onClick={onClear}>
+          Clear filters
+        </Button>
+      )}
     </motion.div>
   );
 }

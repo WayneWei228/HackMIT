@@ -32,6 +32,7 @@ export function ThumbnailRail({
       transition={{ duration: 0.32, ease: easeOutSoft }}
     >
       <div className="flex w-[114px] flex-col gap-2.5 px-3 py-[14px]">
+        {page > 1 && (
         <button
           type="button"
           onClick={onPrev}
@@ -45,6 +46,7 @@ export function ThumbnailRail({
             {Math.max(1, page - 1)}
           </div>
         </button>
+        )}
 
         <div className="h-[116px] cursor-pointer rounded-[4px] border-[1.5px] border-accent bg-panel px-[9px] py-2.5">
           <div className={cn(LINE, "bg-[#E7E7E0]")} />
@@ -61,6 +63,7 @@ export function ThumbnailRail({
           </div>
         </div>
 
+        {page < maxPage && (
         <button
           type="button"
           onClick={onNext}
@@ -73,6 +76,7 @@ export function ThumbnailRail({
             {Math.min(maxPage, page + 1)}
           </div>
         </button>
+        )}
       </div>
     </motion.div>
   );

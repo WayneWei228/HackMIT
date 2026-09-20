@@ -5,6 +5,7 @@ import { motion, useReducedMotion } from "motion/react";
 import { RefreshIcon } from "@/components/ui/icons";
 import { easeOutSoft } from "@/lib/motion";
 import { LiveDot } from "./marks";
+import { useVerificationScreen } from "./screen-context";
 
 /** The travelling highlight on the progress bar while the run is live. */
 function Sheen({ show }: { show: boolean }) {
@@ -48,6 +49,7 @@ export function AgentStatusBar({
   pulse: boolean;
   onReplay: () => void;
 }) {
+  const ruleCount = useVerificationScreen().data.controls.length;
   return (
     <div className="flex flex-none items-center justify-between gap-5 px-[34px] py-[13px]">
       <div className="flex min-w-0 items-center gap-[11px]">
@@ -61,7 +63,7 @@ export function AgentStatusBar({
       </div>
 
       <div className="flex flex-none items-center gap-[14px] text-sm">
-        <span className="whitespace-nowrap text-faint-2">6 controls</span>
+        <span className="whitespace-nowrap text-faint-2">{ruleCount} rules</span>
         <span className="text-line-mute" aria-hidden="true">
           |
         </span>

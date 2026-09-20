@@ -4,7 +4,7 @@ import { motion, useReducedMotion } from "motion/react";
 
 import { transitions } from "@/lib/motion";
 
-import { CATEGORY_TABS, TAB_COUNTS, type CategoryTab } from "../_data";
+import type { CategoryTab } from "../_data";
 
 /**
  * Category filter pills.
@@ -14,9 +14,13 @@ import { CATEGORY_TABS, TAB_COUNTS, type CategoryTab } from "../_data";
  * It still travels between tabs on a shared `layoutId`.
  */
 export function CategoryTabs({
+  tabs,
+  counts,
   value,
   onChange,
 }: {
+  tabs: readonly CategoryTab[];
+  counts: Record<CategoryTab, number>;
   value: CategoryTab;
   onChange: (tab: CategoryTab) => void;
 }) {
@@ -24,7 +28,7 @@ export function CategoryTabs({
 
   return (
     <div className="scrollbar-none mt-[22px] flex items-center gap-0.5 overflow-x-auto">
-      {CATEGORY_TABS.map((tab) => {
+      {tabs.map((tab) => {
         const active = tab === value;
         return (
           <button
@@ -48,7 +52,7 @@ export function CategoryTabs({
                 active ? "text-[#5C7A59]" : "text-ghost"
               }`}
             >
-              {TAB_COUNTS[tab]}
+              {counts[tab]}
             </span>
           </button>
         );

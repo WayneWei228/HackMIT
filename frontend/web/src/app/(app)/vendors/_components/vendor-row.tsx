@@ -5,7 +5,7 @@ import { motion } from "motion/react";
 import { MoreIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/cn";
 import { rowIn, transitions } from "@/lib/motion";
-import { STATE_TONES, WORKFLOW_TONES, type Vendor } from "../_data";
+import { STATE_TONES, workflowTone, type Vendor } from "../_data";
 import { VENDOR_GRID } from "./grid";
 import { VendorMark } from "./vendor-mark";
 
@@ -36,7 +36,7 @@ export function VendorRow({
   animateLayout: boolean;
   onSelect: () => void;
 }) {
-  const workflow = WORKFLOW_TONES[vendor.workflow];
+  const workflow = workflowTone(vendor.workflow);
 
   return (
     <motion.div

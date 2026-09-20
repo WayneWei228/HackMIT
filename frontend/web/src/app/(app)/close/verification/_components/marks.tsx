@@ -162,7 +162,13 @@ export function AssertionMark({ state }: { state: MarkState }) {
 }
 
 /** 17px timeline node used by the control checks. */
-export function ControlMark({ state }: { state: MarkState }) {
+export function ControlMark({
+  state,
+  tone = "ok",
+}: {
+  state: MarkState;
+  tone?: "ok" | "warn";
+}) {
   return (
     <span className="absolute top-px left-0 h-[17px] w-[17px]">
       <Layer show={state === "pending"} duration={0.28}>
@@ -172,16 +178,24 @@ export function ControlMark({ state }: { state: MarkState }) {
         <span className="block h-full w-full rounded-full border-2 border-accent" />
       </Layer>
       <Layer show={state === "done"} duration={0.32}>
-        <svg width="17" height="17" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-          <circle cx="9" cy="9" r="8.4" fill="#2E8047" />
-          <path
-            d="M5.4 9.2l2.6 2.6 5-5.4"
-            stroke="#FFFFFF"
-            strokeWidth={1.6}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
+        {tone === "warn" ? (
+          <svg width="17" height="17" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+            <circle cx="9" cy="9" r="8.4" fill="#D6A43C" />
+            <path d="M9 5v5" stroke="#FFFFFF" strokeWidth={1.7} strokeLinecap="round" />
+            <circle cx="9" cy="12.6" r="1" fill="#FFFFFF" />
+          </svg>
+        ) : (
+          <svg width="17" height="17" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+            <circle cx="9" cy="9" r="8.4" fill="#2E8047" />
+            <path
+              d="M5.4 9.2l2.6 2.6 5-5.4"
+              stroke="#FFFFFF"
+              strokeWidth={1.6}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        )}
       </Layer>
     </span>
   );
@@ -268,11 +282,18 @@ export function TaskMark({ state }: { state: MarkState }) {
 }
 
 /** 15px marker on the final status row - spinner until the run completes. */
-export function FinalMark({ complete }: { complete: boolean }) {
+export function FinalMark({ complete, tone }: { complete: boolean; tone?: string }) {
   return (
     <span className="relative h-[15px] w-[15px] flex-none">
-      <Layer show={!complete} duration={0.3}>
+      <Layer show={!complete && !tone} duration={0.3}>
         <Spinner size={15} duration={1.4} track="#DCDCD4" />
+      </Layer>
+      <Layer show={!complete && !!tone} duration={0.35}>
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <circle cx="8" cy="8" r="7.3" fill={tone ?? "#D6A43C"} />
+          <path d="M8 4.4v4.2" stroke="#FFFFFF" strokeWidth={1.5} strokeLinecap="round" />
+          <circle cx="8" cy="11.2" r=".9" fill="#FFFFFF" />
+        </svg>
       </Layer>
       <Layer show={complete} duration={0.35}>
         <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">

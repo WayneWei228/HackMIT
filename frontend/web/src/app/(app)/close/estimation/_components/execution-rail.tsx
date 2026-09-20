@@ -4,6 +4,7 @@ import Link from "next/link";
 import { motion } from "motion/react";
 
 import { cn } from "@/lib/cn";
+import { useCaseHref } from "@/lib/case-context";
 import {
   HANDOFF,
   RAIL_STAGES_BEFORE,
@@ -37,6 +38,7 @@ export function ExecutionRail({
   rail: RailResize;
   autoAdvance: boolean;
 }) {
+  const caseHref = useCaseHref();
   const tasks = railTaskStates(step);
 
   return (
@@ -115,7 +117,7 @@ export function ExecutionRail({
           </div>
 
           <Link
-            href={HANDOFF.href}
+            href={caseHref(HANDOFF.href)}
             className={cn(stageRow, stageLink, "mt-[22px]")}
           >
             <StageNumber>05</StageNumber>
@@ -162,7 +164,7 @@ export function ExecutionRail({
           className={cn("mt-4", !complete && "pointer-events-none")}
         >
           <Link
-            href={HANDOFF.href}
+            href={caseHref(HANDOFF.href)}
             tabIndex={complete ? undefined : -1}
             aria-hidden={complete ? undefined : true}
             className="relative block w-full overflow-hidden rounded-xl border border-accent bg-accent px-3.5 py-[11px] text-center text-ui leading-[normal] font-medium text-accent-on transition-colors duration-[160ms] ease-[var(--ease-out-soft)] hover:bg-accent-deep hover:text-accent-on"
@@ -185,9 +187,10 @@ export function ExecutionRail({
 }
 
 function CompletedStage({ stage, first }: { stage: RailStage; first: boolean }) {
+  const caseHref = useCaseHref();
   return (
     <Link
-      href={stage.href ?? "#"}
+      href={stage.href ? caseHref(stage.href) : "#"}
       className={cn(stageRow, stageLink, first ? "mt-0" : "mt-5")}
     >
       <StageNumber>{stage.n}</StageNumber>

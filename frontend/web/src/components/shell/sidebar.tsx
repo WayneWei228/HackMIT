@@ -21,6 +21,7 @@ type NavLeaf = { label: string; href?: string };
 const CLOSE_CHILDREN: NavLeaf[] = [
   { label: "Active cases", href: "/close" },
   { label: "All cases", href: "/cases" },
+  { label: "Learning", href: "/learning" },
   { label: "Journals" },
   { label: "Reconciliations" },
 ];
@@ -79,12 +80,31 @@ function LeafRow({ item, active }: { item: NavLeaf; active: boolean }) {
   );
 }
 
-export function Sidebar() {
+export type SidebarIdentity = {
+  periodLabel: string;
+  controllerName: string;
+  controllerRole: string;
+};
+
+const FALLBACK_IDENTITY: SidebarIdentity = {
+  periodLabel: "December 2026",
+  controllerName: "Controller",
+  controllerRole: "Backend offline",
+};
+
+export function Sidebar({ identity = FALLBACK_IDENTITY }: { identity?: SidebarIdentity }) {
   const pathname = usePathname();
   const isCloseSection =
     pathname.startsWith("/close") ||
     pathname.startsWith("/cases") ||
+    pathname.startsWith("/learning") ||
     pathname.startsWith("/agents");
+  const initials = identity.controllerName
+    .split(" ")
+    .map((word) => word[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 
   return (
     <aside className="flex w-[232px] flex-none flex-col border-r border-line bg-rail pt-[22px] pb-[18px]">
@@ -118,7 +138,9 @@ export function Sidebar() {
             active={
               item.href === "/cases"
                 ? pathname === "/cases"
-                : item.href === "/close"
+                : item.href === "/learning"
+                  ? pathname.startsWith("/learning")
+                  : item.href === "/close"
                   ? pathname.startsWith("/close") || pathname.startsWith("/agents")
                   : false
             }
@@ -144,18 +166,18 @@ export function Sidebar() {
         <div className="mx-2 mb-4 h-px bg-line-warm" />
         <div className="flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-1.5 transition-colors duration-[160ms] hover:bg-hover">
           <div className="flex-1">
-            <div className="text-body text-ink">December 2026</div>
+            <div className="text-body text-ink">{identity.periodLabel}</div>
             <div className="mt-0.5 text-meta text-faint-2">Controller</div>
           </div>
           <ChevronRightIcon className="text-faint-2" />
         </div>
         <div className="flex items-center gap-[11px] px-2.5 pt-2.5 pb-1">
           <div className="flex h-[34px] w-[34px] flex-none items-center justify-center rounded-full bg-accent-forest text-micro font-semibold tracking-[0.03em] text-accent-on-2">
-            TS
+            {initials}
           </div>
           <div className="min-w-0 flex-1">
-            <div className="text-body text-ink">Taylor Smith</div>
-            <div className="mt-0.5 text-meta text-faint-2">Mintlify</div>
+            <div className="text-body text-ink">{identity.controllerName}</div>
+            <div className="mt-0.5 text-meta text-faint-2">{identity.controllerRole}</div>
           </div>
           <MoreIcon className="cursor-pointer text-lead text-faint-3" />
         </div>

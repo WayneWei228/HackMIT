@@ -5,11 +5,8 @@ import { AnimatePresence, motion } from "motion/react";
 import { crossFade, easeOutSoft } from "@/lib/motion";
 
 import { MATCH_STEP } from "../_data";
-import {
-  AgreementDocument,
-  ApHistoryDocument,
-  PriorCloseDocument,
-} from "./documents";
+import type { DocTab } from "../_view";
+import { DocumentSheet } from "./document-sheet";
 import { ThumbnailRail } from "./thumbnail-rail";
 import type { DocumentViewer as ViewerState } from "./use-document-viewer";
 import { ViewerToolbar } from "./viewer-toolbar";
@@ -19,15 +16,20 @@ import { ViewerToolbar } from "./viewer-toolbar";
  * document or page cross-fades over 130ms, matching the comp's swap timer.
  */
 export function DocumentViewer({
+  tabs,
+  excerpts,
   step,
   viewer,
   onToggleRail,
 }: {
+  tabs: readonly DocTab[];
+  excerpts: Record<string, string[]>;
   step: number;
   viewer: ViewerState;
   onToggleRail: () => void;
 }) {
   const highlighted = step >= MATCH_STEP;
+  const tab = tabs.find((candidate) => candidate.id === viewer.doc);
 
   return (
     <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-divider bg-panel shadow-[var(--shadow-tile)]">
@@ -50,7 +52,7 @@ export function DocumentViewer({
           open={viewer.thumbs}
           page={viewer.page}
           maxPage={viewer.maxPage}
-          highlighted={highlighted && viewer.doc === "agreement"}
+          highlighted={highlighted && (excerpts[viewer.doc ?? ""]?.length ?? 0) > 0}
           onPrev={viewer.prevPage}
           onNext={viewer.nextPage}
         />
@@ -70,14 +72,18 @@ export function DocumentViewer({
                 animate="visible"
                 exit="exit"
               >
-                {viewer.doc === "agreement" && (
-                  <AgreementDocument
+                {tab ? (
+                  <DocumentSheet
+                    tab={tab}
                     page={viewer.page}
+                    excerpts={excerpts[tab.id] ?? []}
                     highlighted={highlighted}
                   />
+                ) : (
+                  <div className="pt-24 text-center text-ui text-faint-2">
+                    The evidence agent has not read any documents for this case yet.
+                  </div>
                 )}
-                {viewer.doc === "ap" && <ApHistoryDocument />}
-                {viewer.doc === "prior" && <PriorCloseDocument />}
               </motion.div>
             </AnimatePresence>
           </motion.div>

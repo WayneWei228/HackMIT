@@ -7,14 +7,14 @@ import { ChevronRightIcon, SearchIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/cn";
 import { transitions } from "@/lib/motion";
 
-import { DOC_TABS, type DocId } from "../_data";
+import type { DocTab } from "../_view";
 import { AgreementIcon, MemoIcon, SpreadsheetIcon } from "./evidence-icons";
 
-const TAB_ICONS: Record<DocId, (props: { className?: string }) => React.ReactElement> = {
-  agreement: AgreementIcon,
-  ap: SpreadsheetIcon,
-  prior: MemoIcon,
-};
+function iconFor(tab: DocTab): (props: { className?: string }) => React.ReactElement {
+  if (tab.format === "XLSX") return SpreadsheetIcon;
+  if (["agreement", "po", "order", "invoice"].includes(tab.kind)) return AgreementIcon;
+  return MemoIcon;
+}
 
 const MASK = "linear-gradient(to right,#000 calc(100% - 36px),rgba(0,0,0,0))";
 
@@ -24,13 +24,15 @@ const MASK = "linear-gradient(to right,#000 calc(100% - 36px),rgba(0,0,0,0))";
  * measures this on mount and on resize, so this does too.
  */
 export function DocumentTabs({
+  tabs,
   doc,
   onSelect,
   onToggleSearch,
   onJumpToMatch,
 }: {
-  doc: DocId;
-  onSelect: (id: DocId) => void;
+  tabs: readonly DocTab[];
+  doc: string | null;
+  onSelect: (id: string) => void;
   onToggleSearch: () => void;
   onJumpToMatch: () => void;
 }) {
@@ -62,9 +64,9 @@ export function DocumentTabs({
             : undefined
         }
       >
-        {DOC_TABS.map((tab) => {
+        {tabs.map((tab) => {
           const active = tab.id === doc;
-          const Icon = TAB_ICONS[tab.id];
+          const Icon = iconFor(tab);
           return (
             <button
               key={tab.id}

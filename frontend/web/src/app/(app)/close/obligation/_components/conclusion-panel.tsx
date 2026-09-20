@@ -4,9 +4,9 @@ import { motion } from "motion/react";
 
 import { MoreIcon } from "@/components/ui/icons";
 import { easeOutSoft, transitions } from "@/lib/motion";
-import { conclusion, conclusionRows } from "../_data";
 import { NoteInfoIcon } from "./glyphs";
 import { Panel, PanelHeading } from "./panel";
+import { useObligationScreen } from "./screen-context";
 
 /** Rows rise 5px over 400ms, 60ms apart - the comp's staggered reveal. */
 function rowMotion(index: number, visible: boolean) {
@@ -31,6 +31,7 @@ export function ConclusionPanel({
   step: number;
   complete: boolean;
 }) {
+  const { conclusion, rows } = useObligationScreen();
   const amountReady = step >= AMOUNT_AT;
   const rowsReady = step >= ROWS_AT;
 
@@ -57,7 +58,7 @@ export function ConclusionPanel({
           transition={{ duration: 0.25, ease: easeOutSoft }}
           className="font-display absolute top-0 left-0 text-[44px] leading-[1.1] text-[#C4C8BE]"
         >
-          —
+          -
         </motion.span>
         <motion.span
           initial={false}
@@ -73,7 +74,7 @@ export function ConclusionPanel({
       </div>
 
       <div className="mt-[18px] flex flex-col">
-        {conclusionRows.map((row, i) => (
+        {rows.map((row, i) => (
           <motion.div
             key={row.label}
             initial={false}

@@ -6,10 +6,11 @@ import {
   BUILD_BLURB,
   BUILD_STEPS,
   type BuildStepKind,
+  FINAL_STEP,
   autoOpenStep,
   buildStepStates,
-  finalText,
 } from "../_data";
+import { useEstimationScreen } from "./screen-context";
 import { AdjustmentChecks } from "./adjustment-checks";
 import { BuildStep } from "./build-step";
 import { CalcTable } from "./calc-table";
@@ -35,6 +36,12 @@ export function EstimateBuildPanel({
     setOpened(null);
   }
 
+  const { coverageText, rateText, finalText } = useEstimationScreen();
+  const texts: Partial<Record<BuildStepKind, string>> = {
+    coverage: coverageText,
+    rate: rateText,
+    final: finalText,
+  };
   const states = buildStepStates(step);
   const open = opened === null ? autoOpenStep(step) : opened;
 
@@ -69,7 +76,11 @@ export function EstimateBuildPanel({
             }
             onToggle={() => toggle(i)}
           >
-            <StepBody kind={definition.kind} text={definition.text} step={step} />
+            <StepBody
+              kind={definition.kind}
+              text={texts[definition.kind]}
+              step={step}
+            />
           </BuildStep>
         ))}
       </div>
@@ -90,7 +101,7 @@ function StepBody({
   if (kind === "adjustments") return <AdjustmentChecks step={step} />;
   return (
     <div className="pt-[7px] pr-[26px] pl-[27px] text-sm leading-[1.65] text-pretty text-muted-4">
-      {kind === "final" ? finalText(step) : text}
+      {kind === "final" && step < FINAL_STEP ? "Assembling the recommendation..." : text}
     </div>
   );
 }

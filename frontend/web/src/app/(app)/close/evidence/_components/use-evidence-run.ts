@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useReducedMotion } from "motion/react";
 
+import { useCaseHref } from "@/lib/case-context";
 import { routes } from "@/lib/routes";
 
 import {
@@ -12,7 +13,7 @@ import {
   HANDOFF_DELAY,
   SEQ,
   START_SECONDS,
-  STATUS,
+  statusAt,
 } from "../_data";
 
 export type EvidenceRun = {
@@ -42,15 +43,18 @@ const pad = (n: number) => (n < 10 ? `0${n}` : `${n}`);
  * the rail does the navigation, so the screen stays browsable.
  */
 export function useEvidenceRun({
+  factCount,
   autoplay = true,
   autoAdvance = false,
   liveTimer = true,
 }: {
+  factCount: number;
   autoplay?: boolean;
   autoAdvance?: boolean;
   liveTimer?: boolean;
-} = {}): EvidenceRun {
+}): EvidenceRun {
   const router = useRouter();
+  const caseHref = useCaseHref();
   const reduced = useReducedMotion();
   const [step, setStep] = useState(0);
   const [seconds, setSeconds] = useState(START_SECONDS);
@@ -86,13 +90,13 @@ export function useEvidenceRun({
       timers.push(
         setTimeout(() => {
           advanced.current = true;
-          router.push(routes.obligation);
+          router.push(caseHref(routes.obligation));
         }, acc + HANDOFF_DELAY),
       );
     }
 
     return () => timers.forEach(clearTimeout);
-  }, [autoplay, autoAdvance, reduced, router, runId]);
+  }, [autoplay, autoAdvance, reduced, router, runId, caseHref]);
 
   // Replay restarts the sequence only - the comp leaves the clock running.
   const replay = useCallback(() => {
@@ -107,7 +111,7 @@ export function useEvidenceRun({
     done,
     active,
     complete: step >= FINAL_STEP,
-    status: STATUS[step],
+    status: statusAt(step, factCount),
     clock: `${pad(Math.floor(seconds / 60))}:${pad(seconds % 60)}`,
     replay,
   };

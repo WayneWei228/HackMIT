@@ -1,19 +1,23 @@
 import { routes } from "@/lib/routes";
 
 /* -------------------------------------------------------------------------- */
-/* Timeline constants - lifted verbatim from the comp script                   */
+/* Timeline constants                                                          */
 /* -------------------------------------------------------------------------- */
 
-/** Step index at which each of the six control checks flips to "Passed". */
-export const CTRL_DONE = [2, 4, 6, 8, 10, 16];
-/** Step index at which each exception-scan sub-item clears. */
-export const SCAN_DONE = [12, 13, 14, 15];
-/** Step index at which each assertion row verifies. */
-export const ASSERT_DONE = [1, 3, 5, 7, 9, 16];
 /** Step index at which each additional check clears. */
 export const EXTRA_DONE = [13, 14];
 /** Step index at which each rail sub-task completes. */
 export const TASK_DONE = [2, 6, 10, 16, 17, 18];
+
+/** Control `i` of `n` clears at a step spread evenly over the run; the last is never after 16. */
+export function controlDoneSteps(n: number): number[] {
+  return Array.from({ length: n }, (_, i) => 2 + Math.floor((i * 14) / Math.max(n, 1)));
+}
+
+/** Assertion `i` of `n` verifies at a step spread over the first sixteen steps. */
+export function assertionDoneSteps(n: number): number[] {
+  return Array.from({ length: n }, (_, i) => 1 + Math.floor((i * 15) / Math.max(n, 1)));
+}
 
 /** Gap in ms between consecutive steps of the scripted run. */
 export const DELAYS = [
@@ -27,52 +31,36 @@ export const FINAL_STEP = DELAYS.length;
 /** Elapsed seconds the live timer starts from (03:34). */
 export const START_SECONDS = 214;
 
-/** Narration shown beside "Verification agent", indexed by step. */
-export const STATUS = [
-  "Loading verified inputs...",
-  "Tracing source support...",
-  "Testing source traceability...",
-  "Reconciling amounts...",
-  "Testing amount agreement...",
-  "Checking period coverage...",
-  "Validating period coverage...",
-  "Checking GL coding and vendor...",
-  "Validating GL account and vendor...",
-  "Inspecting journal entry...",
-  "Testing journal entry integrity...",
-  "Testing support, consistency, and journal readiness...",
-  "Scanning recent AP activity...",
-  "Checking for existing accruals...",
-  "Reviewing credit memos...",
-  "Validating against policy rules...",
-  "Confirming close readiness...",
-  "Preparing close handoff...",
-  "Verification complete · case is close-ready",
-];
+/** Narration shown beside "Verification agent", indexed by step; `closing` is the last line. */
+export function statusLines(closing: string): string[] {
+  return [
+    "Loading verified inputs...",
+    "Tracing source support...",
+    "Testing source traceability...",
+    "Reconciling amounts...",
+    "Testing amount agreement...",
+    "Checking period coverage...",
+    "Validating period coverage...",
+    "Checking GL coding and vendor...",
+    "Validating GL account and vendor...",
+    "Inspecting journal entry...",
+    "Testing journal entry integrity...",
+    "Testing support, consistency, and journal readiness...",
+    "Scanning recent AP activity...",
+    "Checking for existing accruals...",
+    "Reviewing credit memos...",
+    "Validating against policy rules...",
+    "Confirming close readiness...",
+    "Preparing close handoff...",
+    closing,
+  ];
+}
 
 /* -------------------------------------------------------------------------- */
 /* Static content                                                              */
 /* -------------------------------------------------------------------------- */
 
 export type MarkState = "pending" | "active" | "done";
-
-export type CaseHeadStat = {
-  readonly label: string;
-  readonly value: string;
-  readonly accent?: boolean;
-};
-
-export const HEAD_STATS: readonly CaseHeadStat[] = [
-  { label: "PREVIOUS ACCRUAL", value: "$1,200" },
-  { label: "SUPPORTED", value: "$1,400" },
-  { label: "DIFFERENCE", value: "+$200", accent: true },
-];
-
-export const CASE_META = {
-  vendor: "Mintlify",
-  title: "December accrual",
-  facts: ["Recurring fixed", "Vendor VND-0412", "GL 6042 - Subscriptions"],
-} as const;
 
 export type Assertion = {
   readonly label: string;
@@ -81,88 +69,17 @@ export type Assertion = {
   readonly plain?: boolean;
 };
 
-export const ASSERTIONS: readonly Assertion[] = [
-  { label: "Contracted monthly amount", value: "$1,400" },
-  { label: "Effective date", value: "Dec 1, 2026" },
-  { label: "Service period", value: "Dec 1 – 31, 2026" },
-  { label: "Recommended accrual", value: "$1,400" },
-  { label: "Prior recurring amount", value: "$1,200" },
-  {
-    label: "Journal impact",
-    value: "$1,400 debit / $1,400 credit",
-    plain: true,
-  },
-];
-
-export const EXTRA_CHECKS = ["No duplicate accrual", "No offsetting credits"];
-
 export type Control = {
   readonly index: string;
   readonly title: string;
   readonly subtitle: string;
-  /** Null on the exception scan, which renders the scan list instead. */
+  /** Null on a control that renders the scan list instead. */
   readonly body: string | null;
+  /** "warn" when the rule was hit or noted rather than passed. */
+  readonly tone: "ok" | "warn";
+  /** What the tag says once the control has run. */
+  readonly doneTag: string;
 };
-
-export const CONTROLS: readonly Control[] = [
-  {
-    index: "01",
-    title: "Source traceability",
-    subtitle: "All key fields have supporting evidence.",
-    body: "Rate traced to agreement §4.2 p. 6; prior amount traced to AP history and the November close memo.",
-  },
-  {
-    index: "02",
-    title: "Amount agreement",
-    subtitle: "Accrual amount matches contract and obligation.",
-    body: "Contract rate $1,400 = obligation $1,400 = estimate $1,400. No variance.",
-  },
-  {
-    index: "03",
-    title: "Period coverage",
-    subtitle: "Service period (Dec 1 – 31, 2026) aligns with accrual.",
-    body: "Full month, 31 of 31 days, proration 1.00. No cutoff adjustment needed.",
-  },
-  {
-    index: "04",
-    title: "GL account and vendor",
-    subtitle: "Matches historical coding and vendor master.",
-    body: "GL 6042 · Subscriptions used for all 12 prior months. Vendor VND-0412 active, Net 30.",
-  },
-  {
-    index: "05",
-    title: "Journal entry integrity",
-    subtitle: "Balanced entry with valid accounts.",
-    body: "Dr 6042 $1,400 / Cr 2100 $1,400 — debits equal credits, both accounts open for the period.",
-  },
-  {
-    index: "06",
-    title: "Exception scan",
-    // Replaced at runtime: the comp swaps this line once the run finishes.
-    subtitle: "Checking for duplicate accruals, credits, or conflicts...",
-    body: null,
-  },
-];
-
-export const SCAN_ITEMS = [
-  "Scanning recent AP activity",
-  "Checking for existing accruals",
-  "Reviewing credit memos",
-  "Validating against policy rules",
-];
-
-export const FINAL_ROWS = [
-  { label: "Service period", value: "Dec 1 – 31, 2026" },
-  { label: "GL account", value: "6042 · Subscriptions" },
-  { label: "Vendor", value: "Mintlify (VND-0412)" },
-];
-
-export const JOURNAL_LINES = [
-  { side: "Dr", account: "6042", amount: "$1,400" },
-  { side: "Cr", account: "2100", amount: "$1,400" },
-];
-
-export const ACCRUAL_AMOUNT = "$1,400";
 
 export type ChainStep = {
   readonly index: string;
@@ -224,9 +141,26 @@ export type TaskView = {
   readonly state: MarkState;
 };
 
+export type ExtraCheck = { label: string; ok: boolean };
+
+/** Everything `deriveView` needs from the backend to replay the checks. */
+export type VerificationData = {
+  controls: readonly Control[];
+  assertions: readonly Assertion[];
+  extras: readonly ExtraCheck[];
+  /** The scan list under a control whose body is null; empty when there is none. */
+  scanItems: readonly string[];
+  /** Status shown once the run completes, and while it is still running. */
+  finalStatus: string;
+  noteTitle: string;
+  noteBody: string;
+  closing: string;
+};
+
 export type VerificationView = {
   readonly complete: boolean;
   readonly passed: number;
+  readonly total: number;
   readonly statusText: string;
   readonly passedLabel: string;
   readonly controlCount: string;
@@ -250,44 +184,43 @@ function markOf(done: boolean, active: boolean): MarkState {
 }
 
 /**
- * The comp's `renderVals()`, rewritten as a pure function of the step index.
- * Every number here is the comp's; nothing is rounded or re-tuned.
+ * The comp's `renderVals()`, rewritten as a pure function of the step index
+ * and of what the backend recorded: one control per policy rule, one assertion
+ * per recorded claim.
  */
-export function deriveView(step: number): VerificationView {
+export function deriveView(step: number, data: VerificationData): VerificationView {
   const complete = step >= FINAL_STEP;
+  const total = data.controls.length;
+  const ctrlDone = controlDoneSteps(total);
+  const assertDoneAt = assertionDoneSteps(data.assertions.length);
 
-  const passed = CTRL_DONE.filter((x) => step >= x).length;
-  const activeCtrl = passed < 6 ? passed : -1;
+  const checked = ctrlDone.filter((x) => step >= x).length;
+  const activeCtrl = checked < total ? checked : -1;
 
-  const controls: ControlView[] = CONTROLS.map((control, i) => {
-    const done = step >= CTRL_DONE[i];
-    const active =
-      i === activeCtrl && step >= (i === 0 ? 1 : CTRL_DONE[i - 1]);
+  const controls: ControlView[] = data.controls.map((control, i) => {
+    const done = step >= ctrlDone[i];
+    const active = i === activeCtrl && step >= (i === 0 ? 1 : ctrlDone[i - 1]);
     return {
       ...control,
-      subtitle:
-        control.body === null
-          ? complete
-            ? "No duplicates, credits, or policy conflicts found."
-            : "Checking for duplicate accruals, credits, or conflicts..."
-          : control.subtitle,
       state: markOf(done, active),
-      tag: done ? "Passed" : "In progress",
+      tag: done ? control.doneTag : "In progress",
       tagVisible: done || active,
       lineDone: done,
     };
   });
+  const passed = data.controls.filter((c, i) => step >= ctrlDone[i] && c.tone === "ok").length;
 
+  const scanDone = [12, 13, 14, 15];
   const scanActive =
-    step >= 11 && step < 16 ? SCAN_DONE.filter((x) => step >= x).length : -1;
-  const scans: ScanView[] = SCAN_ITEMS.map((label, i) => ({
+    step >= 11 && step < 16 ? scanDone.filter((x) => step >= x).length : -1;
+  const scans: ScanView[] = data.scanItems.map((label, i) => ({
     label,
-    state: markOf(step >= SCAN_DONE[i], i === scanActive),
+    state: markOf(step >= (scanDone[i] ?? 15), i === scanActive),
   }));
 
-  const assertDone = ASSERT_DONE.filter((x) => step >= x).length;
-  const assertions: AssertionView[] = ASSERTIONS.map((assertion, i) => {
-    const done = step >= ASSERT_DONE[i];
+  const assertDone = assertDoneAt.filter((x) => step >= x).length;
+  const assertions: AssertionView[] = data.assertions.map((assertion, i) => {
+    const done = step >= assertDoneAt[i];
     return {
       ...assertion,
       state: markOf(done, i === assertDone),
@@ -296,9 +229,9 @@ export function deriveView(step: number): VerificationView {
     };
   });
 
-  const extras: ExtraView[] = EXTRA_CHECKS.map((label, i) => {
-    const done = step >= EXTRA_DONE[i];
-    return { label, done, tag: done ? "Clear" : "Pending" };
+  const extras: ExtraView[] = data.extras.map((extra, i) => {
+    const done = step >= (EXTRA_DONE[i] ?? 14);
+    return { label: extra.label, done, tag: done ? (extra.ok ? "Clear" : "Review") : "Pending" };
   });
 
   const taskDone = TASK_DONE.filter((x) => step >= x).length;
@@ -307,29 +240,29 @@ export function deriveView(step: number): VerificationView {
     state: markOf(step >= TASK_DONE[i], i === taskDone && !complete),
   }));
 
+  const lines = statusLines(data.closing);
   return {
     complete,
     passed,
-    statusText: STATUS[Math.min(step, STATUS.length - 1)],
-    passedLabel: `${passed} / 6 passed`,
-    controlCount: `${passed} / 6`,
-    progress: (passed / 6) * 100,
-    headStatus: complete ? "Verified" : "Running",
+    total,
+    statusText: lines[Math.min(step, lines.length - 1)],
+    passedLabel: `${passed} / ${total} passed`,
+    controlCount: `${passed} / ${total}`,
+    progress: total === 0 ? 0 : (checked / total) * 100,
+    headStatus: complete ? data.finalStatus : "Running",
     railStatus: complete ? "Complete" : "Running",
     stageStatus: complete ? "Complete" : "Active",
-    autoOpen: activeCtrl >= 0 ? activeCtrl : 5,
+    autoOpen: activeCtrl >= 0 ? activeCtrl : Math.max(total - 1, 0),
     controls,
     assertions,
     extras,
     scans,
     tasks,
-    finalStatus: complete ? "Close-ready" : "Under review",
-    noteTitle: complete
-      ? "All 6 controls passed."
-      : "All critical controls passed.",
+    finalStatus: complete ? data.finalStatus : "Under review",
+    noteTitle: complete ? data.noteTitle : "Checks in progress.",
     noteBody: complete
-      ? "Case is close-ready. Approve to post the December journal entry."
-      : "Finishing remaining checks before marking as close-ready.",
+      ? data.noteBody
+      : "Finishing remaining checks before the case status is set.",
   };
 }
 

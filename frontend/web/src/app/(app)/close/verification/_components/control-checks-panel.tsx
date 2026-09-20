@@ -77,7 +77,7 @@ function ControlRow({
           className="absolute top-[22px] bottom-0 left-2 w-px"
         />
       )}
-      <ControlMark state={control.state} />
+      <ControlMark state={control.state} tone={control.tone} />
 
       <button
         type="button"
@@ -105,7 +105,12 @@ function ControlRow({
           initial={false}
           animate={{
             opacity: control.tagVisible ? 1 : 0,
-            color: control.state === "done" ? "#2E8047" : "#9AA096",
+            color:
+              control.state === "done"
+                ? control.tone === "warn"
+                  ? "#B9791F"
+                  : "#2E8047"
+                : "#9AA096",
           }}
           transition={FADE}
           className="mt-px flex-none text-sm"
@@ -188,7 +193,7 @@ export function ControlChecksPanel({
             Control checks
           </div>
           <div className="mt-1.5 text-sm leading-[1.6] text-faint">
-            Running automated and rule-based checks.
+            The policy rules applied to this accrual.
           </div>
         </div>
         <div className="flex flex-none items-center gap-2">

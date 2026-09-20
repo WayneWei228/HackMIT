@@ -5,7 +5,9 @@ import { motion } from "motion/react";
 import { cn } from "@/lib/cn";
 import { riseIn, staggerParent } from "@/lib/motion";
 
-import { CASE_STATS, CASE_STATUS_LABEL, CASE_STATUS_VALUE } from "../_data";
+import { CaseStatusValue } from "@/components/close/case-status-value";
+import type { Header } from "@/lib/api-types";
+import { formatMoney, formatSigned } from "@/lib/money";
 
 function StatLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -17,10 +19,15 @@ function StatLabel({ children }: { children: React.ReactNode }) {
 
 /**
  * The four-up figure strip under the title: previous accrual, what the agent
- * has supported so far, the difference, and the run's status. Supported and
- * difference stay em-dashes until the estimation agent fills them in.
+ * has supported so far, the difference, and the case's status. Figures stay
+ * dashes until an agent has produced them.
  */
-export function CaseStats() {
+export function CaseStats({ header }: { header: Header }) {
+  const stats = [
+    { label: "PREVIOUS ACCRUAL", value: formatMoney(header.previous_accrual), muted: header.previous_accrual === null },
+    { label: "SUPPORTED", value: formatMoney(header.supported), muted: header.supported === null },
+    { label: "DIFFERENCE", value: formatSigned(header.difference), muted: header.difference === null },
+  ];
   return (
     <motion.div
       variants={staggerParent(0.05, 0.08)}
@@ -28,7 +35,7 @@ export function CaseStats() {
       animate="visible"
       className="mt-[26px] grid grid-cols-[repeat(4,minmax(0,1fr))] pb-[22px]"
     >
-      {CASE_STATS.map((stat, i) => (
+      {stats.map((stat, i) => (
         <motion.div
           key={stat.label}
           variants={riseIn}
@@ -49,12 +56,9 @@ export function CaseStats() {
       ))}
 
       <motion.div variants={riseIn} className="border-l border-line px-6">
-        <StatLabel>{CASE_STATUS_LABEL}</StatLabel>
-        <div className="mt-[9px] flex items-center gap-2.5">
-          <span className="h-[9px] w-[9px] flex-none rounded-full bg-accent" />
-          <span className="font-display text-[24px] leading-none text-ink-deep">
-            {CASE_STATUS_VALUE}
-          </span>
+        <StatLabel>STATUS</StatLabel>
+        <div className="mt-[9px]">
+          <CaseStatusValue status={header.status} />
         </div>
       </motion.div>
     </motion.div>

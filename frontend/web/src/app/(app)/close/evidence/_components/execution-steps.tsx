@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 
 import { cn } from "@/lib/cn";
 import { easeOutSoft } from "@/lib/motion";
+import { useCaseHref } from "@/lib/case-context";
 import { routes } from "@/lib/routes";
 
 import { CHECKLIST } from "../_data";
@@ -112,6 +113,7 @@ export function ExecutionSteps({
   active: number;
   complete: boolean;
 }) {
+  const caseHref = useCaseHref();
   return (
     <div className="mt-[26px]">
       <Stage
@@ -120,7 +122,7 @@ export function ExecutionSteps({
         status="Complete"
         barClassName="bg-accent-line"
         statusClassName="text-faint-2"
-        href={routes.closeCase}
+        href={caseHref(routes.closeCase)}
       />
 
       <Stage
@@ -158,7 +160,7 @@ export function ExecutionSteps({
           "transition-colors duration-300",
           complete ? "text-ink-2" : "text-faint-3",
         )}
-        href={routes.obligation}
+        href={caseHref(routes.obligation)}
         className="mt-[22px]"
       />
 

@@ -3,10 +3,10 @@
 import { motion } from "motion/react";
 
 import { cn } from "@/lib/cn";
-import { Button } from "@/components/ui/primitives";
 import { easeOutSoft } from "@/lib/motion";
-import { ACCRUAL_AMOUNT, FINAL_ROWS, JOURNAL_LINES } from "../_data";
+import { DecisionBox } from "./decision-box";
 import { FinalMark } from "./marks";
+import { useVerificationScreen } from "./screen-context";
 
 const SETTLE = { duration: 0.45, ease: easeOutSoft };
 const TINT = { duration: 0.4, ease: easeOutSoft };
@@ -60,6 +60,10 @@ export function FinalStatusPanel({
   noteTitle: string;
   noteBody: string;
 }) {
+  const { amount, finalRows, journal, controller, header } = useVerificationScreen();
+  const ready = header.status === "Close-ready" || header.status === "Complete";
+  const settled = complete && ready;
+  const statusColor = settled ? "#2E8047" : header.status === "Blocked" ? "#A4452F" : "#B9791F";
   return (
     <section className="min-h-full rounded-xl border border-divider bg-panel p-5 shadow-[var(--shadow-tile)]">
       <div className="font-display border-b border-divider-3 pb-[14px] text-2xl text-ink-deep">
@@ -70,17 +74,17 @@ export function FinalStatusPanel({
         ACCRUAL AMOUNT
       </div>
       <div className="font-display mt-1.5 text-[44px] leading-[1.1] text-ink-deep">
-        {ACCRUAL_AMOUNT}
+        {amount}
       </div>
 
       <div className="mt-[18px] flex flex-col">
         <div className="flex items-center justify-between gap-[14px] border-t border-wash-deep py-3">
           <span className="text-ui text-muted-4">Status</span>
           <span className="flex items-center gap-2.5">
-            <FinalMark complete={complete} />
+            <FinalMark complete={settled} tone={complete && !ready ? statusColor : undefined} />
             <motion.span
               initial={false}
-              animate={{ color: complete ? "#2E8047" : "#1D1F1B" }}
+              animate={{ color: complete ? statusColor : "#1D1F1B" }}
               transition={{ duration: 0.35, ease: easeOutSoft }}
               className="text-ui"
             >
@@ -89,7 +93,7 @@ export function FinalStatusPanel({
           </span>
         </div>
 
-        {FINAL_ROWS.map((row) => (
+        {finalRows.map((row) => (
           <div
             key={row.label}
             className="flex items-center justify-between gap-[14px] border-t border-wash-deep py-3"
@@ -102,8 +106,8 @@ export function FinalStatusPanel({
         <div className="flex items-start justify-between gap-[14px] border-t border-wash-deep py-3">
           <span className="text-ui text-muted-4">Journal entry</span>
           <span className="grid grid-cols-[20px_auto_auto] gap-x-2.5 gap-y-1.5 text-sm text-ink text-right">
-            {JOURNAL_LINES.map((line) => (
-              <span key={line.side} className="contents">
+            {journal.map((line) => (
+              <span key={`${line.side}-${line.account}`} className="contents">
                 <span className="text-faint-2 text-left">{line.side}</span>
                 <span>{line.account}</span>
                 <span className="tabular-nums">{line.amount}</span>
@@ -115,15 +119,15 @@ export function FinalStatusPanel({
 
       <motion.div
         initial={false}
-        animate={{ backgroundColor: complete ? "#F1F5EC" : "#F6F6F1" }}
+        animate={{ backgroundColor: settled ? "#F1F5EC" : "#F6F6F1" }}
         transition={{ duration: 0.5, ease: easeOutSoft }}
         className="mt-5 flex items-start gap-[11px] rounded-lg px-[14px] py-[13px]"
       >
-        <NoteIcon complete={complete} />
+        <NoteIcon complete={settled} />
         <div className="min-w-0 flex-1">
           <motion.div
             initial={false}
-            animate={{ color: complete ? "#3C5840" : "#33362F" }}
+            animate={{ color: settled ? "#3C5840" : "#33362F" }}
             transition={TINT}
             className="text-meta font-medium leading-[1.5]"
           >
@@ -131,7 +135,7 @@ export function FinalStatusPanel({
           </motion.div>
           <motion.div
             initial={false}
-            animate={{ color: complete ? "#3C5840" : "#75796F" }}
+            animate={{ color: settled ? "#3C5840" : "#75796F" }}
             transition={TINT}
             className="mt-[3px] text-meta leading-[1.65] text-pretty"
           >
@@ -144,26 +148,9 @@ export function FinalStatusPanel({
         initial={false}
         animate={{ opacity: complete ? 1 : 0, y: complete ? 0 : 8 }}
         transition={SETTLE}
-        className={cn(
-          "mt-[18px] flex flex-col gap-2",
-          !complete && "pointer-events-none",
-        )}
+        className={cn(!complete && "pointer-events-none")}
       >
-        {/* text-[13.5px]: `cn` reads the custom `text-ui` token as a colour and
-            drops it against the variant's own text colour. Restating the size in
-            turn drops `leading-none`, so both come back here. */}
-        <Button
-          variant="solid"
-          className="w-full justify-center border border-accent px-3.5 text-[13.5px] leading-none hover:bg-accent-deep"
-        >
-          Approve and post journal
-        </Button>
-        <Button
-          variant="secondary"
-          className="w-full justify-center px-3.5 text-[13.5px] leading-none"
-        >
-          Request changes
-        </Button>
+        {controller.in_queue && <DecisionBox />}
       </motion.div>
     </section>
   );

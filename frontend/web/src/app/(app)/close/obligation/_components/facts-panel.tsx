@@ -5,14 +5,11 @@ import { motion } from "motion/react";
 
 import { ChevronRightIcon } from "@/components/ui/icons";
 import { transitions } from "@/lib/motion";
+import { useCaseHref } from "@/lib/case-context";
 import { routes } from "@/lib/routes";
-import {
-  factAttributes,
-  sourceDocumentsLabel,
-  sourceFacts,
-} from "../_data";
 import { SourceDocIcon } from "./glyphs";
 import { Panel, PanelHeading } from "./panel";
+import { useObligationScreen } from "./screen-context";
 
 /** Facts settle in one at a time as the agent reads them. */
 function factMotion(visible: boolean) {
@@ -27,15 +24,21 @@ function factMotion(visible: boolean) {
  * the document it came out of.
  */
 export function FactsPanel({ step }: { step: number }) {
+  const { facts, attributes, attributesAppearAt, sourceDocumentsLabel } = useObligationScreen();
+  const caseHref = useCaseHref();
   return (
     <Panel className="flex flex-col px-5 pt-5 pb-4">
       <PanelHeading className="border-b border-divider-3 pb-3.5">
         Facts in scope
       </PanelHeading>
 
-      {sourceFacts.map((fact) => (
+      {facts.length === 0 && (
+        <p className="py-4 text-sm text-faint-2">No document facts were extracted for this case.</p>
+      )}
+
+      {facts.map((fact, index) => (
         <motion.div
-          key={fact.label}
+          key={`${index}-${fact.label}`}
           initial={false}
           {...factMotion(step >= fact.appearsAt)}
           className="border-b border-wash-deep py-4"
@@ -43,13 +46,14 @@ export function FactsPanel({ step }: { step: number }) {
           <div className="text-ui text-ink-2">{fact.label}</div>
           <div className="mt-[9px] flex items-start gap-[11px]">
             <SourceDocIcon className="mt-[3px] flex-none text-faint-3" />
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <div className="font-display text-xl leading-[1.15] text-ink-deep">
                 {fact.amount}
               </div>
               <Link
-                href={fact.href}
-                className="mt-[5px] inline-block text-micro text-faint-2 transition-colors duration-[160ms] hover:text-accent-link"
+                href={caseHref(routes.evidence)}
+                className="mt-[5px] block truncate text-micro text-faint-2 transition-colors duration-[160ms] hover:text-accent-link"
+                title={fact.source}
               >
                 {fact.source}
               </Link>
@@ -60,10 +64,10 @@ export function FactsPanel({ step }: { step: number }) {
 
       <motion.div
         initial={false}
-        {...factMotion(step >= factAttributes.appearsAt)}
+        {...factMotion(step >= attributesAppearAt)}
         className="pt-4"
       >
-        {factAttributes.items.map((attribute, i) => (
+        {attributes.map((attribute, i) => (
           <div key={attribute.label} className={i > 0 ? "mt-[17px]" : undefined}>
             <div className="text-ui text-ink-2">{attribute.label}</div>
             <div className="font-display mt-[7px] text-lg leading-[normal] text-ink-deep">
@@ -76,7 +80,7 @@ export function FactsPanel({ step }: { step: number }) {
       <div className="min-h-[18px] flex-1" />
 
       <Link
-        href={routes.evidence}
+        href={caseHref(routes.evidence)}
         className="-mx-2.5 -mb-1 mt-3.5 flex items-center justify-between gap-2.5 rounded-b-md border-t border-wash-deep p-2.5 text-sm leading-[normal] text-muted transition-colors duration-[160ms] ease-[var(--ease-out-soft)] hover:bg-rail-alt hover:text-ink"
       >
         <span>{sourceDocumentsLabel}</span>

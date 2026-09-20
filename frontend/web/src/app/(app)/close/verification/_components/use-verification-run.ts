@@ -12,10 +12,13 @@ import {
   START_SECONDS,
   deriveView,
   formatClock,
+  type VerificationData,
   type VerificationView,
 } from "../_data";
 
 type Options = {
+  /** The recorded checks the run replays. */
+  data: VerificationData;
   /** Play the scripted step sequence on mount. */
   autoplay?: boolean;
   /** Tick the elapsed-time readout in the rail. */
@@ -43,9 +46,10 @@ export type VerificationRun = {
  * rendered straight away.
  */
 export function useVerificationRun({
+  data,
   autoplay = true,
   liveTimer = true,
-}: Options = {}): VerificationRun {
+}: Options): VerificationRun {
   const reduced = useReducedMotion();
 
   const [step, setStep] = useState(0);
@@ -85,8 +89,8 @@ export function useVerificationRun({
   }, [autoplay, reduced, runToken]);
 
   const view = useMemo(
-    () => deriveView(reduced ? FINAL_STEP : step),
-    [reduced, step],
+    () => deriveView(reduced ? FINAL_STEP : step, data),
+    [reduced, step, data],
   );
 
   const replay = useCallback(() => {

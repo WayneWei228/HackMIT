@@ -6,16 +6,12 @@ import { motion } from "motion/react";
 
 import { cn } from "@/lib/cn";
 import { MoreIcon } from "@/components/ui/icons";
+import { formatMoney } from "@/lib/money";
 import { easeOutSoft } from "@/lib/motion";
 
 import { CASE_GRID } from "./case-grid";
 import { CaseStatusDot } from "./case-status-dot";
-import {
-  CATEGORY_STYLES,
-  MARKS,
-  formatAmount,
-  type CaseRecord,
-} from "../_data";
+import { CATEGORY_STYLES, MARKS, type CaseRecord } from "../_data";
 
 const MotionLink = motion.create(Link);
 
@@ -86,7 +82,7 @@ export function CaseRow({
       </div>
 
       <div className="text-body text-ink tabular-nums">
-        {formatAmount(row.amount)}
+        {formatMoney(row.amount)}
       </div>
 
       <div className="text-body text-ink-2">{row.stage}</div>

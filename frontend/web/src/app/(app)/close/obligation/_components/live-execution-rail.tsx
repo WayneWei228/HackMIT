@@ -15,6 +15,7 @@ import {
   railTasks,
   taskStates,
 } from "../_data";
+import { useCaseHref } from "@/lib/case-context";
 import { PulseDot, SourceDocIcon, TaskMarker } from "./glyphs";
 
 export type RailProps = {
@@ -84,6 +85,7 @@ function FullRail({
   onResizeStart,
 }: RailProps) {
   const tasks = taskStates(step);
+  const caseHref = useCaseHref();
 
   return (
     <motion.aside
@@ -181,7 +183,7 @@ function FullRail({
           className={cn("mt-4", !complete && "pointer-events-none")}
         >
           <Link
-            href={handoff.href}
+            href={caseHref(handoff.href)}
             className="relative block w-full overflow-hidden rounded-xl border border-accent bg-accent px-3.5 py-[11px] text-center text-ui font-medium text-accent-on transition-colors duration-[160ms] ease-[var(--ease-out-soft)] hover:bg-accent-deep hover:text-accent-on"
           >
             <span className="relative z-[2]">
@@ -210,6 +212,7 @@ function StageRow({
   complete: boolean;
   first: boolean;
 }) {
+  const caseHref = useCaseHref();
   const label = stageStatusLabel(stage, complete);
   const body = (
     <>
@@ -239,7 +242,7 @@ function StageRow({
 
   return stage.href ? (
     <Link
-      href={stage.href}
+      href={caseHref(stage.href)}
       className={cn(
         "-mx-2 flex items-center gap-3.5 rounded-lg px-2 py-1.5 text-ink transition-colors duration-[160ms] ease-[var(--ease-out-soft)] hover:bg-[#F1F1EB]",
         spacing,

@@ -7,9 +7,11 @@ import type { SortDir } from "@/components/ui/primitives";
 import { CasesToolbar } from "./cases-toolbar";
 import { CategoryTabs } from "./category-tabs";
 import { CaseTable } from "./case-table";
+import { compareMoney } from "@/lib/money";
+
 import {
   ALL_STATUSES,
-  CASES,
+  CATEGORY_ORDER,
   STATUS_OPTIONS,
   type CaseRecord,
   type CategoryTab,
@@ -46,8 +48,10 @@ function matchesFilters(
  * they produce. The page's title block above is static.
  */
 export function CasesWorkspace({
+  cases,
   animateRows = true,
 }: {
+  cases: readonly CaseRecord[];
   animateRows?: boolean;
 }) {
   const [query, setQuery] = useState("");
@@ -63,13 +67,39 @@ export function CasesWorkspace({
   );
 
   const visible = useMemo(
-    () => CASES.filter((record) => matchesFilters(record, filters)),
-    [filters],
+    () => cases.filter((record) => matchesFilters(record, filters)),
+    [cases, filters],
+  );
+
+  const tabs = useMemo<CategoryTab[]>(
+    () => [
+      "All",
+      ...CATEGORY_ORDER.filter((category) =>
+        cases.some((record) => record.category === category),
+      ),
+    ],
+    [cases],
+  );
+
+  const tabCounts = useMemo(
+    () =>
+      Object.fromEntries(
+        tabs.map((tab) => [
+          tab,
+          tab === "All"
+            ? cases.length
+            : cases.filter((record) => record.category === tab).length,
+        ]),
+      ) as Record<CategoryTab, number>,
+    [cases, tabs],
   );
 
   const rows = useMemo(() => {
     const direction = sortDir === "asc" ? 1 : -1;
     return visible.slice().sort((a, b) => {
+      if (sortKey === "amount") {
+        return compareMoney(a.amount, b.amount) * direction;
+      }
       const left = a[sortKey];
       const right = b[sortKey];
       if (typeof left === "number" && typeof right === "number") {
@@ -80,7 +110,7 @@ export function CasesWorkspace({
   }, [visible, sortKey, sortDir]);
 
   const statusCounts = useMemo(() => {
-    const pool = CASES.filter((record) =>
+    const pool = cases.filter((record) =>
       matchesFilters(record, filters, true),
     );
     return STATUS_OPTIONS.reduce(
@@ -93,7 +123,7 @@ export function CasesWorkspace({
       },
       {} as Record<StatusFilter, number>,
     );
-  }, [filters]);
+  }, [cases, filters]);
 
   const totals = useMemo(
     () => ({
@@ -102,7 +132,9 @@ export function CasesWorkspace({
         (record) =>
           record.status === "Running" ||
           record.status === "In progress" ||
-          record.status === "Queued",
+          record.status === "Queued" ||
+          record.status === "Waiting" ||
+          record.status === "Needs review",
       ).length,
       ready: visible.filter((record) => record.status === "Close-ready").length,
       done: visible.filter((record) => record.status === "Complete").length,
@@ -142,7 +174,12 @@ export function CasesWorkspace({
           onStatusChange={setStatus}
           totals={totals}
         />
-        <CategoryTabs value={tab} onChange={setTab} />
+        <CategoryTabs
+          tabs={tabs}
+          counts={tabCounts}
+          value={tab}
+          onChange={setTab}
+        />
       </div>
 
       <CaseTable
@@ -152,6 +189,7 @@ export function CasesWorkspace({
         onSort={handleSort}
         onClearFilters={clearFilters}
         animateRows={animateRows}
+        noCases={cases.length === 0}
       />
     </>
   );

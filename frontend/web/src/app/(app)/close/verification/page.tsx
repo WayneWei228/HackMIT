@@ -1,80 +1,30 @@
-"use client";
+import type { Metadata } from "next";
 
-import { AgentStatusBar } from "./_components/agent-status-bar";
-import { AssertionsPanel } from "./_components/assertions-panel";
-import { CaseHeader } from "./_components/case-header";
-import { ControlChecksPanel } from "./_components/control-checks-panel";
-import { ExecutionRail, MiniRail } from "./_components/execution-rail";
-import { FinalStatusPanel } from "./_components/final-status-panel";
-import { useVerificationRun } from "./_components/use-verification-run";
+import { NoCases } from "@/components/close/no-cases";
+import { getAudit } from "@/lib/api";
+import { loadCase, type SearchParams } from "@/lib/load-case";
 
-/**
- * Verification agent - the last step of the close chain.
- *
- * Six control checks and six assertions resolve on the comp's scripted
- * timeline; when the last one lands the case flips to close-ready and the
- * approve / handoff affordances settle in. All data is synthetic and every
- * upstream system is simulated.
- */
-export default function VerificationPage() {
-  const run = useVerificationRun();
-  const { view } = run;
-  const pulse = !view.complete;
+import { VerificationScreen } from "./_components/verification-screen";
+import { VerificationScreenProvider } from "./_components/screen-context";
+import { buildVerificationView } from "./_view";
 
+export const metadata: Metadata = {
+  title: "Verification - TrueUp",
+  description:
+    "The policy checks and the Controller's decision on an accrual. All data is synthetic and every upstream system is simulated.",
+};
+
+export default async function VerificationPage({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}) {
+  const { close, detail } = await loadCase(searchParams);
+  if (!detail) return <NoCases close={close} />;
+  const audit = await getAudit(detail.header.obligation_id);
   return (
-    <>
-      <main className="flex min-w-[820px] flex-1 flex-col overflow-hidden">
-        <CaseHeader headStatus={view.headStatus} pulse={pulse} />
-
-        <div className="h-px flex-none bg-line" />
-
-        <AgentStatusBar
-          statusText={view.statusText}
-          passedLabel={view.passedLabel}
-          progress={view.progress}
-          pulse={pulse}
-          onReplay={run.replay}
-        />
-
-        <div className="min-h-0 flex-1 overflow-y-auto px-[34px] pb-[26px]">
-          <div className="grid min-h-full grid-cols-[minmax(238px,0.84fr)_minmax(348px,1.34fr)_minmax(250px,0.88fr)] items-start gap-[14px]">
-            <AssertionsPanel
-              assertions={view.assertions}
-              extras={view.extras}
-            />
-            <ControlChecksPanel
-              controls={view.controls}
-              scans={view.scans}
-              controlCount={view.controlCount}
-              openControl={run.openControl}
-              onToggle={run.toggleControl}
-            />
-            <FinalStatusPanel
-              complete={view.complete}
-              finalStatus={view.finalStatus}
-              noteTitle={view.noteTitle}
-              noteBody={view.noteBody}
-            />
-          </div>
-        </div>
-      </main>
-
-      {run.railOpen ? (
-        <ExecutionRail
-          width={run.railWidth}
-          dragging={run.dragging}
-          onStartResize={run.startResize}
-          onCollapse={run.toggleRail}
-          railStatus={view.railStatus}
-          stageStatus={view.stageStatus}
-          complete={view.complete}
-          clock={run.clock}
-          tasks={view.tasks}
-          pulse={pulse}
-        />
-      ) : (
-        <MiniRail onExpand={run.toggleRail} />
-      )}
-    </>
+    <VerificationScreenProvider view={buildVerificationView(detail, close, audit)}>
+      <VerificationScreen />
+    </VerificationScreenProvider>
   );
 }

@@ -3,6 +3,7 @@
 import Link from "next/link";
 
 import { cn } from "@/lib/cn";
+import { caseHref } from "@/lib/case-nav";
 import { routes } from "@/lib/routes";
 
 import { WAITING_STAGES } from "../_data";
@@ -19,9 +20,11 @@ import type { TaskState } from "./use-close-run";
 export function ExecutionStages({
   complete,
   taskStates,
+  obligationId,
 }: {
   complete: boolean;
   taskStates: TaskState[];
+  obligationId: string;
 }) {
   return (
     <div className="mt-[26px]">
@@ -39,7 +42,7 @@ export function ExecutionStages({
       <StepChecklist states={taskStates} />
 
       <Link
-        href={routes.evidence}
+        href={caseHref(routes.evidence, obligationId)}
         className="-mx-2 mt-[22px] flex items-center gap-3.5 rounded-lg px-2 py-1.5 text-ink transition-colors duration-[160ms] ease-[var(--ease-out-soft)] hover:bg-[#F1F1EB] hover:text-ink"
       >
         <StageRowBody
