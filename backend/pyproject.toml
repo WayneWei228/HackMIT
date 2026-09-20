@@ -36,6 +36,7 @@ select = ["E", "F", "I", "UP", "B"]
 
 [tool.ruff.lint.per-file-ignores]
 "data/startup/generate_pdfs.py" = ["E501"]
+"trueup/simulator/files/cases.py" = ["E501"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

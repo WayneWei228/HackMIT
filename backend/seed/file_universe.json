@@ -1,0 +1,1806 @@
+{
+  "as_of": "2026-12-31T23:59:59Z",
+  "cases": [
+    {
+      "case_id": "CASE-MINTLIFY-2026-12",
+      "vendor_id": "VEN-MINTLIFY",
+      "vendor_name": "Mintlify",
+      "title": "Mintlify December accrual",
+      "period": "2026-12"
+    },
+    {
+      "case_id": "CASE-OPENAI-2026-12",
+      "vendor_id": "VEN-OPENAI",
+      "vendor_name": "OpenAI",
+      "title": "OpenAI December accrual",
+      "period": "2026-12"
+    },
+    {
+      "case_id": "CASE-ASUS-2026-12",
+      "vendor_id": "VEN-ASUS",
+      "vendor_name": "ASUS",
+      "title": "ASUS December accrual",
+      "period": "2026-12"
+    },
+    {
+      "case_id": "CASE-META-2026-12",
+      "vendor_id": "VEN-META",
+      "vendor_name": "Meta",
+      "title": "Meta December accrual",
+      "period": "2026-12"
+    },
+    {
+      "case_id": "CASE-NOTABILITY-2026-12",
+      "vendor_id": "VEN-NOTABILITY",
+      "vendor_name": "Notability",
+      "title": "Notability December accrual",
+      "period": "2026-12"
+    }
+  ],
+  "files": [
+    {
+      "file_id": "FILE-ASUS-01",
+      "case_id": "CASE-ASUS-2026-12",
+      "vendor_id": "VEN-ASUS",
+      "name": "capitalization_policy_memo.docx",
+      "kind": "policy",
+      "format": "DOCX",
+      "path": "files/asus/capitalization_policy_memo.docx",
+      "size_label": "1 page",
+      "available_at": "2026-01-15T09:00:00Z",
+      "preview": {
+        "card": "memo",
+        "title": "Capitalization Policy",
+        "subtitle": "Policy memo",
+        "fields": {
+          "To": "Finance and Procurement",
+          "Date": "Jan 15, 2026",
+          "Subject": "Fixed asset capitalization policy"
+        },
+        "body": "Equipment purchases are capitalized when a single order of like items costs $5,000 or more and the items have a useful life beyond one year."
+      }
+    },
+    {
+      "file_id": "FILE-ASUS-02",
+      "case_id": "CASE-ASUS-2026-12",
+      "vendor_id": "VEN-ASUS",
+      "name": "slack_export_eng_onboarding.txt",
+      "kind": "slack",
+      "format": "TXT",
+      "path": "files/asus/slack_export_eng_onboarding.txt",
+      "size_label": "3 messages",
+      "available_at": "2026-12-01T08:00:00Z",
+      "preview": {
+        "card": "chat",
+        "title": "Slack export",
+        "subtitle": "#eng-onboarding",
+        "messages": [
+          {
+            "sender": "riley",
+            "time": "10:00",
+            "text": "new engineers start in January, are their laptops sorted?"
+          },
+          {
+            "sender": "taylor",
+            "time": "11:00",
+            "text": "the laptops are late again, I will chase procurement"
+          },
+          {
+            "sender": "sam",
+            "time": "09:00",
+            "text": "we also need monitor arms for the new desks"
+          }
+        ]
+      }
+    },
+    {
+      "file_id": "FILE-ASUS-03",
+      "case_id": "CASE-ASUS-2026-12",
+      "vendor_id": "VEN-ASUS",
+      "name": "goods_receipt_use-asus-2026-12-18.pdf",
+      "kind": "receipt",
+      "format": "PDF",
+      "path": "files/asus/goods_receipt_use-asus-2026-12-18.pdf",
+      "size_label": "1 page",
+      "available_at": "2026-12-18T14:00:00Z",
+      "preview": {
+        "card": "skeleton",
+        "title": "Goods Receipt",
+        "subtitle": "ASUS",
+        "fields": [
+          [
+            "PO number",
+            "PO-2026-1003"
+          ],
+          [
+            "Ordered",
+            "25"
+          ],
+          [
+            "Received",
+            "20"
+          ]
+        ],
+        "total": null
+      }
+    },
+    {
+      "file_id": "FILE-ASUS-04",
+      "case_id": "CASE-ASUS-2026-12",
+      "vendor_id": "VEN-ASUS",
+      "name": "packing_slip_ps_88214.pdf",
+      "kind": "packing",
+      "format": "PDF",
+      "path": "files/asus/packing_slip_ps_88214.pdf",
+      "size_label": "1 page",
+      "available_at": "2026-12-01T08:00:00Z",
+      "preview": {
+        "card": "skeleton",
+        "title": "Packing Slip",
+        "subtitle": "Deskworks Supply",
+        "fields": [
+          [
+            "PO reference",
+            "PO-2026-0412"
+          ],
+          [
+            "Delivered",
+            "12/09/2026"
+          ]
+        ],
+        "total": null
+      }
+    },
+    {
+      "file_id": "FILE-ASUS-05",
+      "case_id": "CASE-ASUS-2026-12",
+      "vendor_id": "VEN-ASUS",
+      "name": "vendor_master_asus.pdf",
+      "kind": "vendor",
+      "format": "PDF",
+      "path": "files/asus/vendor_master_asus.pdf",
+      "size_label": "1 page",
+      "available_at": "2026-12-01T08:00:00Z",
+      "preview": {
+        "card": "record",
+        "title": "Vendor Master",
+        "subtitle": "VENDOR RECORD",
+        "fields": [
+          [
+            "Vendor ID",
+            "VEN-ASUS"
+          ],
+          [
+            "Legal name",
+            "ASUS Computer Distribution Inc."
+          ],
+          [
+            "Entity type",
+            "Corporation"
+          ],
+          [
+            "Status",
+            "Active"
+          ],
+          [
+            "Pay terms",
+            "Net 30"
+          ],
+          [
+            "Address",
+            "300 Demo Avenue, Fremont, CA 94538"
+          ]
+        ]
+      }
+    },
+    {
+      "file_id": "FILE-ASUS-06",
+      "case_id": "CASE-ASUS-2026-12",
+      "vendor_id": "VEN-ASUS",
+      "name": "standing_desk_quote_thread.eml",
+      "kind": "email",
+      "format": "EML",
+      "path": "files/asus/standing_desk_quote_thread.eml",
+      "size_label": "2 messages",
+      "available_at": "2026-12-05T13:00:00Z",
+      "preview": {
+        "card": "email",
+        "title": "Standing desk quote",
+        "subtitle": "ASUS",
+        "fields": {
+          "From": "Deskworks Sales <sales@deskworks.example>",
+          "To": "Taylor Morgan <taylor.morgan@northstar.example>",
+          "Date": "Dec 05, 2026"
+        },
+        "body": "Quote attached: 8 desks at $620 each, delivered and assembled.\n\nDeskworks"
+      }
+    },
+    {
+      "file_id": "FILE-ASUS-07",
+      "case_id": "CASE-ASUS-2026-12",
+      "vendor_id": "VEN-ASUS",
+      "name": "invoice_a_2025_1188.pdf",
+      "kind": "invoice",
+      "format": "PDF",
+      "path": "files/asus/invoice_a_2025_1188.pdf",
+      "size_label": "1 page",
+      "available_at": "2025-06-12T09:00:00Z",
+      "preview": {
+        "card": "skeleton",
+        "title": "Invoice A-2025-1188",
+        "subtitle": "ASUS Computer Distribution Inc.",
+        "fields": [
+          [
+            "Invoice date",
+            "06/12/2025"
+          ]
+        ],
+        "total": [
+          "Total",
+          "$14,500.00"
+        ]
+      }
+    },
+    {
+      "file_id": "FILE-ASUS-08",
+      "case_id": "CASE-ASUS-2026-12",
+      "vendor_id": "VEN-ASUS",
+      "name": "po_asus_laptops.pdf",
+      "kind": "po",
+      "format": "PDF",
+      "path": "files/asus/po_asus_laptops.pdf",
+      "size_label": "1 page",
+      "available_at": "2026-12-01T08:00:00Z",
+      "preview": {
+        "card": "skeleton",
+        "title": "Purchase Order",
+        "subtitle": "ASUS",
+        "fields": [
+          [
+            "PO number",
+            "PO-2026-1003"
+          ],
+          [
+            "Vendor",
+            "ASUS Computer Distribution Inc."
+          ],
+          [
+            "Buyer",
+            "Northstar Analytics, Inc."
+          ],
+          [
+            "Order date",
+            "December 1, 2026"
+          ]
+        ],
+        "total": [
+          "Approved total",
+          "$40,000.00"
+        ]
+      }
+    },
+    {
+      "file_id": "FILE-ASUS-09",
+      "case_id": "CASE-ASUS-2026-12",
+      "vendor_id": "VEN-ASUS",
+      "name": "fixed_asset_register.xlsx",
+      "kind": "register",
+      "format": "XLSX",
+      "path": "files/asus/fixed_asset_register.xlsx",
+      "size_label": "3 rows",
+      "available_at": "2026-12-01T08:00:00Z",
+      "preview": {
+        "card": "table",
+        "title": "Fixed Asset Register",
+        "subtitle": "Asset listing",
+        "columns": [
+          "TAG",
+          "ASSET",
+          "COST"
+        ],
+        "rows": [
+          [
+            "FA-1001",
+            "Rack server",
+            "$18,400.00"
+          ],
+          [
+            "FA-1002",
+            "Conference room display",
+            "$3,200.00"
+          ],
+          [
+            "FA-1003",
+            "Network switch",
+            "$2,750.00"
+          ]
+        ]
+      }
+    },
+    {
+      "file_id": "FILE-ASUS-10",
+      "case_id": "CASE-ASUS-2026-12",
+      "vendor_id": "VEN-ASUS",
+      "name": "general_ledger_export_dec.xlsx",
+      "kind": "gl",
+      "format": "XLSX",
+      "path": "files/asus/general_ledger_export_dec.xlsx",
+      "size_label": "28 rows",
+      "available_at": "2026-12-01T08:00:00Z",
+      "preview": {
+        "card": "table",
+        "title": "General Ledger",
+        "subtitle": "Account Activity",
+        "columns": [
+          "DATE",
+          "JE / DESCRIPTION",
+          "AMOUNT"
+        ],
+        "rows": [
+          [
+            "2026-10-01",
+            "GL-OPENAI-2026-09",
+            "$14,600.00"
+          ],
+          [
+            "2026-10-01",
+            "GL-OPENAI-2026-09",
+            "$14,600.00"
+          ],
+          [
+            "2026-10-02",
+            "GL-MINTLIFY-2026-09",
+            "$1,200.00"
+          ],
+          [
+            "2026-10-02",
+            "GL-MINTLIFY-2026-09",
+            "$1,200.00"
+          ]
+        ]
+      }
+    },
+    {
+      "file_id": "FILE-ASUS-L1",
+      "case_id": "CASE-ASUS-2026-12",
+      "vendor_id": "VEN-ASUS",
+      "name": "invoice_asus-2027-001.pdf",
+      "kind": "invoice",
+      "format": "PDF",
+      "path": "files/asus/invoice_asus-2027-001.pdf",
+      "size_label": "1 page",
+      "available_at": "2027-01-08T09:00:00Z",
+      "preview": {
+        "card": "skeleton",
+        "title": "Invoice ASUS-2027-001",
+        "subtitle": "ASUS Computer Distribution Inc.",
+        "fields": [
+          [
+            "Invoice #",
+            "ASUS-2027-001"
+          ],
+          [
+            "Date",
+            "01/07/2027"
+          ],
+          [
+            "Due date",
+            "02/06/2027"
+          ]
+        ],
+        "total": [
+          "Total",
+          "$32,000.00"
+        ]
+      }
+    },
+    {
+      "file_id": "FILE-ASUS-L2",
+      "case_id": "CASE-ASUS-2026-12",
+      "vendor_id": "VEN-ASUS",
+      "name": "reply_asus_20270104.eml",
+      "kind": "email",
+      "format": "EML",
+      "path": "files/asus/reply_asus_20270104.eml",
+      "size_label": "1 message",
+      "available_at": "2027-01-04T10:00:00Z",
+      "preview": {
+        "card": "email",
+        "title": "Re: ASUS December confirmation",
+        "subtitle": "ASUS",
+        "fields": {
+          "From": "Taylor Morgan <taylor.morgan@northstar.example>",
+          "To": "Jordan Patel <jordan.patel@northstar.example>",
+          "Date": "Jan 04, 2027"
+        },
+        "body": "The laptops went out to the new engineers over the holidays. I do not have the exact in-service dates yet."
+      }
+    },
+    {
+      "file_id": "FILE-META-01",
+      "case_id": "CASE-META-2026-12",
+      "vendor_id": "VEN-META",
+      "name": "delivery_report_meta_dec.pdf",
+      "kind": "delivery",
+      "format": "PDF",
+      "path": "files/meta/delivery_report_meta_dec.pdf",
+      "size_label": "1 page",
+      "available_at": "2026-12-30T17:00:00Z",
+      "preview": {
+        "card": "table",
+        "title": "Delivery Report",
+        "subtitle": "Delivered to date",
+        "columns": [
+          "AD SET",
+          "DELIVERED"
+        ],
+        "rows": [
+          [
+            "Launch video",
+            "$11,115.00"
+          ],
+          [
+            "Carousel",
+            "$8,645.00"
+          ],
+          [
+            "Retargeting",
+            "$4,940.00"
+          ]
+        ]
+      }
+    },
+    {
+      "file_id": "FILE-META-02",
+      "case_id": "CASE-META-2026-12",
+      "vendor_id": "VEN-META",
+      "name": "vendor_master_meta.pdf",
+      "kind": "vendor",
+      "format": "PDF",
+      "path": "files/meta/vendor_master_meta.pdf",
+      "size_label": "1 page",
+      "available_at": "2026-12-01T08:00:00Z",
+      "preview": {
+        "card": "record",
+        "title": "Vendor Master",
+        "subtitle": "VENDOR RECORD",
+        "fields": [
+          [
+            "Vendor ID",
+            "VEN-META"
+          ],
+          [
+            "Legal name",
+            "Meta Ads Billing Ltd."
+          ],
+          [
+            "Entity type",
+            "Corporation"
+          ],
+          [
+            "Status",
+            "Active"
+          ],
+          [
+            "Pay terms",
+            "Net 30"
+          ],
+          [
+            "Address",
+            "400 Placeholder Road, Menlo Park, CA 94025"
+          ]
+        ]
+      }
+    },
+    {
+      "file_id": "FILE-META-03",
+      "case_id": "CASE-META-2026-12",
+      "vendor_id": "VEN-META",
+      "name": "launch_creative_specs.eml",
+      "kind": "email",
+      "format": "EML",
+      "path": "files/meta/launch_creative_specs.eml",
+      "size_label": "1 message",
+      "available_at": "2026-12-02T10:00:00Z",
+      "preview": {
+        "card": "email",
+        "title": "Launch creative specs",
+        "subtitle": "Meta",
+        "fields": {
+          "From": "Jo Park <jo@creative-agency.example>",
+          "To": "Priya Nair <priya.nair@northstar.example>",
+          "Date": "Dec 02, 2026"
+        },
+        "body": "Attached are the final specs: 1080x1350 for feed, 1080x1920 for stories. Please confirm the safe zones.\n\nJo"
+      }
+    },
+    {
+      "file_id": "FILE-META-04",
+      "case_id": "CASE-META-2026-12",
+      "vendor_id": "VEN-META",
+      "name": "slack_export_marketing_launch.txt",
+      "kind": "slack",
+      "format": "TXT",
+      "path": "files/meta/slack_export_marketing_launch.txt",
+      "size_label": "3 messages",
+      "available_at": "2026-12-01T08:00:00Z",
+      "preview": {
+        "card": "chat",
+        "title": "Slack export",
+        "subtitle": "#marketing-launch",
+        "messages": [
+          {
+            "sender": "taylor",
+            "time": "10:00",
+            "text": "launch video is approved, agency is loading it today"
+          },
+          {
+            "sender": "riley",
+            "time": "11:00",
+            "text": "can we get the landing page ready before the ads go live?"
+          },
+          {
+            "sender": "sam",
+            "time": "09:00",
+            "text": "landing page is up on staging"
+          }
+        ]
+      }
+    },
+    {
+      "file_id": "FILE-META-05",
+      "case_id": "CASE-META-2026-12",
+      "vendor_id": "VEN-META",
+      "name": "campaign_order_meta.pdf",
+      "kind": "order",
+      "format": "PDF",
+      "path": "files/meta/campaign_order_meta.pdf",
+      "size_label": "1 page",
+      "available_at": "2026-12-01T08:00:00Z",
+      "preview": {
+        "card": "skeleton",
+        "title": "Campaign Order",
+        "subtitle": "Meta",
+        "fields": [
+          [
+            "Order",
+            "PO-2026-1004"
+          ],
+          [
+            "Campaign",
+            "Product launch"
+          ]
+        ],
+        "total": [
+          "Budget",
+          "$30,000.00"
+        ]
+      }
+    },
+    {
+      "file_id": "FILE-META-06",
+      "case_id": "CASE-META-2026-12",
+      "vendor_id": "VEN-META",
+      "name": "creative_brief_launch.docx",
+      "kind": "brief",
+      "format": "DOCX",
+      "path": "files/meta/creative_brief_launch.docx",
+      "size_label": "1 page",
+      "available_at": "2026-11-20T09:00:00Z",
+      "preview": {
+        "card": "memo",
+        "title": "Creative Brief",
+        "subtitle": "Product launch campaign",
+        "fields": {
+          "Audience": "Engineering leads",
+          "Goal": "1.2M impressions"
+        },
+        "body": "Tone: direct and technical."
+      }
+    },
+    {
+      "file_id": "FILE-META-07",
+      "case_id": "CASE-META-2026-12",
+      "vendor_id": "VEN-META",
+      "name": "general_ledger_export_dec.xlsx",
+      "kind": "gl",
+      "format": "XLSX",
+      "path": "files/meta/general_ledger_export_dec.xlsx",
+      "size_label": "28 rows",
+      "available_at": "2026-12-01T08:00:00Z",
+      "preview": {
+        "card": "table",
+        "title": "General Ledger",
+        "subtitle": "Account Activity",
+        "columns": [
+          "DATE",
+          "JE / DESCRIPTION",
+          "AMOUNT"
+        ],
+        "rows": [
+          [
+            "2026-10-01",
+            "GL-OPENAI-2026-09",
+            "$14,600.00"
+          ],
+          [
+            "2026-10-01",
+            "GL-OPENAI-2026-09",
+            "$14,600.00"
+          ],
+          [
+            "2026-10-02",
+            "GL-MINTLIFY-2026-09",
+            "$1,200.00"
+          ],
+          [
+            "2026-10-02",
+            "GL-MINTLIFY-2026-09",
+            "$1,200.00"
+          ]
+        ]
+      }
+    },
+    {
+      "file_id": "FILE-META-08",
+      "case_id": "CASE-META-2026-12",
+      "vendor_id": "VEN-META",
+      "name": "invoice_m_q3_2044.pdf",
+      "kind": "invoice",
+      "format": "PDF",
+      "path": "files/meta/invoice_m_q3_2044.pdf",
+      "size_label": "1 page",
+      "available_at": "2026-10-09T09:00:00Z",
+      "preview": {
+        "card": "skeleton",
+        "title": "Invoice M-Q3-2044",
+        "subtitle": "Meta Ads Billing Ltd.",
+        "fields": [
+          [
+            "Invoice date",
+            "10/09/2026"
+          ]
+        ],
+        "total": [
+          "Total",
+          "$13,120.00"
+        ]
+      }
+    },
+    {
+      "file_id": "FILE-META-09",
+      "case_id": "CASE-META-2026-12",
+      "vendor_id": "VEN-META",
+      "name": "prior_campaign_close_meta.docx",
+      "kind": "prior",
+      "format": "DOCX",
+      "path": "files/meta/prior_campaign_close_meta.docx",
+      "size_label": "1 page",
+      "available_at": "2026-10-06T09:00:00Z",
+      "preview": {
+        "card": "memo",
+        "title": "Q3 campaign",
+        "subtitle": "Close Memo",
+        "fields": {
+          "To": "Controller",
+          "Date": "Oct 6, 2026",
+          "Subject": "Accrue delivered spend"
+        },
+        "body": "For the Q3 campaign the order allowed $15,000 but only $13,120 of ads were delivered. We accrued the delivered $13,120 and the final invoice matched it."
+      }
+    },
+    {
+      "file_id": "FILE-META-10",
+      "case_id": "CASE-META-2026-12",
+      "vendor_id": "VEN-META",
+      "name": "campaign_performance_export.xlsx",
+      "kind": "report",
+      "format": "XLSX",
+      "path": "files/meta/campaign_performance_export.xlsx",
+      "size_label": "3 rows",
+      "available_at": "2026-12-18T09:00:00Z",
+      "preview": {
+        "card": "table",
+        "title": "Campaign Performance",
+        "subtitle": "Impressions and clicks",
+        "columns": [
+          "AD SET",
+          "IMPRESSIONS",
+          "CLICKS"
+        ],
+        "rows": [
+          [
+            "Launch video",
+            "412,000",
+            "5,210"
+          ],
+          [
+            "Carousel",
+            "298,000",
+            "3,880"
+          ],
+          [
+            "Retargeting",
+            "176,000",
+            "4,105"
+          ]
+        ]
+      }
+    },
+    {
+      "file_id": "FILE-META-L1",
+      "case_id": "CASE-META-2026-12",
+      "vendor_id": "VEN-META",
+      "name": "invoice_meta-2027-001.pdf",
+      "kind": "invoice",
+      "format": "PDF",
+      "path": "files/meta/invoice_meta-2027-001.pdf",
+      "size_label": "1 page",
+      "available_at": "2027-01-07T09:00:00Z",
+      "preview": {
+        "card": "skeleton",
+        "title": "Invoice META-2027-001",
+        "subtitle": "Meta Ads Billing Ltd.",
+        "fields": [
+          [
+            "Invoice #",
+            "META-2027-001"
+          ],
+          [
+            "Date",
+            "01/06/2027"
+          ],
+          [
+            "Due date",
+            "02/05/2027"
+          ]
+        ],
+        "total": [
+          "Total",
+          "$30,000.00"
+        ]
+      }
+    },
+    {
+      "file_id": "FILE-MINTLIFY-01",
+      "case_id": "CASE-MINTLIFY-2026-12",
+      "vendor_id": "VEN-MINTLIFY",
+      "name": "re_mintlify_sso_and_custom_domain.eml",
+      "kind": "email",
+      "format": "EML",
+      "path": "files/mintlify/re_mintlify_sso_and_custom_domain.eml",
+      "size_label": "3 messages",
+      "available_at": "2026-12-10T09:30:00Z",
+      "preview": {
+        "card": "email",
+        "title": "Re: Mintlify SSO and custom domain",
+        "subtitle": "Mintlify",
+        "fields": {
+          "From": "Riley Kim <riley.kim@northstar.example>",
+          "To": "Alex Chen <alex@mintlify.example>",
+          "Date": "Dec 10, 2026"
+        },
+        "body": "That worked, SSO is live. We stay on the current plan, so nothing else changes on our side.\n\nRiley"
+      }
+    },
+    {
+      "file_id": "FILE-MINTLIFY-02",
+      "case_id": "CASE-MINTLIFY-2026-12",
+      "vendor_id": "VEN-MINTLIFY",
+      "name": "slack_export_eng_docs.txt",
+      "kind": "slack",
+      "format": "TXT",
+      "path": "files/mintlify/slack_export_eng_docs.txt",
+      "size_label": "4 messages",
+      "available_at": "2026-12-01T08:00:00Z",
+      "preview": {
+        "card": "chat",
+        "title": "Slack export",
+        "subtitle": "#eng-docs",
+        "messages": [
+          {
+            "sender": "riley",
+            "time": "11:00",
+            "text": "docs site preview deploys are taking forever again"
+          },
+          {
+            "sender": "sam",
+            "time": "11:00",
+            "text": "the docs site build is fine locally, could be the Mintlify preview queue"
+          },
+          {
+            "sender": "riley",
+            "time": "15:00",
+            "text": "can we add the new API reference pages before the release?"
+          },
+          {
+            "sender": "taylor",
+            "time": "16:00",
+            "text": "yes, I will open the PR tonight"
+          }
+        ]
+      }
+    },
+    {
+      "file_id": "FILE-MINTLIFY-03",
+      "case_id": "CASE-MINTLIFY-2026-12",
+      "vendor_id": "VEN-MINTLIFY",
+      "name": "november_close_memo_mintlify.docx",
+      "kind": "prior",
+      "format": "DOCX",
+      "path": "files/mintlify/november_close_memo_mintlify.docx",
+      "size_label": "1 page",
+      "available_at": "2026-12-03T09:00:00Z",
+      "preview": {
+        "card": "memo",
+        "title": "December 2026",
+        "subtitle": "Close Memo",
+        "fields": {
+          "To": "Controller",
+          "From": "Finance Operations",
+          "Date": "Dec 3, 2026",
+          "Subject": "Mintlify subscription accrual"
+        },
+        "body": "November was accrued and invoiced at $1,200, the rate in force through November 30, 2026. The amended agreement signed on November 18, 2026 raises the monthly fee to $1,400 effective December 1, 2026."
+      }
+    },
+    {
+      "file_id": "FILE-MINTLIFY-04",
+      "case_id": "CASE-MINTLIFY-2026-12",
+      "vendor_id": "VEN-MINTLIFY",
+      "name": "general_ledger_export_dec.xlsx",
+      "kind": "gl",
+      "format": "XLSX",
+      "path": "files/mintlify/general_ledger_export_dec.xlsx",
+      "size_label": "28 rows",
+      "available_at": "2026-12-01T08:00:00Z",
+      "preview": {
+        "card": "table",
+        "title": "General Ledger",
+        "subtitle": "Account Activity",
+        "columns": [
+          "DATE",
+          "JE / DESCRIPTION",
+          "AMOUNT"
+        ],
+        "rows": [
+          [
+            "2026-10-01",
+            "GL-OPENAI-2026-09",
+            "$14,600.00"
+          ],
+          [
+            "2026-10-01",
+            "GL-OPENAI-2026-09",
+            "$14,600.00"
+          ],
+          [
+            "2026-10-02",
+            "GL-MINTLIFY-2026-09",
+            "$1,200.00"
+          ],
+          [
+            "2026-10-02",
+            "GL-MINTLIFY-2026-09",
+            "$1,200.00"
+          ]
+        ]
+      }
+    },
+    {
+      "file_id": "FILE-MINTLIFY-05",
+      "case_id": "CASE-MINTLIFY-2026-12",
+      "vendor_id": "VEN-MINTLIFY",
+      "name": "mintlify_master_subscription_agreement.pdf",
+      "kind": "agreement",
+      "format": "PDF",
+      "path": "files/mintlify/mintlify_master_subscription_agreement.pdf",
+      "size_label": "2 pages",
+      "available_at": "2026-11-18T09:00:00Z",
+      "preview": {
+        "card": "clause",
+        "title": "Mintlify",
+        "subtitle": "Master Subscription Agreement",
+        "heading": "4. Fees and Payment",
+        "clause_no": "4.2",
+        "text": "Commencing December 1, 2026, the monthly subscription fee for the Standard Workspace plan shall increase from $1,200 to $1,400 per month for the remainder of the term."
+      }
+    },
+    {
+      "file_id": "FILE-MINTLIFY-06",
+      "case_id": "CASE-MINTLIFY-2026-12",
+      "vendor_id": "VEN-MINTLIFY",
+      "name": "mintlify_workspace_usage_nov.pdf",
+      "kind": "usage",
+      "format": "PDF",
+      "path": "files/mintlify/mintlify_workspace_usage_nov.pdf",
+      "size_label": "1 page",
+      "available_at": "2026-12-01T08:00:00Z",
+      "preview": {
+        "card": "record",
+        "title": "Usage Report",
+        "subtitle": "USAGE REPORT",
+        "fields": [
+          [
+            "Workspace",
+            "Standard Workspace"
+          ],
+          [
+            "Period",
+            "November 2026"
+          ],
+          [
+            "Page views",
+            "48,210"
+          ],
+          [
+            "Active editors",
+            "14"
+          ],
+          [
+            "Preview deploys",
+            "212"
+          ]
+        ]
+      }
+    },
+    {
+      "file_id": "FILE-MINTLIFY-07",
+      "case_id": "CASE-MINTLIFY-2026-12",
+      "vendor_id": "VEN-MINTLIFY",
+      "name": "invoice_mint-2026-003.pdf",
+      "kind": "invoice",
+      "format": "PDF",
+      "path": "files/mintlify/invoice_mint-2026-003.pdf",
+      "size_label": "1 page",
+      "available_at": "2026-12-01T08:00:00Z",
+      "preview": {
+        "card": "skeleton",
+        "title": "Invoice MINT-2026-003",
+        "subtitle": "Mintlify, Inc.",
+        "fields": [
+          [
+            "Invoice #",
+            "MINT-2026-003"
+          ],
+          [
+            "Date",
+            "11/30/2026"
+          ],
+          [
+            "Due date",
+            "12/30/2026"
+          ]
+        ],
+        "total": [
+          "Total",
+          "$1,200.00"
+        ]
+      }
+    },
+    {
+      "file_id": "FILE-MINTLIFY-08",
+      "case_id": "CASE-MINTLIFY-2026-12",
+      "vendor_id": "VEN-MINTLIFY",
+      "name": "vendor_master_mintlify.pdf",
+      "kind": "vendor",
+      "format": "PDF",
+      "path": "files/mintlify/vendor_master_mintlify.pdf",
+      "size_label": "1 page",
+      "available_at": "2026-12-01T08:00:00Z",
+      "preview": {
+        "card": "record",
+        "title": "Vendor Master",
+        "subtitle": "VENDOR RECORD",
+        "fields": [
+          [
+            "Vendor ID",
+            "VEN-MINTLIFY"
+          ],
+          [
+            "Legal name",
+            "Mintlify, Inc."
+          ],
+          [
+            "Entity type",
+            "Corporation"
+          ],
+          [
+            "Status",
+            "Active"
+          ],
+          [
+            "Pay terms",
+            "Net 30"
+          ],
+          [
+            "Address",
+            "100 Example Way, Suite 4, San Francisco, CA 94100"
+          ]
+        ]
+      }
+    },
+    {
+      "file_id": "FILE-MINTLIFY-09",
+      "case_id": "CASE-MINTLIFY-2026-12",
+      "vendor_id": "VEN-MINTLIFY",
+      "name": "ap_history_mintlify.xlsx",
+      "kind": "ap",
+      "format": "XLSX",
+      "path": "files/mintlify/ap_history_mintlify.xlsx",
+      "size_label": "3 rows",
+      "available_at": "2026-12-01T08:00:00Z",
+      "preview": {
+        "card": "table",
+        "title": "Accounts Payable",
+        "subtitle": "Vendor History",
+        "columns": [
+          "DATE",
+          "DESCRIPTION",
+          "AMOUNT"
+        ],
+        "rows": [
+          [
+            "2026-11-30",
+            "Mintlify Standard Workspace subscription, November 2026",
+            "$1,200.00"
+          ],
+          [
+            "2026-10-31",
+            "Mintlify Standard Workspace subscription, October 2026",
+            "$1,200.00"
+          ],
+          [
+            "2026-09-30",
+            "Mintlify Standard Workspace subscription, September 2026",
+            "$1,200.00"
+          ]
+        ]
+      }
+    },
+    {
+      "file_id": "FILE-MINTLIFY-10",
+      "case_id": "CASE-MINTLIFY-2026-12",
+      "vendor_id": "VEN-MINTLIFY",
+      "name": "po_mintlify_2026.pdf",
+      "kind": "po",
+      "format": "PDF",
+      "path": "files/mintlify/po_mintlify_2026.pdf",
+      "size_label": "1 page",
+      "available_at": "2026-12-01T08:00:00Z",
+      "preview": {
+        "card": "skeleton",
+        "title": "Order Form",
+        "subtitle": "Mintlify",
+        "fields": [
+          [
+            "Customer",
+            "Northstar Analytics"
+          ],
+          [
+            "Order date",
+            "January 1, 2026"
+          ],
+          [
+            "Unit price",
+            "$1,200.00"
+          ]
+        ],
+        "total": null
+      }
+    },
+    {
+      "file_id": "FILE-MINTLIFY-L1",
+      "case_id": "CASE-MINTLIFY-2026-12",
+      "vendor_id": "VEN-MINTLIFY",
+      "name": "invoice_mint-2027-001.pdf",
+      "kind": "invoice",
+      "format": "PDF",
+      "path": "files/mintlify/invoice_mint-2027-001.pdf",
+      "size_label": "1 page",
+      "available_at": "2027-01-03T09:00:00Z",
+      "preview": {
+        "card": "skeleton",
+        "title": "Invoice MINT-2027-001",
+        "subtitle": "Mintlify, Inc.",
+        "fields": [
+          [
+            "Invoice #",
+            "MINT-2027-001"
+          ],
+          [
+            "Date",
+            "01/02/2027"
+          ],
+          [
+            "Due date",
+            "02/01/2027"
+          ]
+        ],
+        "total": [
+          "Total",
+          "$1,400.00"
+        ]
+      }
+    },
+    {
+      "file_id": "FILE-NOTABILITY-01",
+      "case_id": "CASE-NOTABILITY-2026-12",
+      "vendor_id": "VEN-NOTABILITY",
+      "name": "gl_detail_notability.xlsx",
+      "kind": "gl",
+      "format": "XLSX",
+      "path": "files/notability/gl_detail_notability.xlsx",
+      "size_label": "4 rows",
+      "available_at": "2026-12-01T08:00:00Z",
+      "preview": {
+        "card": "table",
+        "title": "GL Detail",
+        "subtitle": "Notability entries",
+        "columns": [
+          "DATE",
+          "JE",
+          "AMOUNT"
+        ],
+        "rows": [
+          [
+            "2026-11-25",
+            "GL-NOTABILITY-2026-12",
+            "$21,600.00"
+          ],
+          [
+            "2026-11-25",
+            "GL-NOTABILITY-2026-12",
+            "$21,600.00"
+          ],
+          [
+            "2026-12-01",
+            "GL-NOTABILITY-2026-12-MANUAL",
+            "$21,600.00"
+          ],
+          [
+            "2026-12-01",
+            "GL-NOTABILITY-2026-12-MANUAL",
+            "$21,600.00"
+          ]
+        ]
+      }
+    },
+    {
+      "file_id": "FILE-NOTABILITY-02",
+      "case_id": "CASE-NOTABILITY-2026-12",
+      "vendor_id": "VEN-NOTABILITY",
+      "name": "general_ledger_export_dec.xlsx",
+      "kind": "gl",
+      "format": "XLSX",
+      "path": "files/notability/general_ledger_export_dec.xlsx",
+      "size_label": "28 rows",
+      "available_at": "2026-12-01T08:00:00Z",
+      "preview": {
+        "card": "table",
+        "title": "General Ledger",
+        "subtitle": "Account Activity",
+        "columns": [
+          "DATE",
+          "JE / DESCRIPTION",
+          "AMOUNT"
+        ],
+        "rows": [
+          [
+            "2026-10-01",
+            "GL-OPENAI-2026-09",
+            "$14,600.00"
+          ],
+          [
+            "2026-10-01",
+            "GL-OPENAI-2026-09",
+            "$14,600.00"
+          ],
+          [
+            "2026-10-02",
+            "GL-MINTLIFY-2026-09",
+            "$1,200.00"
+          ],
+          [
+            "2026-10-02",
+            "GL-MINTLIFY-2026-09",
+            "$1,200.00"
+          ]
+        ]
+      }
+    },
+    {
+      "file_id": "FILE-NOTABILITY-03",
+      "case_id": "CASE-NOTABILITY-2026-12",
+      "vendor_id": "VEN-NOTABILITY",
+      "name": "notability_seat_activity_nov.pdf",
+      "kind": "usage",
+      "format": "PDF",
+      "path": "files/notability/notability_seat_activity_nov.pdf",
+      "size_label": "1 page",
+      "available_at": "2026-12-01T08:00:00Z",
+      "preview": {
+        "card": "record",
+        "title": "Seat Activity Report",
+        "subtitle": "USAGE REPORT",
+        "fields": [
+          [
+            "Plan",
+            "Teams"
+          ],
+          [
+            "Period",
+            "November 2026"
+          ],
+          [
+            "Active seats",
+            "96"
+          ],
+          [
+            "Notebooks created",
+            "1,340"
+          ]
+        ]
+      }
+    },
+    {
+      "file_id": "FILE-NOTABILITY-04",
+      "case_id": "CASE-NOTABILITY-2026-12",
+      "vendor_id": "VEN-NOTABILITY",
+      "name": "vendor_master_notability.pdf",
+      "kind": "vendor",
+      "format": "PDF",
+      "path": "files/notability/vendor_master_notability.pdf",
+      "size_label": "1 page",
+      "available_at": "2026-12-01T08:00:00Z",
+      "preview": {
+        "card": "record",
+        "title": "Vendor Master",
+        "subtitle": "VENDOR RECORD",
+        "fields": [
+          [
+            "Vendor ID",
+            "VEN-NOTABILITY"
+          ],
+          [
+            "Legal name",
+            "Notability Teams Inc."
+          ],
+          [
+            "Entity type",
+            "Corporation"
+          ],
+          [
+            "Status",
+            "Active"
+          ],
+          [
+            "Pay terms",
+            "Net 30"
+          ],
+          [
+            "Address",
+            "500 Fictional Lane, Austin, TX 78701"
+          ]
+        ]
+      }
+    },
+    {
+      "file_id": "FILE-NOTABILITY-05",
+      "case_id": "CASE-NOTABILITY-2026-12",
+      "vendor_id": "VEN-NOTABILITY",
+      "name": "notability_team_subscription_agreement.pdf",
+      "kind": "agreement",
+      "format": "PDF",
+      "path": "files/notability/notability_team_subscription_agreement.pdf",
+      "size_label": "2 pages",
+      "available_at": "2026-11-20T09:00:00Z",
+      "preview": {
+        "card": "clause",
+        "title": "Notability",
+        "subtitle": "Team Subscription Agreement",
+        "heading": "4. Fees and Payment",
+        "clause_no": "4.1",
+        "text": "The team subscription fee is $21,600 for the 12-month term."
+      }
+    },
+    {
+      "file_id": "FILE-NOTABILITY-06",
+      "case_id": "CASE-NOTABILITY-2026-12",
+      "vendor_id": "VEN-NOTABILITY",
+      "name": "notability_product_update.eml",
+      "kind": "email",
+      "format": "EML",
+      "path": "files/notability/notability_product_update.eml",
+      "size_label": "1 message",
+      "available_at": "2026-12-14T11:00:00Z",
+      "preview": {
+        "card": "email",
+        "title": "Notability Teams product update",
+        "subtitle": "Notability",
+        "fields": {
+          "From": "Lee Hart <lee@notability.example>",
+          "To": "Taylor Morgan <taylor.morgan@northstar.example>",
+          "Date": "Dec 14, 2026"
+        },
+        "body": "New this month: shared notebooks and admin controls. Team plans start at $9.99 per user per month.\n\nThe Notability team"
+      }
+    },
+    {
+      "file_id": "FILE-NOTABILITY-07",
+      "case_id": "CASE-NOTABILITY-2026-12",
+      "vendor_id": "VEN-NOTABILITY",
+      "name": "slack_export_it_tools.txt",
+      "kind": "slack",
+      "format": "TXT",
+      "path": "files/notability/slack_export_it_tools.txt",
+      "size_label": "2 messages",
+      "available_at": "2026-12-01T08:00:00Z",
+      "preview": {
+        "card": "chat",
+        "title": "Slack export",
+        "subtitle": "#it-tools",
+        "messages": [
+          {
+            "sender": "riley",
+            "time": "10:00",
+            "text": "are we all set on Notability seats for the new hires?"
+          },
+          {
+            "sender": "taylor",
+            "time": "11:00",
+            "text": "yes, admin added them yesterday"
+          }
+        ]
+      }
+    },
+    {
+      "file_id": "FILE-NOTABILITY-08",
+      "case_id": "CASE-NOTABILITY-2026-12",
+      "vendor_id": "VEN-NOTABILITY",
+      "name": "payment_confirmation_notability.eml",
+      "kind": "payment",
+      "format": "EML",
+      "path": "files/notability/payment_confirmation_notability.eml",
+      "size_label": "1 message",
+      "available_at": "2026-11-27T15:00:00Z",
+      "preview": {
+        "card": "email",
+        "title": "Payment confirmation for invoice NOTE-2026-001",
+        "subtitle": "Notability",
+        "fields": {
+          "From": "Accounts Payable <ap@northstar.example>",
+          "To": "Lee Hart <lee@notability.example>",
+          "Date": "Nov 27, 2026"
+        },
+        "body": "We paid $21,600.00 on November 27, 2026 against invoice NOTE-2026-001 by ACH. Remittance advice is attached to the payment record."
+      }
+    },
+    {
+      "file_id": "FILE-NOTABILITY-09",
+      "case_id": "CASE-NOTABILITY-2026-12",
+      "vendor_id": "VEN-NOTABILITY",
+      "name": "invoice_note-2026-001.pdf",
+      "kind": "invoice",
+      "format": "PDF",
+      "path": "files/notability/invoice_note-2026-001.pdf",
+      "size_label": "1 page",
+      "available_at": "2026-12-01T08:00:00Z",
+      "preview": {
+        "card": "skeleton",
+        "title": "Invoice NOTE-2026-001",
+        "subtitle": "Notability Teams Inc.",
+        "fields": [
+          [
+            "Invoice #",
+            "NOTE-2026-001"
+          ],
+          [
+            "Date",
+            "11/24/2026"
+          ],
+          [
+            "Due date",
+            "12/24/2026"
+          ]
+        ],
+        "total": [
+          "Total",
+          "$21,600.00"
+        ]
+      }
+    },
+    {
+      "file_id": "FILE-NOTABILITY-10",
+      "case_id": "CASE-NOTABILITY-2026-12",
+      "vendor_id": "VEN-NOTABILITY",
+      "name": "invoice_np_2025_031.pdf",
+      "kind": "invoice",
+      "format": "PDF",
+      "path": "files/notability/invoice_np_2025_031.pdf",
+      "size_label": "1 page",
+      "available_at": "2025-11-03T09:00:00Z",
+      "preview": {
+        "card": "skeleton",
+        "title": "Invoice NP-2025-031",
+        "subtitle": "Notability Teams Inc.",
+        "fields": [
+          [
+            "Invoice date",
+            "11/03/2025"
+          ]
+        ],
+        "total": [
+          "Total",
+          "$960.00"
+        ]
+      }
+    },
+    {
+      "file_id": "FILE-OPENAI-01",
+      "case_id": "CASE-OPENAI-2026-12",
+      "vendor_id": "VEN-OPENAI",
+      "name": "openai_december_usage_export_thread.eml",
+      "kind": "email",
+      "format": "EML",
+      "path": "files/openai/openai_december_usage_export_thread.eml",
+      "size_label": "2 messages",
+      "available_at": "2026-12-31T08:30:00Z",
+      "preview": {
+        "card": "email",
+        "title": "OpenAI December usage export is incomplete",
+        "subtitle": "OpenAI",
+        "fields": {
+          "From": "Jordan Patel <jordan.patel@northstar.example>",
+          "To": "Riley Kim <riley.kim@northstar.example>",
+          "Date": "Dec 31, 2026"
+        },
+        "body": "Hi Riley, following up on the December usage total. The close cannot be finalized without it.\n\nJordan"
+      }
+    },
+    {
+      "file_id": "FILE-OPENAI-02",
+      "case_id": "CASE-OPENAI-2026-12",
+      "vendor_id": "VEN-OPENAI",
+      "name": "openai_api_services_agreement.pdf",
+      "kind": "agreement",
+      "format": "PDF",
+      "path": "files/openai/openai_api_services_agreement.pdf",
+      "size_label": "2 pages",
+      "available_at": "2026-09-01T09:00:00Z",
+      "preview": {
+        "card": "clause",
+        "title": "OpenAI",
+        "subtitle": "API Services Agreement",
+        "heading": "4. Fees and Payment",
+        "clause_no": "5.2",
+        "text": "Effective September 1, 2026, the usage rate increases by 25 percent from $0.016 to $0.02 per unit."
+      }
+    },
+    {
+      "file_id": "FILE-OPENAI-03",
+      "case_id": "CASE-OPENAI-2026-12",
+      "vendor_id": "VEN-OPENAI",
+      "name": "general_ledger_export_dec.xlsx",
+      "kind": "gl",
+      "format": "XLSX",
+      "path": "files/openai/general_ledger_export_dec.xlsx",
+      "size_label": "28 rows",
+      "available_at": "2026-12-01T08:00:00Z",
+      "preview": {
+        "card": "table",
+        "title": "General Ledger",
+        "subtitle": "Account Activity",
+        "columns": [
+          "DATE",
+          "JE / DESCRIPTION",
+          "AMOUNT"
+        ],
+        "rows": [
+          [
+            "2026-10-01",
+            "GL-OPENAI-2026-09",
+            "$14,600.00"
+          ],
+          [
+            "2026-10-01",
+            "GL-OPENAI-2026-09",
+            "$14,600.00"
+          ],
+          [
+            "2026-10-02",
+            "GL-MINTLIFY-2026-09",
+            "$1,200.00"
+          ],
+          [
+            "2026-10-02",
+            "GL-MINTLIFY-2026-09",
+            "$1,200.00"
+          ]
+        ]
+      }
+    },
+    {
+      "file_id": "FILE-OPENAI-04",
+      "case_id": "CASE-OPENAI-2026-12",
+      "vendor_id": "VEN-OPENAI",
+      "name": "openai_product_news_dec.eml",
+      "kind": "email",
+      "format": "EML",
+      "path": "files/openai/openai_product_news_dec.eml",
+      "size_label": "1 message",
+      "available_at": "2026-12-15T12:00:00Z",
+      "preview": {
+        "card": "email",
+        "title": "Product news and pricing update",
+        "subtitle": "OpenAI",
+        "fields": {
+          "From": "OpenAI Newsletter <news@openai.example>",
+          "To": "Riley Kim <riley.kim@northstar.example>",
+          "Date": "Dec 15, 2026"
+        },
+        "body": "New models are now available in the API. List pricing for the latest model starts at $2.50 per 1M input tokens and $10.00 per 1M output tokens.\n\nManage preferences in your dashboard."
+      }
+    },
+    {
+      "file_id": "FILE-OPENAI-05",
+      "case_id": "CASE-OPENAI-2026-12",
+      "vendor_id": "VEN-OPENAI",
+      "name": "vendor_master_openai.pdf",
+      "kind": "vendor",
+      "format": "PDF",
+      "path": "files/openai/vendor_master_openai.pdf",
+      "size_label": "1 page",
+      "available_at": "2026-12-01T08:00:00Z",
+      "preview": {
+        "card": "record",
+        "title": "Vendor Master",
+        "subtitle": "VENDOR RECORD",
+        "fields": [
+          [
+            "Vendor ID",
+            "VEN-OPENAI"
+          ],
+          [
+            "Legal name",
+            "OpenAI Services LLC"
+          ],
+          [
+            "Entity type",
+            "Corporation"
+          ],
+          [
+            "Status",
+            "Active"
+          ],
+          [
+            "Pay terms",
+            "Net 30"
+          ],
+          [
+            "Address",
+            "200 Sample Street, San Francisco, CA 94101"
+          ]
+        ]
+      }
+    },
+    {
+      "file_id": "FILE-OPENAI-06",
+      "case_id": "CASE-OPENAI-2026-12",
+      "vendor_id": "VEN-OPENAI",
+      "name": "invoice_oa-2026-001.pdf",
+      "kind": "invoice",
+      "format": "PDF",
+      "path": "files/openai/invoice_oa-2026-001.pdf",
+      "size_label": "1 page",
+      "available_at": "2026-12-01T08:00:00Z",
+      "preview": {
+        "card": "skeleton",
+        "title": "Invoice OA-2026-001",
+        "subtitle": "OpenAI Services LLC",
+        "fields": [
+          [
+            "Invoice #",
+            "OA-2026-001"
+          ],
+          [
+            "Date",
+            "09/30/2026"
+          ],
+          [
+            "Due date",
+            "10/30/2026"
+          ]
+        ],
+        "total": [
+          "Total",
+          "$14,600.00"
+        ]
+      }
+    },
+    {
+      "file_id": "FILE-OPENAI-07",
+      "case_id": "CASE-OPENAI-2026-12",
+      "vendor_id": "VEN-OPENAI",
+      "name": "november_close_memo_openai.docx",
+      "kind": "prior",
+      "format": "DOCX",
+      "path": "files/openai/november_close_memo_openai.docx",
+      "size_label": "1 page",
+      "available_at": "2026-12-03T09:00:00Z",
+      "preview": {
+        "card": "memo",
+        "title": "November 2026",
+        "subtitle": "Close Memo",
+        "fields": {
+          "To": "Controller",
+          "From": "Finance Operations",
+          "Date": "Dec 3, 2026",
+          "Subject": "OpenAI accrual versus invoice"
+        },
+        "body": "Accruals were booked at the base rate of $0.016 per unit. Invoices were billed at $0.02 per unit after the rate step-up effective September 1, 2026."
+      }
+    },
+    {
+      "file_id": "FILE-OPENAI-08",
+      "case_id": "CASE-OPENAI-2026-12",
+      "vendor_id": "VEN-OPENAI",
+      "name": "usage_report_dec_2026.pdf",
+      "kind": "usage",
+      "format": "PDF",
+      "path": "files/openai/usage_report_dec_2026.pdf",
+      "size_label": "1 page",
+      "available_at": "2026-12-28T18:00:00Z",
+      "preview": {
+        "card": "table",
+        "title": "Usage Report",
+        "subtitle": "PARTIAL EXPORT",
+        "columns": [
+          "WINDOW",
+          "UNITS"
+        ],
+        "rows": [
+          [
+            "Dec 1 - Dec 7",
+            "192,000"
+          ],
+          [
+            "Dec 8 - Dec 14",
+            "192,000"
+          ],
+          [
+            "Dec 15 - Dec 19",
+            "192,000"
+          ]
+        ]
+      }
+    },
+    {
+      "file_id": "FILE-OPENAI-09",
+      "case_id": "CASE-OPENAI-2026-12",
+      "vendor_id": "VEN-OPENAI",
+      "name": "slack_export_ai_platform.txt",
+      "kind": "slack",
+      "format": "TXT",
+      "path": "files/openai/slack_export_ai_platform.txt",
+      "size_label": "3 messages",
+      "available_at": "2026-12-01T08:00:00Z",
+      "preview": {
+        "card": "chat",
+        "title": "Slack export",
+        "subtitle": "#ai-platform",
+        "messages": [
+          {
+            "sender": "sam",
+            "time": "10:00",
+            "text": "rotating the API keys for staging this afternoon"
+          },
+          {
+            "sender": "riley",
+            "time": "11:00",
+            "text": "eval run finished, latency looks good on the new prompt"
+          },
+          {
+            "sender": "taylor",
+            "time": "09:00",
+            "text": "can someone bump the rate limit on the sandbox project?"
+          }
+        ]
+      }
+    },
+    {
+      "file_id": "FILE-OPENAI-10",
+      "case_id": "CASE-OPENAI-2026-12",
+      "vendor_id": "VEN-OPENAI",
+      "name": "ap_history_openai.xlsx",
+      "kind": "ap",
+      "format": "XLSX",
+      "path": "files/openai/ap_history_openai.xlsx",
+      "size_label": "3 rows",
+      "available_at": "2026-12-01T08:00:00Z",
+      "preview": {
+        "card": "table",
+        "title": "Accounts Payable",
+        "subtitle": "Vendor History",
+        "columns": [
+          "DATE",
+          "DESCRIPTION",
+          "AMOUNT"
+        ],
+        "rows": [
+          [
+            "2026-11-30",
+            "OpenAI API usage, November 2026",
+            "$15,600.00"
+          ],
+          [
+            "2026-10-31",
+            "OpenAI API usage, October 2026",
+            "$14,800.00"
+          ],
+          [
+            "2026-09-30",
+            "OpenAI API usage, September 2026",
+            "$14,600.00"
+          ]
+        ]
+      }
+    },
+    {
+      "file_id": "FILE-OPENAI-L1",
+      "case_id": "CASE-OPENAI-2026-12",
+      "vendor_id": "VEN-OPENAI",
+      "name": "invoice_oa-2027-001.pdf",
+      "kind": "invoice",
+      "format": "PDF",
+      "path": "files/openai/invoice_oa-2027-001.pdf",
+      "size_label": "1 page",
+      "available_at": "2027-01-05T09:00:00Z",
+      "preview": {
+        "card": "skeleton",
+        "title": "Invoice OA-2027-001",
+        "subtitle": "OpenAI Services LLC",
+        "fields": [
+          [
+            "Invoice #",
+            "OA-2027-001"
+          ],
+          [
+            "Date",
+            "01/04/2027"
+          ],
+          [
+            "Due date",
+            "02/03/2027"
+          ]
+        ],
+        "total": [
+          "Total",
+          "$18,600.00"
+        ]
+      }
+    },
+    {
+      "file_id": "FILE-OPENAI-L2",
+      "case_id": "CASE-OPENAI-2026-12",
+      "vendor_id": "VEN-OPENAI",
+      "name": "reply_openai_20270102.eml",
+      "kind": "email",
+      "format": "EML",
+      "path": "files/openai/reply_openai_20270102.eml",
+      "size_label": "3 messages",
+      "available_at": "2027-01-02T10:00:00Z",
+      "preview": {
+        "card": "email",
+        "title": "OpenAI December usage export is incomplete",
+        "subtitle": "OpenAI",
+        "fields": {
+          "From": "Riley Kim <riley.kim@northstar.example>",
+          "To": "Jordan Patel <jordan.patel@northstar.example>",
+          "Date": "Jan 02, 2027"
+        },
+        "body": "Riley here. The full December export is in: 930,000 API calls for December 1 through December 31."
+      }
+    }
+  ]
+}

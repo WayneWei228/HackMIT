@@ -1,0 +1,4 @@
+# #ai-platform
+[2026-12-10 10:00] sam: rotating the API keys for staging this afternoon
+[2026-12-10 11:00] riley: eval run finished, latency looks good on the new prompt
+[2026-12-11 09:00] taylor: can someone bump the rate limit on the sandbox project?
