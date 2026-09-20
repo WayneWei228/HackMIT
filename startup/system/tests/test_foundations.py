@@ -48,6 +48,22 @@ def test_covers_partial_overlap():
     assert covers("2026-12-15", "2026-12-20", "2026-12") is True
 
 
+def test_covers_no_end_date_is_open_ended():
+    assert covers("2026-09-01", None, "2026-12") is True
+
+
+def test_covers_no_start_and_no_end_is_always_open():
+    assert covers(None, None, "2026-12") is True
+
+
+def test_covers_end_before_period_still_false_with_open_start():
+    assert covers(None, "2026-11-30", "2026-12") is False
+
+
+def test_covers_start_after_period_still_false_with_open_end():
+    assert covers("2026-12-01", None, "2026-11") is False
+
+
 def test_workspace_default_paths():
     ws = Workspace.default()
     assert ws.pdf_root.name == "startup_minimal_data"

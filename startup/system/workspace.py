@@ -60,9 +60,14 @@ def prev_periods(period: str, n: int) -> list[str]:
 def covers(start: str | None, end: str | None, period: str) -> bool:
     """True when the [start, end] date range overlaps `period` at all.
 
-    `None` for either bound means open-ended on that side.
+    `None` for either bound means open-ended on that side: `start=None` is
+    "since forever", `end=None` is "no end". Callers that need to detect
+    "no validity dates at all" check `start is None and end is None`
+    themselves; that is not this function's job.
     """
     period_start, period_end = period_bounds(period)
-    if start is None or end is None:
+    if start is not None and start > period_end:
         return False
-    return start <= period_end and end >= period_start
+    if end is not None and end < period_start:
+        return False
+    return True
