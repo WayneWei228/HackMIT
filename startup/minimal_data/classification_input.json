@@ -39,10 +39,11 @@
         {
           "document_type": "INVOICE",
           "document_id": "INV-MINTLIFY-DEC",
-          "invoice_date": "2026-12-31",
+          "invoice_date": "2027-01-10",
           "service_period": "2026-12",
-          "description": "Team documentation plan",
-          "amount": 1200.0
+          "description": "Team documentation plan (amended monthly fee)",
+          "amount": 1400.0,
+          "folder": "2026-12/afterclose"
         }
       ]
     },
@@ -93,9 +94,31 @@
           "document_type": "USAGE_REPORT",
           "document_id": "USG-OPENAI-DEC",
           "service_period": "2026-12",
-          "description": "API usage through December 31",
+          "description": "API usage through December 25 (partial)",
+          "quantity": 700000,
+          "unit": "API usage unit",
+          "unit_rate": 0.02,
+          "amount": 14000.0,
+          "coverage_start": "2026-12-01",
+          "coverage_end": "2026-12-25",
+          "generated_on": "2026-12-26",
+          "status": "PARTIAL"
+        },
+        {
+          "document_type": "USAGE_REPORT",
+          "document_id": "USG-OPENAI-DEC-FINAL",
+          "service_period": "2026-12",
+          "description": "API usage through December 31 (final)",
           "quantity": 930000,
-          "unit": "API usage unit"
+          "unit": "API usage unit",
+          "unit_rate": 0.02,
+          "amount": 18600.0,
+          "coverage_start": "2026-12-01",
+          "coverage_end": "2026-12-31",
+          "generated_on": "2027-01-08",
+          "status": "FINAL",
+          "replaces": "USG-OPENAI-DEC",
+          "folder": "2026-12/afterclose"
         }
       ]
     },
@@ -142,7 +165,8 @@
           "document_id": "META-DELIVERY-DEC",
           "service_period": "2026-12",
           "description": "Advertising delivered for the product-launch campaign",
-          "delivered_amount": 24700.0
+          "delivered_amount": 24700.0,
+          "folder": "2026-12/afterclose"
         }
       ]
     }

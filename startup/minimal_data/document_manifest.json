@@ -5,15 +5,17 @@
     {"document_id": "INV-MINTLIFY-SEP", "pdf": "output/pdf/startup_minimal_data/2026-09/INV-MINTLIFY-SEP.pdf"},
     {"document_id": "INV-MINTLIFY-OCT", "pdf": "output/pdf/startup_minimal_data/2026-10/INV-MINTLIFY-OCT.pdf"},
     {"document_id": "INV-MINTLIFY-NOV", "pdf": "output/pdf/startup_minimal_data/2026-11/INV-MINTLIFY-NOV.pdf"},
-    {"document_id": "INV-MINTLIFY-DEC", "pdf": "output/pdf/startup_minimal_data/2026-12/INV-MINTLIFY-DEC.pdf"},
+    {"document_id": "INV-MINTLIFY-DEC", "pdf": "output/pdf/startup_minimal_data/2026-12/afterclose/INV-MINTLIFY-DEC.pdf"},
     {"document_id": "CTR-002", "pdf": "output/pdf/startup_minimal_data/2026-09/CTR-002.pdf"},
     {"document_id": "INV-OPENAI-SEP", "pdf": "output/pdf/startup_minimal_data/2026-09/INV-OPENAI-SEP.pdf"},
     {"document_id": "INV-OPENAI-OCT", "pdf": "output/pdf/startup_minimal_data/2026-10/INV-OPENAI-OCT.pdf"},
     {"document_id": "INV-OPENAI-NOV", "pdf": "output/pdf/startup_minimal_data/2026-11/INV-OPENAI-NOV.pdf"},
     {"document_id": "USG-OPENAI-DEC", "pdf": "output/pdf/startup_minimal_data/2026-12/USG-OPENAI-DEC.pdf"},
+    {"document_id": "USG-OPENAI-DEC-FINAL", "pdf": "output/pdf/startup_minimal_data/2026-12/afterclose/USG-OPENAI-DEC-FINAL.pdf"},
     {"document_id": "PO-003", "pdf": "output/pdf/startup_minimal_data/2026-12/PO-003.pdf"},
     {"document_id": "GR-ASUS-DEC", "pdf": "output/pdf/startup_minimal_data/2026-12/GR-ASUS-DEC.pdf"},
     {"document_id": "CAMPAIGN-004", "pdf": "output/pdf/startup_minimal_data/2026-12/CAMPAIGN-004.pdf"},
-    {"document_id": "META-DELIVERY-DEC", "pdf": "output/pdf/startup_minimal_data/2026-12/META-DELIVERY-DEC.pdf"}
+    {"document_id": "META-DELIVERY-DEC", "pdf": "output/pdf/startup_minimal_data/2026-12/afterclose/META-DELIVERY-DEC.pdf"},
+    {"document_id": "REPLY-T-2026-12-PO-001-001-VARIANCE_UNEXPLAINED", "pdf": "output/pdf/startup_minimal_data/2026-12/afterclose/replies/REPLY-T-2026-12-PO-001-001-VARIANCE_UNEXPLAINED.txt"}
   ]
 }

@@ -1,12 +1,21 @@
-"""Run the workers built so far (Evidence, Detection, Invoice Lookup, Classification, Estimation) month by month on a folder of PDFs.
+"""Run the whole close, month by month, on a folder of PDFs.
 
-    cd startup && ../.venv/bin/python -m close.try_run ../output/pdf/startup_minimal_data [2026-12 ...] [--fresh]
+    cd startup && ../.venv/bin/python -m close.try_run ../output/pdf/startup_minimal_data [2026-12 ...] [--fresh] [--improvements FILE]
 
-<pdf_dir>/<YYYY-MM>/ holds the documents of that month. Each monthly run reads ONLY its own folder; what earlier
-months established (contracts, invoices) is already in the db, exactly as in a real close. With no period given,
-every month folder is run in order. The clock of a run is the 5th of the following month.
-Everything is written under close/_run/try/ (git-ignored). Estimation reads close/_run/try/state/improvements.md if it
-exists; --improvements FILE copies a lessons file there first (it survives --fresh).
+Folders decide when a document becomes known (<next> = the following month):
+    <P>/*                      during the month              (<P>-01)
+    <P>/replies/*              answers before the cutoff     (<next>-03)   a reply is named REPLY-<ticket_id>
+    <P>/afterclose/*           arrives after the close       (<next>-12)
+    <P>/afterclose/replies/*   vendor answers after close    (<next>-20)
+Each month runs in four passes on a simulated clock:
+    <next>-02  close pass 1   evidence, detection, invoice lookup, classification, estimation, outreach (asks)
+    <next>-05  close pass 2   the same again with the replies, outreach (answers / expiries -> forced estimates), close out
+    <next>-15  settle pass 1  evidence (after-close documents), settlement (true-ups, vendor questions)
+    <next>-25  settle pass 2  evidence (vendor replies), outreach (answers), settlement (explanations)
+Everything is written under close/_run/try/ (git-ignored):
+    out/<P>/documents/<DOC>.json   what Evidence extracted from each document and the row it wrote
+    out/<P>/cases/<LINE>.json      one dossier per case: obligation, invoice match, classification, estimate, settlement, tickets, decisions
+    out/<P>/accruals.json  tickets.json  trueups.json  tables/
 """
 import argparse
 import json
@@ -14,17 +23,19 @@ import re
 import shutil
 from pathlib import Path
 
-from . import classifier, detection, estimation, evidence, improvements, invoice_lookup, store
+from . import case as cases_mod
+from . import classifier, detection, estimation, evidence, improvements, invoice_lookup, outreach, settlement, store, tickets
 from .llm import bedrock_llm
 from .workspace import CLOSE_DIR, Workspace
 
 VENDORS = [("V001", "Mintlify"), ("V002", "OpenAI"), ("V003", "ASUS"), ("V004", "Meta")]
 YEAR = {"validity_start": "2026-09-01", "validity_end": "2027-08-31"}
-HEADERS = [
-    {"po_number": "PO-001", "vendor_id": "V001", "order_type": "FO", **YEAR},
-    {"po_number": "PO-002", "vendor_id": "V002", "order_type": "FO", **YEAR},
-    {"po_number": "PO-003", "vendor_id": "V003", "order_type": "NB"},
-    {"po_number": "CAMPAIGN-004", "vendor_id": "V004", "order_type": "NB", "validity_start": "2026-12-01", "validity_end": "2026-12-31"},
+HEADERS = [  # SYNTHETIC: stands in for the e-procurement PO database, which the PDFs cannot provide
+    {"po_number": "PO-001", "vendor_name": "Mintlify", "vendor_id": "V001", "order_type": "FO", "requester": "sam.lee", "cost_center_owner": "priya.shah", **YEAR},
+    {"po_number": "PO-002", "vendor_name": "OpenAI", "vendor_id": "V002", "order_type": "FO", "requester": "dana.kim", "cost_center_owner": "raj.patel", **YEAR},
+    {"po_number": "PO-003", "vendor_name": "ASUS", "vendor_id": "V003", "order_type": "NB", "requester": "alex.chen", "cost_center_owner": "priya.shah"},
+    {"po_number": "CAMPAIGN-004", "vendor_name": "Meta", "vendor_id": "V004", "order_type": "NB", "requester": "maria.gomez", "cost_center_owner": "tom.baker",
+     "validity_start": "2026-12-01", "validity_end": "2026-12-31"},
 ]
 LINES = [
     {"po_line_id": "PO-001-001", "po_number": "PO-001", "item_category": "P", "contract_id": "CTR-001", "unit_price": 1200, "line_description": "Team documentation platform subscription, billed monthly"},
@@ -34,9 +45,17 @@ LINES = [
     {"po_line_id": "CAMPAIGN-004-001", "po_number": "CAMPAIGN-004", "item_category": "B", "overall_limit": 30000, "line_description": "Product-launch advertising campaign, charged on delivery"},
 ]
 
-def close_clock(period: str) -> str:
+
+def next_month(period: str) -> str:
     y, m = map(int, period.split("-"))
-    return f"{y + m // 12}-{m % 12 + 1:02d}-05T12:00:00Z"
+    return f"{y + m // 12}-{m % 12 + 1:02d}"
+
+
+def available_at(period: str, rel: Path) -> str:
+    parts, nxt = rel.parts[:-1], next_month(period)
+    if "afterclose" in parts:
+        return f"{nxt}-20" if "replies" in parts else f"{nxt}-12"
+    return f"{nxt}-03" if "replies" in parts else f"{period}-01"
 
 
 def build_world(root: Path, pdf_dir: Path) -> None:
@@ -45,65 +64,67 @@ def build_world(root: Path, pdf_dir: Path) -> None:
     dump("vendors", [{"vendor_id": i, "vendor_name": n, "aliases": []} for i, n in VENDORS])
     dump("po_headers", [{"entity_id": "ORBIT-US", "status": "Open", "validity_start": None, "validity_end": None, **h} for h in HEADERS])
     dump("po_lines", [{"contract_id": None, "gr_required": False, "quantity_received": None, "quantity_billed": 0, **l} for l in LINES])
-    files = sorted(p for p in pdf_dir.glob("*/*") if p.suffix.lower() in (".pdf", ".txt") and re.fullmatch(r"\d{4}-\d{2}", p.parent.name))
-    dump("documents/index", [{"doc_id": p.stem, "file": str(p.resolve()), "period": p.parent.name} for p in files])
+    index = []
+    for month in sorted(p for p in pdf_dir.iterdir() if re.fullmatch(r"\d{4}-\d{2}", p.name)):
+        for f in sorted(p for p in month.rglob("*") if p.suffix.lower() in (".pdf", ".txt")):
+            index.append({"doc_id": f.stem, "file": str(f.resolve()), "period": month.name, "available_at": available_at(month.name, f.relative_to(month))})
+    dump("documents/index", index)
 
 
-def show(title: str, rows: list[dict], cols: tuple[str, ...]) -> None:
-    print(f"\n  {title} ({len(rows)})")
-    for r in rows:
-        print("    " + "  ".join(f"{c}={r.get(c)}" for c in cols))
+def close_out(ws, period: str) -> list[dict]:
+    """The cutoff: every estimate becomes the month's accrual and the case is closed. Invoiced cases close with nothing to accrue."""
+    everything = cases_mod.load_cases(ws)
+    accruals = []
+    for c in (c for c in everything if c["period"] == period):
+        if c["status"] == "ESTIMATED":
+            cases_mod.transition(ws, c, "JOURNALED", "runner", "cutoff: estimate booked as the accrual")
+            cases_mod.transition(ws, c, "CLOSED", "runner", "period closed")
+            e = c["estimate"]
+            accruals.append({"case_key": c["case_key"], "vendor": c["vendor_id"], "category": e["category"], "amount": e["amount"], "calculation": e["calculation"],
+                             "estimator": e["estimator"], "complete": e["complete"], "flags": c["flags"]})
+        elif c["status"] == "INVOICED":
+            cases_mod.transition(ws, c, "CLOSED", "runner", "period closed, invoice on hand")
+    cases_mod.save_cases(ws, everything)
+    return accruals
 
 
-def snapshot(ws, period: str, documents: list[dict], cases: list[dict], matched: list[dict], classified: list[dict], estimated: list[dict]) -> None:
-    """Freeze what each worker produced for this month under out/<period>/, so later months do not overwrite it."""
+def snapshot(ws, period: str, documents: list[dict], accruals: list[dict] | None = None) -> None:
     out = ws.out_dir / period
-    shutil.rmtree(out, ignore_errors=True)
-    (out / "evidence" / "tables").mkdir(parents=True)
-    (out / "detection").mkdir()
-    (out / "evidence" / "documents_read_this_month.json").write_text(json.dumps(documents, indent=2))
-    (out / "evidence" / "documents").mkdir()
-    for d in documents:  # one file per PDF, for checking them one by one
+    for sub in ("documents", "cases", "tables"):
+        (out / sub).mkdir(parents=True, exist_ok=True)
+    for d in documents:
         rows = store.load_table(ws, d["applied_to"]) if d["applied_to"] else []
-        one = {"pdf": d["file"], "doc_id": d["doc_id"], "doc_type": d["doc_type"], "extracted": d["record"],
-               "matched_vendor_id": d["vendor_id"], "matched_po_line_id": d["po_line_id"],
-               "quality": d["quality"], "reasons": d["reasons"], "written_to_table": d["applied_to"],
-               "written_row": next((r for r in rows if r.get("source_doc") == d["doc_id"]), None)}
-        (out / "evidence" / "documents" / f"{d['doc_id']}.json").write_text(json.dumps(one, indent=2))
+        key = {"invoices": "invoice_id", "activity": "activity_id", "goods_receipts": "gr_id"}.get(d["applied_to"], "source_doc")
+        one = {"file": d["file"], "doc_id": d["doc_id"], "known_from": d.get("available_at"), "doc_type": d["doc_type"], "extracted": d["record"],
+               "matched_vendor_id": d["vendor_id"], "matched_po_line_id": d["po_line_id"], "quality": d["quality"], "reasons": d["reasons"],
+               "written_to_table": d["applied_to"], "written_row": next((r for r in rows if r.get(key) == d["doc_id"] or r.get("source_doc") == d["doc_id"]), None)}
+        (out / "documents" / f"{d['doc_id']}.json").write_text(json.dumps(one, indent=2))
+    all_tickets = tickets.load(ws)
+    for c in cases_mod.cases_for(ws, period):
+        dossier = {k: c[k] for k in ("case_id", "status", "vendor_id", "po_line_id", "flags", "obligation", "invoice_match", "classification", "estimate", "settlement")}
+        dossier["tickets"] = [t for t in all_tickets if t["case_id"] == c["case_id"]]
+        dossier["decision_log"] = c["decision_log"]
+        (out / "cases" / f"{c['case_key'].replace('/', '-')}.json").write_text(json.dumps(dossier, indent=2))
     for table in sorted(ws.db_dir.glob("*.json")):
-        if table.name != "documents.json":
-            shutil.copy(table, out / "evidence" / "tables" / table.name)
-    (out / "detection" / "cases.json").write_text(json.dumps(cases, indent=2))
-    (out / "invoice_lookup").mkdir()
-    (out / "invoice_lookup" / "cases.json").write_text(json.dumps(matched, indent=2))
-    (out / "classification").mkdir()
-    (out / "classification" / "cases.json").write_text(json.dumps(classified, indent=2))
-    headers = {h["po_number"]: h for h in store.load_table(ws, "po_headers")}
-    lines = {l["po_line_id"]: l for l in store.load_table(ws, "po_lines")}
-    for c in classified:  # one file per PO line: the row it read, and both reads of it
-        line = lines[c["po_line_id"]]
-        one = {"case_id": c["case_id"], "input_po_header": headers[line["po_number"]], "input_po_line": line,
-               "output_classification": c["classification"], "flags": [f for f in c["flags"] if f.startswith("CLASSIFICATION_")],
-               "decision": [d for d in c["decision_log"] if d["worker"] == "classifier"]}
-        (out / "classification" / f"{c['case_key']}.json").write_text(json.dumps(one, indent=2))
-    (out / "estimation").mkdir()
-    (out / "estimation" / "cases.json").write_text(json.dumps(estimated, indent=2))
-    for c in estimated:  # one file per PO line: the facts it used, the calculation, and the result
-        one = {"case_id": c["case_id"], "status": c["status"], "category": (c["classification"] or {}).get("final"),
-               "invoice_result": c["invoice_match"]["result"],
-               "input_facts": estimation.gather(ws, c) if c["estimate"] else None,
-               "output_estimate": c["estimate"], "flags": c["flags"],
-               "decision": [d for d in c["decision_log"] if d["worker"] == "estimation"]}
-        (out / "estimation" / f"{c['case_key']}.json").write_text(json.dumps(one, indent=2))
-    invoices = store.visible(store.load_table(ws, "invoices"), ws.as_of)
-    for c in matched:  # one file per detected PO line: what lookup saw, and what it concluded
-        same_line = [i for i in invoices if i.get("po_line_id") == c["po_line_id"]]
-        one = {"case_id": c["case_id"], "po_line_id": c["po_line_id"], "vendor_id": c["vendor_id"],
-               "recognition_basis": c["obligation"]["recognition_basis"],
-               "input_invoices_for_this_line": [{k: i.get(k) for k in ("invoice_id", "service_period", "amount", "status")} for i in same_line],
-               "output_invoice_match": c["invoice_match"], "flags": c["flags"],
-               "decision": [d for d in c["decision_log"] if d["worker"] == "invoice_lookup"]}
-        (out / "invoice_lookup" / f"{c['case_key']}.json").write_text(json.dumps(one, indent=2))
+        shutil.copy(table, out / "tables" / table.name)
+    (out / "tickets.json").write_text(json.dumps([t for t in all_tickets if t["period"] == period], indent=2))
+    if accruals is not None:
+        (out / "accruals.json").write_text(json.dumps(accruals, indent=2))
+    settled = [{"case_key": c["case_key"], **c["settlement"]} for c in cases_mod.cases_for(ws, period) if c.get("settlement")]
+    (out / "trueups.json").write_text(json.dumps(settled, indent=2))
+
+
+def show_documents(documents: list[dict]) -> None:
+    for d in documents:
+        print(f"    {d['doc_id']:<52} {d['doc_type']:<16} {d['quality']:<12} -> {d['applied_to'] or '-'}" + (f"   ! {'; '.join(d['reasons'])}" if d["reasons"] else ""))
+
+
+def show_cases(ws, period: str) -> None:
+    for c in cases_mod.cases_for(ws, period):
+        e, s = c.get("estimate"), c.get("settlement")
+        amount = f"{e['amount']:>10,.2f} = {e['calculation']}  [{e['estimator']}]" if e and e["amount"] is not None else ("       n/a" if e else "         -")
+        tail = f"   actual {s['actual']:,.2f}, true-up {s['true_up']:+,.2f}, {s['cause']}" + ("" if s["explained"] else " (asked the vendor)") if s else ""
+        print(f"    {c['case_key']:<18} {c['status']:<17} {amount}{tail}  {c['flags'] or ''}")
 
 
 def main() -> None:
@@ -122,62 +143,44 @@ def main() -> None:
         (root / "state").mkdir(parents=True, exist_ok=True)
         shutil.copy(args.improvements, root / "state" / "improvements.md")
     periods = args.periods or sorted(p.name for p in args.pdf_dir.iterdir() if re.fullmatch(r"\d{4}-\d{2}", p.name))
-    ws = Workspace(world_dir=root / "world", db_dir=root / "db", state_dir=root / "state", out_dir=root / "out",
-                   as_of=close_clock(periods[0])).ensure()
+    ws = Workspace(world_dir=root / "world", db_dir=root / "db", state_dir=root / "state", out_dir=root / "out", as_of=f"{periods[0]}-01T00:00:00Z").ensure()
 
     for period in periods:
-        ws = ws.at(close_clock(period))
-        print(f"\n=== {period} close, as_of {ws.as_of} - reading {args.pdf_dir / period}/ ===")
-        done = evidence.run(ws, bedrock_llm, period)
-        for d in done:
-            facts = {k: v for k, v in d["record"].items() if v is not None and k != "document_type"}
-            print(f"  {d['doc_id']:<22} {d['doc_type']:<18} {d['quality']:<12} -> {d['applied_to'] or '-':<14} "
-                  f"vendor={d['vendor_id']} line={d['po_line_id']}")
-            print(f"      {facts}")
-            for reason in d["reasons"]:
-                print(f"      ! {reason}")
-        print(f"\n  --- Detection: PO lines owed for {period} (input: po_headers + po_lines only) ---")
-        cases = detection.run(ws, period)
-        for c in cases:
-            o = c["obligation"]
-            print(f"  {c['case_key']:<18} {o['recognition_basis']:<17} why: {'; '.join(o['reasons'])}")
-        detected = json.loads(json.dumps(cases))  # Detection's output, before Invoice Lookup writes on the cases
-        print(f"\n  --- Invoice Lookup for {period} (input: detected cases + invoices + po_lines) ---")
-        matched = invoice_lookup.run(ws, period)
-        for c in matched:
-            m = c["invoice_match"]
-            where = f"on AP {m['on_ap']} / in queue {m['in_queue']}" if m["invoice_ids"] else "nothing on the AP or in the queue"
-            print(f"  {c['case_key']:<18} {m['result']:<19} invoiced={m['invoiced_amount']:>10,.2f}  {where}")
-        looked_up = json.loads(json.dumps(matched))
-        print(f"\n  --- Classification for {period} (input: detected cases + po_headers + po_lines) ---")
-        classified = classifier.run(ws, bedrock_llm, period)
-        for c in classified:
-            k = c["classification"]
-            read = f"{k['model']} ({k['model_confidence']:.2f}{', cached' if k['cache_hit'] else ''})" if k["model"] else "no answer"
-            print(f"  {c['case_key']:<18} rules={k['rules']:<19} model={read:<34} final={k['final']}  {[f for f in c['flags'] if f.startswith('CLASS')] or ''}")
-        classified = json.loads(json.dumps(classified))
+        nxt, accruals = next_month(period), None
+        shutil.rmtree(ws.out_dir / period, ignore_errors=True)
         active = [l["id"] for l in improvements.load(ws) if l["status"] == "ACTIVE"]
-        print(f"\n  --- Estimation for {period} (input: cases + Evidence tables + improvements.md; active lessons: {active or 'none'}) ---")
-        estimated = estimation.run(ws, bedrock_llm, period)
-        for c in estimated:
-            e = c["estimate"]
-            if e is None:
-                print(f"  {c['case_key']:<18} {c['status']:<17} not estimated ({c['invoice_match']['result']})")
-                continue
-            amount = "       n/a" if e["amount"] is None else f"{e['amount']:>10,.2f}"
-            note = f"  lessons {e['lessons_applied']} (base {e['base']['amount']})" if e["lessons_applied"] else ""
-            note += f"  MISSING: {e['missing']}" if e["missing"] else ""
-            print(f"  {c['case_key']:<18} {c['status']:<17} {amount} = {e['calculation']}  [{e['estimator']}]{note}")
-        snapshot(ws, period, done, detected, looked_up, classified, estimated)
-
-    print(f"\n=== db after {periods[-1]} ===")
-    show("contracts", store.load_table(ws, "contracts"),
-         ("contract_id", "version", "status", "monthly_rate", "unit_rate", "effective_start", "effective_end", "source_doc"))
-    show("invoices", store.load_table(ws, "invoices"), ("invoice_id", "po_line_id", "service_period", "amount", "status"))
-    show("activity", store.load_table(ws, "activity"),
-         ("activity_id", "po_line_id", "kind", "service_period", "coverage_start", "coverage_end", "quantity", "value"))
-    show("goods_receipts", store.load_table(ws, "goods_receipts"), ("gr_id", "po_line_id", "received_date", "quantity"))
-    print(f"\nPer-month output files: {root / 'out'}/<YYYY-MM>/ (evidence, detection, invoice_lookup, classification, estimation)")
+        print(f"\n================ {period}   (active lessons: {active or 'none'}) ================")
+        for label, day, cutoff in (("close pass 1", "02", False), ("close pass 2 - cutoff", "05", True)):
+            ws = ws.at(f"{nxt}-{day}T12:00:00Z")
+            print(f"\n  -- {label}, clock {ws.as_of}")
+            documents = evidence.run(ws, bedrock_llm, period)
+            show_documents(documents)
+            detection.run(ws, period)
+            invoice_lookup.run(ws, period)
+            classifier.run(ws, bedrock_llm, period)
+            estimation.run(ws, bedrock_llm, period)
+            for t in outreach.run(ws, bedrock_llm, period, deadline=f"{nxt}-05T00:00:00Z"):
+                print(f"    ticket {t['ticket_id']:<52} {t['state']:<9} to {t['to']} ({t['asked_of']})")
+            if cutoff:
+                accruals = close_out(ws, period)
+            show_cases(ws, period)
+            snapshot(ws, period, documents, accruals)
+        for label, day in (("settle pass 1", "15"), ("settle pass 2", "25")):
+            ws = ws.at(f"{nxt}-{day}T12:00:00Z")
+            documents = evidence.run(ws, bedrock_llm, period)
+            outreach.run(ws, bedrock_llm, period, deadline=f"{nxt}-05T00:00:00Z")      # vendor replies -> ANSWERED
+            settled = settlement.run(ws, period)
+            changed = outreach.run(ws, bedrock_llm, period, deadline=f"{nxt}-05T00:00:00Z")  # word the vendor questions settlement just opened
+            changed = [t for t in tickets.load(ws) if t["period"] == period and t["asked_of"] == "VENDOR"]
+            if documents or settled:
+                print(f"\n  -- {label}, clock {ws.as_of}")
+                show_documents(documents)
+                for t in (t for t in changed if t["asked_of"] == "VENDOR"):
+                    print(f"    ticket {t['ticket_id']:<52} {t['state']:<9} to {t['to']} ({t['asked_of']})")
+                show_cases(ws, period)
+            snapshot(ws, period, documents)
+        total = sum(a["amount"] for a in accruals or [])
+        print(f"\n  {period} accrued {total:,.2f} over {len(accruals or [])} case(s); files: {ws.out_dir / period}/")
 
 
 if __name__ == "__main__":

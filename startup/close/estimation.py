@@ -2,11 +2,13 @@
 
 Input: the period's cases (with `invoice_match` and `classification`), the Evidence tables, and improvements.md.
   1. CODE picks the base formula from the case's category:
-       RECURRING_FIXED     copy the flat rate from the PO line
-       RECURRING_VARIABLE  full-period usage x contract unit rate; incomplete usage -> forced estimate: the average
-                           of the last three invoices, never below what a partial report already shows
-       ONE_TIME_FIXED      unit price x (quantity received - quantity billed)
-       ONE_TIME_VARIABLE   value delivered - value billed (the limit is only a cap)
+       RECURRING_FIXED     the contract rate in effect (else the PO line rate); a PO rate that disagrees is a DATA_MISMATCH
+       RECURRING_VARIABLE  full-period usage x contract unit rate; a partial report is scaled to the whole period
+                           (quantity / days covered x days in period); no usage at all -> forced estimate: the average
+                           of the last three invoices
+       ONE_TIME_FIXED      three-way match (ordered / received / invoiced): unit price x (received - billed) - invoiced
+       ONE_TIME_VARIABLE   value delivered - value billed; nothing reported -> outreach, and if nobody answers by the
+                           cutoff the PO budget is accrued (`force`)
   2. MODEL, only when improvements.md has [ACTIVE] lessons for that category: apply them to the case's facts and
      return a corrected calculation. CODE re-evaluates the arithmetic and rejects numbers that are not in the facts.
 A case that already has its invoice is not estimated.
@@ -71,9 +73,14 @@ def base_estimate(category: str, facts: dict) -> dict:
     line, period = facts["po_line"], facts["period"]
     billed = facts["invoiced_this_period"]
     if category == "RECURRING_FIXED":
-        if line.get("unit_price") is None:
-            return {"estimator": "PO_RATE", "calculation": None, "complete": False, "forced": False, "missing": "PO line has no unit price"}
-        return {"estimator": "PO_RATE", "calculation": num(line["unit_price"]), "complete": True, "forced": False, "missing": None}
+        contract_rate = (facts["contract_in_effect"] or {}).get("monthly_rate")
+        rate = contract_rate if contract_rate is not None else line.get("unit_price")
+        if rate is None:
+            return {"estimator": "CONTRACT_RATE", "calculation": None, "complete": False, "forced": False, "missing": "no contract rate and no PO line rate"}
+        out = {"estimator": "CONTRACT_RATE" if contract_rate is not None else "PO_RATE", "calculation": num(rate), "complete": True, "forced": False, "missing": None}
+        if contract_rate is not None and line.get("unit_price") is not None and abs(contract_rate - line["unit_price"]) > 0.005:
+            out["mismatch"] = f"PO line rate {num(line['unit_price'])} differs from the contract rate in effect {num(contract_rate)}"
+        return out
 
     if category == "RECURRING_VARIABLE":
         usage = [r for r in facts["activity_reports"] if r["kind"] == "USAGE" and r.get("quantity") is not None]
@@ -81,6 +88,11 @@ def base_estimate(category: str, facts: dict) -> dict:
         full = next((r for r in usage if covers_whole_period(r, period)), None)
         if full and rate is not None:
             return {"estimator": "USAGE_X_RATE", "calculation": f"{num(full['quantity'])} * {num(rate)}", "complete": True, "forced": False, "missing": None}
+        partial_report = max((r for r in usage if r.get("coverage_days")), key=lambda r: r["coverage_days"], default=None)
+        if partial_report and rate is not None:  # scale what is known to the whole period
+            calc = f"{num(partial_report['quantity'])} / {partial_report['coverage_days']} * {facts['days_in_period']} * {num(rate)}"
+            return {"estimator": "USAGE_EXTRAPOLATED", "calculation": calc, "complete": False, "forced": False, "extrapolated": True,
+                    "missing": f"usage after {partial_report['coverage_end']}"}
         amounts = [i["amount"] for i in facts["recent_invoices"] if i.get("amount") is not None]
         partial = max((r["quantity"] * rate for r in usage), default=0) if rate is not None else 0
         if usage:
@@ -96,20 +108,38 @@ def base_estimate(category: str, facts: dict) -> dict:
         return {"estimator": "TRAILING_AVERAGE", "calculation": calc, "complete": False, "forced": True, "missing": missing}
 
     if category == "ONE_TIME_FIXED":
-        open_qty = (line.get("quantity_received") or 0) - (line.get("quantity_billed") or 0)
+        match = three_way_match(line, billed)
+        open_qty = match["received"] - match["billed_quantity"]
         if line.get("unit_price") is None or open_qty <= 0:
-            return {"estimator": "RECEIVED_X_PRICE", "calculation": None, "complete": False, "forced": False, "missing": "nothing received and unbilled"}
-        calc = f"{num(line['unit_price'])} * ({num(line.get('quantity_received') or 0)} - {num(line.get('quantity_billed') or 0)})"
-        return {"estimator": "RECEIVED_X_PRICE", "calculation": calc + (f" - {num(billed)}" if billed else ""), "complete": True, "forced": False, "missing": None}
+            return {"estimator": "THREE_WAY_MATCH", "calculation": None, "complete": False, "forced": False, "missing": "nothing received and unbilled",
+                    "three_way_match": match}
+        calc = f"{num(line['unit_price'])} * ({num(match['received'])} - {num(match['billed_quantity'])})"
+        return {"estimator": "THREE_WAY_MATCH", "calculation": calc + (f" - {num(billed)}" if billed else ""), "complete": True, "forced": False,
+                "missing": None, "three_way_match": match}
 
     if category == "ONE_TIME_VARIABLE":
         delivered = [r for r in facts["activity_reports"] if r["kind"] == "DELIVERY" and r.get("value") is not None]
-        if not delivered:  # not accrued at the cap: nothing is known to be delivered
-            return {"estimator": "DELIVERED_VALUE", "calculation": None, "complete": False, "forced": False, "missing": "delivery report for the period"}
+        if not delivered:  # ask first; the budget is only the fallback when nobody answers by the cutoff
+            budget = line.get("overall_limit")
+            return {"estimator": "DELIVERED_VALUE", "calculation": None, "complete": False, "forced": False, "missing": "delivery report for the period",
+                    "fallback": None if budget is None else {"estimator": "PO_BUDGET", "calculation": num(budget), "basis": "PO budget (overall limit)"}}
         total = " + ".join(num(r["value"]) for r in delivered)
         return {"estimator": "DELIVERED_VALUE", "calculation": (f"({total}) - {num(billed)}" if billed else total), "complete": True, "forced": False, "missing": None}
 
     return {"estimator": "NONE", "calculation": None, "complete": False, "forced": False, "missing": f"no formula for category {category}"}
+
+
+def three_way_match(line: dict, invoiced_amount: float) -> dict:
+    """PO vs goods receipt vs invoice for one goods line. Accrue only what arrived and is not invoiced."""
+    ordered, received = line.get("quantity_ordered") or 0, line.get("quantity_received") or 0
+    price = line.get("unit_price")
+    exceptions = []
+    if received > ordered:
+        exceptions.append(f"received {num(received)} exceeds ordered {num(ordered)}")
+    if price is not None and invoiced_amount - received * price > 0.005:
+        exceptions.append(f"invoiced {num(invoiced_amount)} exceeds received value {num(received * price)}")
+    return {"ordered": ordered, "received": received, "billed_quantity": line.get("quantity_billed") or 0, "unit_price": price,
+            "invoiced_amount": invoiced_amount, "received_value": None if price is None else money(received * price), "exceptions": exceptions}
 
 
 def numbers_in(obj) -> set[float]:
@@ -145,6 +175,19 @@ def apply_lessons(ws, llm, case: dict, category: str, facts: dict, base: dict) -
             "mismatch": reply.get("mismatch") or None, "explanation": str(reply.get("explanation") or "")}
 
 
+def force(ws, case: dict) -> bool:
+    """Nobody answered by the cutoff: book the recorded fallback. OUTREACH_PENDING -> FORCED_ESTIMATE -> ESTIMATED. False when there is none."""
+    fallback = (case.get("estimate") or {}).get("fallback")
+    if case["status"] != "OUTREACH_PENDING" or not fallback:
+        return False
+    amount = money(safe_math.evaluate(fallback["calculation"]))
+    case["estimate"].update(estimator=fallback["estimator"], amount=amount, calculation=fallback["calculation"], forced=True)
+    cases_mod.add_flag(case, "FORCED_ESTIMATE")
+    cases_mod.transition(ws, case, "FORCED_ESTIMATE", "estimation", f"no answer by the cutoff: {fallback['basis']}")
+    cases_mod.transition(ws, case, "ESTIMATED", "estimation", f"{amount:.2f} = {fallback['calculation']}")
+    return True
+
+
 def run(ws, llm, period: str) -> list[dict]:
     """Estimate every DETECTED case of the period that Invoice Lookup and Classification have finished with."""
     everything = cases_mod.load_cases(ws)
@@ -169,19 +212,22 @@ def run(ws, llm, period: str) -> list[dict]:
         amount = None if calculation is None else money(safe_math.evaluate(calculation))
         case["estimate"] = {
             "category": category, "estimator": base["estimator"], "amount": amount, "calculation": calculation,
-            "complete": base["complete"], "forced": base["forced"], "missing": base["missing"],
+            "complete": base["complete"], "forced": base["forced"], "extrapolated": base.get("extrapolated", False), "missing": base["missing"],
+            "three_way_match": base.get("three_way_match"), "fallback": base.get("fallback"),
             "base": {"amount": base_amount, "calculation": base["calculation"]},
             "lessons_applied": fix["lessons_applied"] if fix else [], "sources": fix["sources"] if fix else [],
-            "mismatch": fix["mismatch"] if fix else None, "explanation": fix["explanation"] if fix else "",
+            "mismatch": (fix["mismatch"] if fix else None) or base.get("mismatch"), "explanation": fix["explanation"] if fix else "",
         }
         cases_mod.log_decision(ws, case, "estimation", "RULE", f"Base formula for {category}?", base["calculation"], action=base["estimator"])
         if fix:
             cases_mod.log_decision(ws, case, "estimation", "LLM", "Do the approved lessons change the calculation?", fix["calculation"],
                                    action=f"applied {', '.join(fix['lessons_applied'])}")
-            if fix["mismatch"]:
-                cases_mod.add_flag(case, "DATA_MISMATCH")
+        if case["estimate"]["mismatch"]:
+            cases_mod.add_flag(case, "DATA_MISMATCH")
+        if (base.get("three_way_match") or {}).get("exceptions"):
+            cases_mod.add_flag(case, "THREE_WAY_EXCEPTION")
         if not base["complete"]:
-            cases_mod.add_flag(case, "FORCED_ESTIMATE" if base["forced"] else "MISSING_DATA")
+            cases_mod.add_flag(case, "FORCED_ESTIMATE" if base["forced"] else "EXTRAPOLATED" if base.get("extrapolated") else "MISSING_DATA")
         if amount is None:
             cases_mod.transition(ws, case, "OUTREACH_PENDING", "estimation", f"no amount yet: {base['missing']}")
         else:

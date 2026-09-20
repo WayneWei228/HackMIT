@@ -225,3 +225,43 @@ Money is rounded to 2 decimals when stored.
 8. `settlement.run(ws, jev, period)` - at a later `as_of`: match newly visible invoices / final reports to CLOSED accrued cases, compute true-up, `SETTLED`.
 9. `learning.run(ws, jev, llm, period)` - Jev root-cause Choice; LLM drafts rule text; code backtests on prior periods; rule saved `DRAFT` in `state/rules.json` (+ rendered `improvements.md`); only `approve(rule_id)` makes it `ACTIVE`. `LEARNED`.
 10. `engine.py` - the state machine: `run_close(ws, jev, llm, period)`, `run_settlement(...)`, CLI, and a demo printer that surfaces the Jev moments.
+
+## Closing the loop (built after the five workers)
+
+Time in a close. The runner (`try_run.py`) runs every month in TWO passes and a settlement in two more; `<next>` is the following month:
+
+```text
+<next>-02T12:00Z  close pass 1   evidence -> detection -> invoice_lookup -> classifier -> estimation -> outreach (opens tickets)
+<next>-05T12:00Z  close pass 2   the same again (replies are in the tables now) -> outreach (answers, expiries, forced fallbacks) -> close_out
+<next>-15T12:00Z  settle pass 1  evidence (after-close documents) -> settlement (true-ups, vendor tickets)
+<next>-25T12:00Z  settle pass 2  evidence (vendor replies) -> outreach (answers) -> settlement (explanations)
+```
+
+Document availability comes from the folder: `<P>/*` -> `<P>-01`; `<P>/replies/*` -> `<next>-03`; `<P>/afterclose/*` -> `<next>-12`;
+`<P>/afterclose/replies/*` -> `<next>-20`. A reply is a document named `REPLY-<ticket_id>`; Evidence extracts it by the facts it states.
+
+Tickets (`tickets.py`, `state/outreach.json`): `{ticket_id = T-<period>-<case_key>-<REASON>, case_id, period, reason, asked_of INTERNAL|VENDOR, to, question,
+message, blocking, deadline, state OPEN|ANSWERED|EXPIRED, opened_at, answered_at, answered_by_doc, expired_at}`. `open_ticket` is idempotent.
+
+6. `outreach.run(ws, llm, period, deadline) -> list[ticket]` - for the period's cases:
+   - status `OUTREACH_PENDING` -> blocking ticket `MISSING_DATA` to the PO header's `requester` (INTERNAL), question built from `estimate.missing`.
+   - flag `DATA_MISMATCH` -> non-blocking ticket `DATA_MISMATCH` to "Procurement" (INTERNAL) quoting `estimate.mismatch`.
+   - flag `CLASSIFICATION_MISMATCH` -> non-blocking ticket `CLASSIFICATION_MISMATCH` to "Procurement" with the suggested category.
+   - The LLM (prompt `outreach_message`) writes `{subject, body}` for a NEW ticket only; any failure falls back to the plain question. Code decides everything else.
+   - An OPEN ticket whose reply document (`documents` row `REPLY-<ticket_id>`, quality OK) exists -> `ANSWERED` (`answered_at`, `answered_by_doc`).
+   - An OPEN ticket with `deadline <= ws.as_of` -> `EXPIRED`; if it is blocking and its case is still `OUTREACH_PENDING`: `estimation.force(ws, case)`;
+     when that returns False the case goes `OUTREACH_PENDING -> FORCED_ESTIMATE -> ESTIMATED` with amount 0.0 and flag `NO_ACCRUAL_BASIS`, then `REVIEW`.
+   - Open tickets of other periods that belong to `CLOSED`/`SETTLED` cases (vendor tickets) are also checked for answers and expiry.
+7. `settlement.run(ws, period) -> list[case]` - pure code, for `CLOSED` cases of the period with an accrued amount, and `SETTLED` cases still unexplained:
+   - Actual: invoices of the line and period visible now that were not known at close (not in `invoice_match.invoice_ids`); else, for `RECURRING_VARIABLE`,
+     a usage report covering the whole period x the contract unit rate; for `ONE_TIME_VARIABLE`, the delivered value. No actual yet -> untouched.
+   - `true_up = actual - accrued`. Within tolerance (`abs <= max(1.00, 1% of accrued)`) -> cause `CONFIRMED`.
+   - Otherwise re-check what was known AT CLOSE (`ws.at(case["as_of"])` views of contracts / po_lines / activity / invoices):
+     `OUR_DATA` when data visible at close already gave the actual (e.g. a contract version in effect whose rate equals the actual, which the estimate ignored);
+     `USAGE_VARIANCE` when the estimate was extrapolated, forced or a budget fallback and the actual comes from a later report or invoice at the same rate;
+     `EXTERNAL_CHANGE` when the close-time data was internally consistent (contract rate, PO rate, prior invoices agree with the estimate) and the vendor billed differently:
+     open a non-blocking `VARIANCE_UNEXPLAINED` ticket to the vendor (asked_of VENDOR, deadline = ws.as_of + 10 days) and mark `explained: false`.
+   - A `SETTLED` case with `explained: false` whose ticket is `ANSWERED`: if a contract version in effect for the period now has a rate equal to the actual and became
+     available after the close, `explained: true` with a one-line `explanation` naming the version and its source document.
+   - `case["settlement"] = {actual, accrued, true_up, settled_by, cause, within_tolerance, recheck, ticket_id, explained, explanation}`; `CLOSED -> SETTLED`.
+8. `try_run.close_out(ws, period)` - `ESTIMATED -> JOURNALED -> CLOSED`, `INVOICED -> CLOSED`, writes `out/<period>/accruals.json`; settlement passes write `out/<period>/trueups.json`.

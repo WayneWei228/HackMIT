@@ -91,3 +91,36 @@ Compare the generated result with [`expected_classifications.json`](expected_cla
 - the main evidence supporting the decision.
 
 Do not classify a fee from the vendor name alone. Base every decision and amount on the contents of the PDFs.
+
+## December 2026 close-timing scenarios
+
+`output/pdf/startup_minimal_data/2026-12/` also demonstrates documents that are known at
+different times relative to month-end close. The month-end close system honors this
+convention: `2026-12/` holds documents known during the month; `2026-12/afterclose/` holds
+documents that arrive only after the books are closed; `2026-12/afterclose/replies/` holds a
+vendor's reply to a question the system sent out after close.
+
+- **OpenAI usage (partial then final).** `2026-12/USG-OPENAI-DEC.pdf` is a *partial* usage
+  report covering only December 1-25, 2026 (700,000 units, $14,000.00 at $0.02/unit),
+  generated December 26, 2026. It states plainly that it is not an invoice and that usage
+  after December 25 is not included. `2026-12/afterclose/USG-OPENAI-DEC-FINAL.pdf` is the
+  *final* report for the full month (December 1-31, 2026; 930,000 units, $18,600.00),
+  generated January 8, 2027, and states that it replaces `USG-OPENAI-DEC`.
+- **Mintlify invoice arrives late, at a higher price.** At close, only the $1,200/month
+  `CTR-001` contract is known. The December invoice, `2026-12/afterclose/INV-MINTLIFY-DEC.pdf`,
+  does not arrive until January 10, 2027 (after close) and bills the new amended amount of
+  $1,400.00. No amendment document is available in the December folder itself.
+  `2026-12/afterclose/replies/REPLY-T-2026-12-PO-001-001-VARIANCE_UNEXPLAINED.txt` is
+  Mintlify's reply, dated January 18, 2027, to the system's after-close variance question: it
+  explains that a signed contract amendment (`AMD-MINTLIFY-DEC`, signed December 15, 2026)
+  raised the CTR-001 monthly fee from $1,200.00 to $1,400.00 effective December 1, 2026, and
+  that all other terms are unchanged.
+- **Meta delivery report arrives after close.** Nobody answers before close, so
+  `2026-12/afterclose/META-DELIVERY-DEC.pdf` (the $30,000 budget / $24,700 delivered
+  campaign delivery report) is only available after the books close.
+  `2026-12/CAMPAIGN-004.pdf` (the campaign order itself) remains available during the month.
+
+These placements are driven by an optional `"folder"` field on a document entry in
+`classification_input.json` (e.g. `"folder": "2026-12/afterclose"`), which
+`generate_pdfs.py`'s `month_of()` honors ahead of the default month-of-service-period
+placement.

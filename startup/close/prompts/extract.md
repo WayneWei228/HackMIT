@@ -4,6 +4,10 @@ Document id: {{DOC_ID}}
 Known vendors: {{KNOWN_VENDORS}}
 Allowed document_type values: {{DOCUMENT_TYPES}}
 
+An email or a reply to a question is classified by the facts it states: a message saying a fee changed from a date is an AMENDMENT
+(contract_id = the original agreement, monthly_rate = the NEW fee, effective_start = the date it applies from); a message stating what was used or
+delivered in a period is a USAGE_REPORT or DELIVERY_REPORT.
+
 Return ONE JSON object with exactly these keys. Use null when the document does not state the fact.
 
 - document_type: one of the allowed values

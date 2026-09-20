@@ -1,0 +1,32 @@
+From: Mintlify Billing <billing@mintlify.example>
+To: Orbit Labs Accounts Payable <ap@orbitlabs.example>
+Date: January 18, 2027
+Subject: RE: December invoice variance - agreement CTR-001
+
+Hello,
+
+Thank you for reaching out about the amount on the December invoice
+(INV-MINTLIFY-DEC) for your team documentation plan.
+
+Under agreement CTR-001, the monthly fee changed from $1,200.00 to
+$1,400.00 per month, effective December 1, 2026. This change was made
+under a contract amendment (amendment ID AMD-MINTLIFY-DEC), which both
+parties signed on December 15, 2026. The December invoice correctly
+reflects the new monthly fee of $1,400.00 under the amended agreement.
+
+All other terms of agreement CTR-001 are unchanged: the plan continues
+on a monthly billing cycle with the same scope of service.
+
+Summary for your records:
+- Vendor: Mintlify
+- Original agreement: CTR-001
+- Amendment ID: AMD-MINTLIFY-DEC (signed December 15, 2026)
+- New monthly fee: $1,400.00
+- Effective date: 2026-12-01
+
+Please let us know if you need a copy of the signed amendment for your
+files.
+
+Best regards,
+Mintlify Billing
+billing@mintlify.example

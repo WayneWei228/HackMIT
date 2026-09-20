@@ -43,35 +43,64 @@ def close(tmp_path, llm=None, activity=(), invoices=HISTORY, lessons=None):
     return ws, {c["case_key"]: c for c in estimation.run(ws, llm, P)}
 
 
-def test_base_formulas_without_lessons(tmp_path):
+def test_each_category_has_its_own_method(tmp_path):
     _, cases = close(tmp_path, activity=[FULL, DELIVERY])
     est = {k: c["estimate"] for k, c in cases.items()}
-    assert (est["PO-001-001"]["estimator"], est["PO-001-001"]["amount"], est["PO-001-001"]["calculation"]) == ("PO_RATE", 1200.0, "1200")
+    fixed = est["PO-001-001"]   # the contract version in effect wins over the stale PO rate, and says so
+    assert (fixed["estimator"], fixed["amount"], fixed["calculation"]) == ("CONTRACT_RATE", 1400.0, "1400")
+    assert fixed["mismatch"] == "PO line rate 1200 differs from the contract rate in effect 1400" and cases["PO-001-001"]["flags"] == ["DATA_MISMATCH"]
     assert (est["PO-002-001"]["estimator"], est["PO-002-001"]["amount"], est["PO-002-001"]["calculation"]) == ("USAGE_X_RATE", 18600.0, "930000 * 0.02")
-    assert (est["PO-003-001"]["amount"], est["PO-003-001"]["calculation"]) == (32000.0, "1600 * (20 - 0)")       # not the 40,000 ordered
-    assert (est["CAMPAIGN-004-001"]["amount"], est["CAMPAIGN-004-001"]["calculation"]) == (24700.0, "24700")    # not the 30,000 cap
-    assert all(c["status"] == "ESTIMATED" and c["estimate"]["complete"] and c["flags"] == [] for c in cases.values())
-    assert [d["action"] for d in cases["PO-003-001"]["decision_log"] if d["worker"] == "estimation"][-2:] == ["RECEIVED_X_PRICE", "ESTIMATE_REQUIRED -> ESTIMATED"]
+    assert (est["PO-003-001"]["estimator"], est["PO-003-001"]["amount"], est["PO-003-001"]["calculation"]) == ("THREE_WAY_MATCH", 32000.0, "1600 * (20 - 0)")
+    assert (est["CAMPAIGN-004-001"]["amount"], est["CAMPAIGN-004-001"]["calculation"]) == (24700.0, "24700")    # not the 30,000 budget
+    assert all(c["status"] == "ESTIMATED" and c["estimate"]["complete"] for c in cases.values())
+    assert [c["flags"] for k, c in cases.items() if k != "PO-001-001"] == [[], [], []]
 
 
-def test_partial_usage_forces_the_three_month_average(tmp_path):
+def test_fixed_rate_without_a_contract_uses_the_po_rate(tmp_path):
+    ws = make_ws(tmp_path)
+    for name, rows in (("po_headers", HEADERS), ("po_lines", LINES), ("contracts", []), ("invoices", []), ("activity", [])):
+        store.save_table(ws, name, rows)
+    llm = FakeLLM(read_description=lambda v: {"category": None, "confidence": 0.0})
+    detection.run(ws, P); invoice_lookup.run(ws, P); classifier.run(ws, llm, P)
+    cases = {c["case_key"]: c for c in estimation.run(ws, llm, P)}
+    e = cases["PO-001-001"]["estimate"]
+    assert (e["estimator"], e["amount"], e["mismatch"]) == ("PO_RATE", 1200.0, None) and cases["PO-001-001"]["flags"] == []
+
+
+def test_three_way_match_block_and_exceptions(tmp_path):
+    _, cases = close(tmp_path)
+    m = cases["PO-003-001"]["estimate"]["three_way_match"]
+    assert (m["ordered"], m["received"], m["billed_quantity"], m["unit_price"], m["invoiced_amount"], m["received_value"], m["exceptions"]) == \
+        (25, 20, 0, 1600, 0, 32000.0, [])
+    over = estimation.three_way_match({"quantity_ordered": 25, "quantity_received": 27, "unit_price": 1600}, 50000)
+    assert over["exceptions"] == ["received 27 exceeds ordered 25", "invoiced 50000 exceeds received value 43200"]
+
+
+def test_partial_usage_is_scaled_to_the_whole_period(tmp_path):
     _, cases = close(tmp_path, activity=[PARTIAL])
     e = cases["PO-002-001"]["estimate"]
-    assert (e["estimator"], e["amount"], e["calculation"], e["complete"], e["forced"]) == ("TRAILING_AVERAGE", 15500.0, "(14200 + 16800 + 15500) / 3", False, True)
-    assert e["missing"] == "usage after 2026-12-25" and cases["PO-002-001"]["flags"] == ["FORCED_ESTIMATE"]
+    assert (e["estimator"], e["amount"], e["calculation"]) == ("USAGE_EXTRAPOLATED", 17360.0, "700000 / 25 * 31 * 0.02")
+    assert (e["complete"], e["forced"], e["extrapolated"], e["missing"]) == (False, False, True, "usage after 2026-12-25")
+    assert cases["PO-002-001"]["flags"] == ["EXTRAPOLATED"] and cases["PO-002-001"]["status"] == "ESTIMATED"
 
 
-def test_forced_estimate_is_never_below_the_partial_report(tmp_path):
-    low = [dict(i, amount=9000.0) for i in HISTORY]
-    _, cases = close(tmp_path, activity=[PARTIAL], invoices=low)
-    assert cases["PO-002-001"]["estimate"]["amount"] == 14000.0  # 700,000 x 0.02 already used
-
-
-def test_nothing_delivered_is_not_accrued_at_the_cap(tmp_path):
+def test_no_usage_at_all_forces_the_three_month_average(tmp_path):
     _, cases = close(tmp_path)
+    e = cases["PO-002-001"]["estimate"]
+    assert (e["estimator"], e["amount"], e["calculation"], e["forced"]) == ("TRAILING_AVERAGE", 15500.0, "(14200 + 16800 + 15500) / 3", True)
+    assert e["missing"] == "usage report for the period" and cases["PO-002-001"]["flags"] == ["FORCED_ESTIMATE"]
+
+
+def test_nothing_delivered_asks_first_and_the_budget_is_only_the_cutoff_fallback(tmp_path):
+    ws, cases = close(tmp_path)
     c = cases["CAMPAIGN-004-001"]
     assert c["estimate"]["amount"] is None and c["estimate"]["missing"] == "delivery report for the period"
+    assert c["estimate"]["fallback"] == {"estimator": "PO_BUDGET", "calculation": "30000", "basis": "PO budget (overall limit)"}
     assert c["status"] == "OUTREACH_PENDING" and c["flags"] == ["MISSING_DATA"]
+
+    assert estimation.force(ws, c) is True
+    assert (c["status"], c["estimate"]["amount"], c["estimate"]["estimator"], c["estimate"]["forced"]) == ("ESTIMATED", 30000.0, "PO_BUDGET", True)
+    assert c["flags"] == ["MISSING_DATA", "FORCED_ESTIMATE"] and estimation.force(ws, c) is False  # only once, only from OUTREACH_PENDING
 
 
 def test_invoiced_cases_are_not_estimated_and_ambiguous_ones_go_to_review(tmp_path):
@@ -106,14 +135,13 @@ def test_parse_improvements():
 
 def test_active_lessons_correct_the_base_and_code_recomputes(tmp_path):
     llm = lesson_llm(
-        RECURRING_FIXED={"calculation": "1400", "lessons_applied": ["I-001"], "sources": ["CTR-001 v2"], "mismatch": "PO line says 1200, contract v2 says 1400", "explanation": "x"},
-        RECURRING_VARIABLE={"calculation": "700000 / 25 * 31 * 0.02", "lessons_applied": ["I-002"], "sources": ["USG-DEC"], "mismatch": None, "explanation": "y"})
-    _, cases = close(tmp_path, llm=llm, activity=[PARTIAL, DELIVERY], lessons=LESSONS)
+        RECURRING_FIXED={"calculation": "1400", "lessons_applied": [], "mismatch": None},   # the base is already right: nothing applied
+        RECURRING_VARIABLE={"calculation": "16800", "lessons_applied": ["I-002"], "sources": ["INV-OPENAI-10"], "mismatch": "usage report is missing", "explanation": "y"})
+    _, cases = close(tmp_path, llm=llm, activity=[DELIVERY], lessons=LESSONS)
     fixed, variable = cases["PO-001-001"], cases["PO-002-001"]
-    assert (fixed["estimate"]["amount"], fixed["estimate"]["base"]["amount"], fixed["estimate"]["lessons_applied"]) == (1400.0, 1200.0, ["I-001"])
-    assert fixed["flags"] == ["DATA_MISMATCH"] and fixed["estimate"]["mismatch"].startswith("PO line says 1200")
-    assert (variable["estimate"]["amount"], variable["estimate"]["base"]["amount"]) == (17360.0, 15500.0)
-    assert variable["estimate"]["forced"] is True and variable["flags"] == ["FORCED_ESTIMATE"]   # better number, still incomplete evidence
+    assert (fixed["estimate"]["amount"], fixed["estimate"]["lessons_applied"]) == (1400.0, [])
+    assert (variable["estimate"]["amount"], variable["estimate"]["base"]["amount"], variable["estimate"]["lessons_applied"]) == (16800.0, 15500.0, ["I-002"])
+    assert variable["estimate"]["forced"] is True and variable["flags"] == ["DATA_MISMATCH", "FORCED_ESTIMATE"]   # better number, still incomplete evidence
     calls = [v for name, v in llm.calls if name == "apply_improvements"]
     assert sorted(v["CATEGORY"] for v in calls) == ["RECURRING_FIXED", "RECURRING_VARIABLE"]      # no lessons for the one-time categories: no call
     assert "I-009" not in calls[0]["LESSONS"] and calls[0]["FACTS"]["contract_in_effect"]["monthly_rate"] == 1400.0
@@ -123,8 +151,8 @@ def test_bad_corrections_never_replace_the_base(tmp_path):
     for i, reply in enumerate([
         {"calculation": "1999", "lessons_applied": ["I-001"]},                       # a number that is nowhere in the facts
         {"calculation": "__import__('os')", "lessons_applied": ["I-001"]},           # not arithmetic
-        {"calculation": "1400", "lessons_applied": ["I-404"]},                       # cites a lesson that is not active
-        {"calculation": "1400", "lessons_applied": []},                              # model says no lesson applies
+        {"calculation": "1200", "lessons_applied": ["I-404"]},                       # cites a lesson that is not active
+        {"calculation": "1200", "lessons_applied": []},                              # model says no lesson applies
     ]):
         _, cases = close(tmp_path / str(i), llm=lesson_llm(RECURRING_FIXED=reply, RECURRING_VARIABLE=reply), lessons=LESSONS)
-        assert cases["PO-001-001"]["estimate"]["amount"] == 1200.0 and cases["PO-001-001"]["estimate"]["lessons_applied"] == []
+        assert cases["PO-001-001"]["estimate"]["amount"] == 1400.0 and cases["PO-001-001"]["estimate"]["lessons_applied"] == []

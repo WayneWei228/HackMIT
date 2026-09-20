@@ -288,28 +288,62 @@ def make_invoice(vendor: str, doc: dict, path: Path):
     document(path, "INVOICE", f"{vendor}  |  {doc['document_id']}", story)
 
 
+def human_date(value: str) -> str:
+    return date.fromisoformat(value).strftime("%B %d, %Y")
+
+
 def make_usage_report(vendor: str, doc: dict, path: Path):
-    projected = doc["quantity"] * 0.02
+    unit_rate = doc.get("unit_rate", 0.02)
+    amount = doc.get("amount", doc["quantity"] * unit_rate)
+    status = doc.get("status", "FINAL")
+    is_partial = status == "PARTIAL"
+    coverage_start = doc.get("coverage_start")
+    coverage_end = doc.get("coverage_end")
+    coverage_label = (
+        f"{human_date(coverage_start)} to {human_date(coverage_end)}"
+        if coverage_start and coverage_end
+        else doc["service_period"]
+    )
+    generated_on = doc.get("generated_on")
+    replaces = doc.get("replaces")
+
+    if is_partial:
+        status_label = f"PARTIAL - covers {coverage_label} only"
+        certification = (
+            f"This report is NOT AN INVOICE. It reflects usage recorded from {human_date(coverage_start)} "
+            f"through {human_date(coverage_end)} only. Usage after {human_date(coverage_end)} is not "
+            "included and will be reported in the final usage report for this period."
+        )
+    else:
+        status_label = f"FINAL for {coverage_label}"
+        certification = (
+            f"This is the FINAL usage report for {coverage_label}. It reflects all accepted API requests "
+            f"recorded during this period. The amount shown is calculated under the contracted rate and "
+            "is not an invoice."
+        )
+        if replaces:
+            certification += f" This report replaces report {replaces}, which covered a partial period."
+
     story = [
         info_grid([
             ("Report ID", doc["document_id"]),
-            ("Reporting period", doc["service_period"]),
+            ("Reporting period", coverage_label),
             ("Customer", "Orbit Labs, Inc."),
-            ("Status", "Final through December 31"),
+            ("Status", status_label),
         ]),
         Spacer(1, 14),
         p("USAGE SUMMARY", "Section"),
         standard_table([
             ["Service", "Measured quantity", "Contract rate", "Expected charge"],
-            [doc["description"], f"{doc['quantity']:,} {doc['unit']}s", "$0.02 per unit", money(projected)],
+            [doc["description"], f"{doc['quantity']:,} {doc['unit']}s", money(unit_rate) + " per unit", money(amount)],
         ], [2.55 * inch, 1.55 * inch, 1.35 * inch, 1.35 * inch], right_cols=(1, 2, 3)),
         Spacer(1, 15),
         p("CERTIFICATION", "Section"),
-        p("Usage reflects accepted API requests recorded from December 1 through December 31, 2026. The amount shown is an estimate under the contracted rate and is not an invoice."),
+        p(certification),
         Spacer(1, 18),
         info_grid([
             ("Prepared by", "Automated Usage Operations"),
-            ("Generated at", "2027-01-01 02:00 UTC"),
+            ("Generated at", human_date(generated_on) if generated_on else "2027-01-01"),
         ]),
     ]
     document(path, "MONTHLY USAGE REPORT", f"{vendor}  |  {doc['document_id']}", story)
@@ -426,7 +460,12 @@ def make_delivery_report(vendor: str, doc: dict, path: Path):
 
 
 def month_of(case: dict, source: dict) -> str:
-    """The month folder a document belongs to. Contracts go in the first month the case is billed."""
+    """The folder a document belongs to. An explicit "folder" field (e.g. "2026-12/afterclose")
+    overrides the default month-of-service_period placement, for documents that arrive after
+    close or replies to an after-close question. Contracts go in the first month the case is
+    billed."""
+    if source.get("folder"):
+        return source["folder"]
     if source["document_type"] == "CONTRACT":
         return min(d["service_period"] for d in case["documents"] if d.get("service_period"))
     if source.get("service_period"):
@@ -460,8 +499,8 @@ def main() -> None:
             else:
                 raise ValueError(f"Unsupported document type: {kind}")
             generated.append(path)
-    if len(generated) != 14:
-        raise RuntimeError(f"Expected 14 PDFs, generated {len(generated)}")
+    if len(generated) != 15:
+        raise RuntimeError(f"Expected 15 PDFs, generated {len(generated)}")
     print(f"generated={len(generated)} output={OUTPUT}")
 
 
