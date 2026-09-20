@@ -247,5 +247,7 @@ def test_a_ticket_opened_by_another_worker_gets_its_wording(tmp_path):
     ticket = next(t for t in tickets.load(ws) if t["reason"] == "VARIANCE_UNEXPLAINED")
     asked = [v for name, v in llm.calls if name == "outreach_message" and v["REASON"] == "VARIANCE_UNEXPLAINED"]
     assert ticket["message"]["body"] and ticket["state"] == "OPEN" and [v["ASKED_OF"] for v in asked] == ["VENDOR"]
+    from close import events
+    assert [e["message"] for e in events.read(ws) if "message written to Mintlify (VENDOR)" in e["message"]]  # the log says so
     outreach.run(ws, llm, P, LATER)  # worded once
     assert len([v for name, v in llm.calls if name == "outreach_message" and v["REASON"] == "VARIANCE_UNEXPLAINED"]) == 1

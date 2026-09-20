@@ -114,6 +114,7 @@ def run(ws, llm, period: str, deadline: str) -> list[dict]:
         case = cases_mod.find_case(everything, ticket["case_id"])
         if ticket.get("message") is None and case is not None:  # opened by another worker (settlement's vendor question): word it now
             ticket["message"] = write_message(ws, llm, case, ticket, ticket["period"], ticket["deadline"], ticket["asked_of"])
+            events.log(ws, "outreach", f"{ticket['ticket_id']}: message written to {ticket['to']} ({ticket['asked_of']}) - {ticket['message']['subject']}", ticket["period"])
             changed.add(ticket["ticket_id"])
         reply = tickets.reply_doc_id(ticket)
         if reply in replies:  # an answer that arrives on the deadline still counts
