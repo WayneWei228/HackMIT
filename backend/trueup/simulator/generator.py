@@ -42,7 +42,7 @@ OPENAI_STALE_RATE = Decimal("0.016")
 OPENAI_RATE = Decimal("0.02")
 
 PEOPLE = [
-    ("CONTROLLER-001", "Maya Chen", "Controller", "maya.chen@northstar.example"),
+    ("CONTROLLER-001", "Rudraksh Awasthi", "Controller", "rudraksh.awasthi@northstar.example"),
     ("AP-001", "Jordan Patel", "AP Specialist", "jordan.patel@northstar.example"),
     ("PROC-001", "Avery Rivera", "Procurement Manager", "avery.rivera@northstar.example"),
     ("ENG-001", "Riley Kim", "Engineering Service Owner", "riley.kim@northstar.example"),

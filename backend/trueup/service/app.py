@@ -22,10 +22,11 @@ from trueup.agents.controller_workspace import (
     ReviewItem,
 )
 from trueup.agents.ingestion import load_universe
-from trueup.agents.learning_agent import LearningError, approve_rule, reject_rule, revoke_rule
+from trueup.agents.learning_agent import LearningError
 from trueup.service import demo_state as demo
 from trueup.service import models as v
 from trueup.service import readmodels as rm
+from trueup.service import runlog
 from trueup.store import models as m
 from trueup.store.workflow import IllegalTransitionError
 
@@ -62,7 +63,11 @@ def create_app() -> FastAPI:
             state = demo.current()
             with state.session() as session:
                 return rm.close_view(
-                    session, period=demo.PERIOD, phase=state.phase, now=_aware(state.sim.now())
+                    session,
+                    period=demo.PERIOD,
+                    phase=state.phase,
+                    now=_aware(state.sim.now()),
+                    universe=universe,
                 )
 
     @app.post("/api/close/run", response_model=v.ActionResult)
@@ -88,7 +93,10 @@ def create_app() -> FastAPI:
                 raise HTTPException(status_code=409, detail=str(exc)) from exc
             with state.session() as session:
                 case = rm.case_row(
-                    session, session.get(m.TrueUpObligation, obligation_id), phase=state.phase
+                    session,
+                    session.get(m.TrueUpObligation, obligation_id),
+                    phase=state.phase,
+                    universe=universe,
                 )
         message = "Started." if started else "Already started."
         return v.StartResult(ok=True, message=message, started=started, case=case)
@@ -112,21 +120,89 @@ def create_app() -> FastAPI:
             demo.reset()
         return v.ActionResult(ok=True, message="Demo reset to day one.", obligation_ids=[])
 
-    @app.get("/api/obligations/{obligation_id}", response_model=v.ObligationDetail)
-    def obligation(obligation_id: str) -> v.ObligationDetail:
-        with demo.locked():
-            state = demo.current()
-            with state.session() as session:
-                detail = rm.obligation_detail(
-                    session,
-                    obligation_id,
-                    universe=universe,
-                    seed_dir=SEED_DIR,
-                    now=_aware(state.sim.now()),
-                )
+    def detail_of(state: demo.DemoState, obligation_id: str) -> v.ObligationDetail:
+        with state.session() as session:
+            detail = rm.obligation_detail(
+                session,
+                obligation_id,
+                universe=universe,
+                seed_dir=SEED_DIR,
+                now=_aware(state.sim.now()),
+                durations=state.durations,
+            )
         if detail is None:
             raise HTTPException(status_code=404, detail=f"No obligation {obligation_id}.")
         return detail
+
+    @app.get("/api/obligations/{obligation_id}", response_model=v.ObligationDetail)
+    def obligation(obligation_id: str) -> v.ObligationDetail:
+        with demo.locked():
+            return detail_of(demo.current(), obligation_id)
+
+    def trace_of(state: demo.DemoState, obligation_id: str) -> runlog.Trace:
+        with state.session() as session:
+            ob = session.get(m.TrueUpObligation, obligation_id)
+            if ob is None:
+                raise HTTPException(status_code=404, detail=f"No obligation {obligation_id}.")
+            return runlog.build_trace(session, ob, universe, state.durations)
+
+    @app.get("/api/obligations/{obligation_id}/log", response_model=v.LogView)
+    def obligation_log(obligation_id: str) -> v.LogView:
+        with demo.locked():
+            trace = trace_of(demo.current(), obligation_id)
+        return v.LogView(obligation_id=obligation_id, entries=trace.entries)
+
+    @app.get("/api/obligations/{obligation_id}/handoffs", response_model=v.HandoffsView)
+    def obligation_handoffs(obligation_id: str) -> v.HandoffsView:
+        with demo.locked():
+            trace = trace_of(demo.current(), obligation_id)
+        return v.HandoffsView(obligation_id=obligation_id, handoffs=trace.handoffs)
+
+    @app.post("/api/obligations/{obligation_id}/advance", response_model=v.AdvanceResult)
+    def advance_obligation(obligation_id: str) -> v.AdvanceResult:
+        with demo.locked():
+            state = demo.current()
+            before = trace_of(state, obligation_id)
+            try:
+                outcome = demo.advance_case(state, obligation_id)
+            except LookupError as exc:
+                raise HTTPException(status_code=404, detail=str(exc)) from exc
+            except demo.CloseMovedOnError as exc:
+                raise HTTPException(status_code=409, detail=str(exc)) from exc
+            case = detail_of(state, obligation_id)
+        logged, handed = before.entries, before.handoffs
+        stage_run = None
+        if outcome.ran and outcome.agent:
+            stage_run = v.StageRun(
+                agent=outcome.agent,
+                stage_from=outcome.stage_from,
+                stage_to=outcome.stage_to,
+                duration_ms=outcome.duration_ms,
+                log_seqs=list(range(len(logged) + 1, case.header.log_count + 1)),
+                handoff_seqs=list(range(len(handed) + 1, case.header.handoff_count + 1)),
+            )
+        return v.AdvanceResult(
+            case=case,
+            stage_run=stage_run,
+            done=outcome.done,
+            resting_state=outcome.stage_to if outcome.done else None,
+            message=(
+                f"{outcome.agent} ran." if stage_run else (outcome.reason or "Nothing to run.")
+            ),
+        )
+
+    @app.put(
+        "/api/obligations/{obligation_id}/ingestion-selection", response_model=v.ObligationDetail
+    )
+    def ingestion_selection(obligation_id: str, body: v.SelectionRequest) -> v.ObligationDetail:
+        with demo.locked():
+            try:
+                state = demo.set_selection(demo.current(), obligation_id, body.excluded_file_ids)
+            except LookupError as exc:
+                raise HTTPException(status_code=404, detail=str(exc)) from exc
+            except demo.UnknownFileError as exc:
+                raise HTTPException(status_code=422, detail=str(exc)) from exc
+            return detail_of(state, obligation_id)
 
     @app.get("/api/controller/queue", response_model=list[ReviewItem])
     def queue() -> list[ReviewItem]:
@@ -170,19 +246,10 @@ def create_app() -> FastAPI:
         with demo.locked():
             state = demo.current()
             decided_by = body.decided_by or demo.controller(state)
-            now = _aware(state.sim.now())
             try:
-                with state.session() as session:
-                    if name == "approve":
-                        approve_rule(session, learning_id, decided_by=decided_by, now=now)
-                    elif name == "reject":
-                        reject_rule(
-                            session, learning_id, decided_by=decided_by, notes=body.notes, now=now
-                        )
-                    else:
-                        revoke_rule(
-                            session, learning_id, decided_by=decided_by, reason=body.notes, now=now
-                        )
+                demo.rule_decision(
+                    state, name, learning_id, decided_by=decided_by, notes=body.notes
+                )
             except (LearningError, ControllerWorkspaceError, LookupError) as exc:
                 raise _conflict(exc) from exc
         return v.ActionResult(ok=True, message=f"{learning_id} {name}d.", obligation_ids=[])

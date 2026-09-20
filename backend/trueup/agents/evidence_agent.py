@@ -168,7 +168,7 @@ def collect_evidence(
     files: list[FileEvidence] = []
     uncertainties: list[str] = []
     stored = _stored_cards(session, obligation_id)
-    seen = {(c.source_id, c.fact, c.source_excerpt) for c in stored}
+    seen = {(c.source_id, c.fact) for c in stored}
 
     for file_id in ingestion.selected:
         entry = entries.get(file_id)
@@ -200,10 +200,10 @@ def collect_evidence(
                 uncertainties.append(f"Dropped {fact.key.value} from {entry.name}: {reason}")
                 continue
             card = _card(fact, entry, "", obligation_id, now)
-            if (card.source_id, card.fact, card.source_excerpt) in seen:
+            if (card.source_id, card.fact) in seen:
                 repeated += 1
                 continue
-            seen.add((card.source_id, card.fact, card.source_excerpt))
+            seen.add((card.source_id, card.fact))
             kept += 1
             number = len(stored) + len(cards) + 1
             cards.append(card.model_copy(update={"evidence_id": f"EVD-{stem}-{number:02d}"}))
@@ -236,7 +236,11 @@ def collect_evidence(
 
 
 def _stored_cards(session: Session | None, obligation_id: str | None) -> list[TrueUpEvidence]:
-    """Document cards already on the obligation, so a second gathering adds only what is new."""
+    """Document cards already on the obligation, so a second gathering adds only what is new.
+
+    A fact is one card per source file: the same label and value quoted twice in a file (two lines
+    of one journal entry, a clause and its restatement) is still one fact.
+    """
     if session is None or obligation_id is None:
         return []
     return list(
@@ -370,7 +374,8 @@ def _log(
         status=AgentRunStatus.COMPLETED,
         decision_summary=(
             f"Extracted {kept} grounded facts from {len(result.files)} selected files "
-            f"for {case.vendor_name} {case.period}; dropped {gone} ungrounded."
+            f"for {case.vendor_name} {case.period}; dropped {gone} ungrounded. "
+            f"Extractor: {result.extractor}."
         ),
         output_summary=(
             f"{kept} evidence cards ready for Obligation"

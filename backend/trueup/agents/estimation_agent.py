@@ -18,6 +18,7 @@ from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from trueup.agents.document_support import support_gaps
 from trueup.learning.rules import (
     CandidateRule,
     RuleFeatures,
@@ -204,6 +205,15 @@ def compute(
 
 def _estimate_and_write(session: Session, ctx: Context, now: datetime) -> EstimationResult:
     obligation = ctx.obligation
+    gaps = support_gaps(session, obligation)
+    if gaps:
+        lost = " and ".join(gap.label for gap in gaps)
+        raise Insufficient(
+            gaps[0].status,
+            f"The documents still selected no longer support the {lost}; "
+            "an estimate would be a guess.",
+            gaps[0].route,
+        )
     method = METHOD_BY_TYPE.get(obligation.purchase_type)
     if method is None:
         raise Insufficient(

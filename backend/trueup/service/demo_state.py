@@ -1,54 +1,76 @@
-"""The demo close the API serves: the seam that drives the agents through the workflow.
+"""The demo close the API serves, driven by the real close orchestrator, one stage at a time.
 
-Everything here calls the agents' public functions and advances stages through the workflow
-graph. `load_demo_close()` is the single entry point the app builds its state from. When
-`run_month_end_close` (the orchestrator) is the owner of this sequence, replace the body of
-`start_case` and `advance_to_january` with calls to it and delete the driver below.
+Every started case runs through `close_orchestrator.CloseRun`, so the verifier gates, the Reviewer
+and the run log fire exactly as they do in `scripts/run_close.py`. One `advance` runs exactly one
+agent's turn and stops, so nothing exists on a screen before the agent that produces it has run.
+
+The API is the Controller's side of the desk, so the orchestrator is built with no Controller of
+its own: cases rest in the queue until a person decides through the API.
+
+The state is a deterministic function of its events (advances, decisions, rule decisions, the move
+to January) and the person's file removals. A change to the file selection therefore rebuilds the
+world from day one and replays the events, so the changed case is genuinely run again with the
+file out of play instead of being edited in place.
 """
 
 from __future__ import annotations
 
-import importlib
 from collections.abc import Iterator
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from decimal import Decimal
 from pathlib import Path
 from threading import RLock
-from typing import Literal
+from typing import Any, Literal
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from trueup.agents.classification_agent import classify
-from trueup.agents.controller_workspace import controller_id
-from trueup.agents.controller_workspace import decide as controller_decide
-from trueup.agents.detection_agent import detect
-from trueup.agents.estimation_agent import estimate
-from trueup.agents.evidence_agent import EvidenceError, collect_evidence
-from trueup.agents.ingestion import ingest, load_universe, rule_judge
-from trueup.agents.invoice_lookup_agent import lookup
-from trueup.agents.journal_entry_service import draft_entry, post_simulated
-from trueup.agents.learning_agent import evaluate, record_outcome, replay, run_learning_loop
-from trueup.agents.outreach_agent import expire_overdue, poll_replies, send_outreach
-from trueup.agents.policy_agent import enforce
-from trueup.agents.reconciliation_agent import collect_arrivals, reconcile
+from trueup.agents import ingestion
+from trueup.agents.controller_workspace import ControllerWorkspaceError, controller_id
+from trueup.agents.ingestion import FileCard, FileDecision, Judge
+from trueup.agents.learning_agent import LearningError, approve_rule, reject_rule, revoke_rule
+from trueup.close_orchestrator import CloseRun, CloseSettings, FileOverride, StepOutcome
 from trueup.gateway import llm
+from trueup.ingest.manifest import CaseEntry, FileUniverse
 from trueup.service.readmodels import is_pending
 from trueup.simulator.simulator import Simulator
 from trueup.store import enums as e
 from trueup.store import models as m
-from trueup.store.workflow import advance
+from trueup.store.workflow import IllegalTransitionError
 
 PERIOD = "2026-12"
 CLOSE_AT = datetime(2026, 12, 31, 23, 59, tzinfo=UTC)
 REPLIES_AT = datetime(2027, 1, 5, 12, 0, tzinfo=UTC)
 JANUARY_AT = datetime(2027, 1, 31, 12, 0, tzinfo=UTC)
 SEED_DIR = Path(__file__).resolve().parents[2] / "seed"
+DEMO_USER = "demo user"
 
 Phase = Literal["DAY_ONE", "CLOSED", "JANUARY"]
 
-_S, _A = e.WorkflowStage, e.NextAction
+_S = e.WorkflowStage
+# States where a case waits for someone or something outside the loop, or is finished.
+_AT_REST = frozenset(
+    {
+        _S.AWAITING_OUTREACH,
+        _S.AWAITING_CONTROLLER,
+        _S.BLOCKED,
+        _S.AWAITING_ACTUAL_INVOICE,
+        _S.RECONCILING,
+        _S.CLOSED,
+        _S.CLOSED_NO_ACCRUAL,
+    }
+)
+
+
+@dataclass(frozen=True)
+class Event:
+    """One thing that happened to the demo. Replaying the events rebuilds the same state."""
+
+    kind: Literal["advance", "decision", "rule", "january"]
+    obligation_id: str | None = None
+    args: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -57,6 +79,11 @@ class DemoState:
 
     sim: Simulator
     phase: Phase = "DAY_ONE"
+    judge: Judge | None = None
+    events: list[Event] = field(default_factory=list)
+    overrides: dict[str, FileOverride] = field(default_factory=dict)
+    durations: dict[str, int] = field(default_factory=dict)
+    dropped: list[str] = field(default_factory=list)
 
     def session(self):
         return self.sim.session()
@@ -64,21 +91,54 @@ class DemoState:
 
 _lock = RLock()
 _state: DemoState | None = None
+_universe: FileUniverse | None = None
 
 
-def load_demo_close() -> DemoState:
+def universe() -> FileUniverse:
+    global _universe
+    if _universe is None:
+        _universe = ingestion.load_universe(SEED_DIR)
+    return _universe
+
+
+def settings(state: DemoState) -> CloseSettings:
+    """Offline by default; with a model configured it reads the files and the rules back it up."""
+    judge = state.judge
+    if judge is None and llm.available():
+        judge = _model_or_rules
+    return CloseSettings(
+        universe=universe(), seed_dir=SEED_DIR, judge=judge, file_overrides=dict(state.overrides)
+    )
+
+
+def _model_or_rules(case: CaseEntry, cards: list[FileCard]) -> list[FileDecision]:
+    try:
+        return ingestion.llm_judge(case, cards)
+    except llm.LLMError:
+        return ingestion.rule_judge(case, cards)
+
+
+def run_for(state: DemoState, session: Session) -> CloseRun:
+    """The orchestrator for one request. It keeps no state that is not already in the tables."""
+    return CloseRun(session, state.sim, None, settings(state))
+
+
+def load_demo_close(
+    *, judge: Judge | None = None, overrides: dict[str, FileOverride] | None = None
+) -> DemoState:
     """Day one: the closed history is graded and a rule waits for the Controller.
 
     The five December obligations are detected and left untouched, so every case starts Pending
     and the presenter starts each one by hand.
     """
     sim = Simulator.initialize()
+    state = DemoState(sim=sim, judge=judge, overrides=dict(overrides or {}))
     with sim.session() as session:
-        run_learning_loop(session, now=sim.now())
+        run_for(state, session).learn_from_history(now=_aware(sim.now()))
     sim.advance_to(CLOSE_AT)
     with sim.session() as session:
-        detect(session, PERIOD, now=CLOSE_AT)
-    return DemoState(sim=sim)
+        run_for(state, session).detect(PERIOD, now=CLOSE_AT)
+    return state
 
 
 @contextmanager
@@ -107,6 +167,52 @@ class CloseMovedOnError(RuntimeError):
     """A case cannot be started once January's invoices are in."""
 
 
+class UnknownFileError(ValueError):
+    """A file id that does not belong to the obligation's case."""
+
+
+# ---- one stage at a time ----------------------------------------------------------------------
+
+
+def advance_case(state: DemoState, obligation_id: str) -> StepOutcome:
+    """Run exactly one agent's turn for the obligation, through its gate, and stop."""
+    with _lock:
+        with state.session() as session:
+            ob = session.get(m.TrueUpObligation, obligation_id)
+            if ob is None:
+                raise LookupError(f"No obligation {obligation_id}.")
+            if state.phase == "JANUARY" and is_pending(ob):
+                raise CloseMovedOnError(
+                    "January's invoices are already in; the close has moved on."
+                )
+            floor = _last_run(session)
+            outcome = run_for(state, session).step_obligation(
+                obligation_id, now=_aware(state.sim.now())
+            )
+            if outcome.ran:
+                for run_id in _runs_after(session, floor):
+                    state.durations[run_id] = outcome.duration_ms
+        if outcome.ran:
+            state.events.append(Event("advance", obligation_id))
+            if state.phase == "DAY_ONE":
+                state.phase = "CLOSED"
+        return outcome
+
+
+def _number(run_id: str) -> int:
+    return int(run_id.rsplit("-", 1)[-1])
+
+
+def _last_run(session: Session) -> int:
+    ids = session.scalars(select(m.TrueUpAgentRun.run_id)).all()
+    return max((_number(i) for i in ids), default=0)
+
+
+def _runs_after(session: Session, floor: int) -> list[str]:
+    ids = session.scalars(select(m.TrueUpAgentRun.run_id)).all()
+    return [i for i in ids if _number(i) > floor]
+
+
 def start_case(state: DemoState, obligation_id: str) -> bool:
     """Work one Pending obligation from the top to its resting state; a started case is a no-op."""
     with _lock:
@@ -120,8 +226,9 @@ def start_case(state: DemoState, obligation_id: str) -> bool:
                 raise CloseMovedOnError(
                     "January's invoices are already in; the close has moved on."
                 )
-            drive(session, obligation_id, now=CLOSE_AT)
-        state.phase = "CLOSED"
+        for _ in range(60):
+            if advance_case(state, obligation_id).done:
+                break
         return True
 
 
@@ -144,37 +251,37 @@ def run_close(state: DemoState) -> list[str]:
 
 
 def advance_to_january(state: DemoState) -> list[str]:
-    """Deliver the owners' replies, post what they unblock, then let the January invoices grade."""
+    """Deliver the owners' replies, then let the January invoices grade the December accruals."""
     with _lock:
         if state.phase != "CLOSED":
             return []
-        sim = state.sim
         touched: list[str] = []
-        sim.advance_to(REPLIES_AT)
-        with state.session() as session:
-            replies = poll_replies(
-                session,
-                now=REPLIES_AT,
-                responder=lambda key, _now: sim.reply_to_outreach(key, session),
-            )
-            for reply in replies:
-                touched.append(reply.obligation_id)
-                drive(session, reply.obligation_id, now=REPLIES_AT)
-            expire_overdue(session, now=REPLIES_AT)
-        sim.advance_to(JANUARY_AT)
-        with state.session() as session:
-            ready = collect_arrivals(session, now=JANUARY_AT)
-            for obligation_id in ready:
-                reconcile(session, obligation_id, now=JANUARY_AT)
-                touched.append(obligation_id)
-                record_outcome(session, obligation_id, now=JANUARY_AT)
-                ob = session.get(m.TrueUpObligation, obligation_id)
-                if (ob.workflow_stage, ob.next_action) == (_S.RECONCILING, _A.EVALUATE_LEARNING):
-                    result = evaluate(session, obligation_id, now=JANUARY_AT)
-                    if result.candidate_created:
-                        replay(session, result.learning_id, now=JANUARY_AT)
+        for moment in (REPLIES_AT, JANUARY_AT):
+            state.sim.advance_to(moment)
+            with state.session() as session:
+                run = run_for(state, session)
+                settled = _settled(session)
+                run.post_reversals(now=moment)
+                run.collect_replies(now=moment)
+                run.settle(now=moment, obligation_ids=settled)
+                touched += [s.obligation_id for s in run.steps if s.obligation_id]
         state.phase = "JANUARY"
+        state.events.append(Event("january"))
         return list(dict.fromkeys(touched))
+
+
+def _settled(session: Session) -> set[str]:
+    """Cases at rest. A case still mid-flight is not carried on by the passing of time."""
+    return {
+        ob.obligation_id
+        for ob in session.scalars(
+            select(m.TrueUpObligation).where(m.TrueUpObligation.period == PERIOD)
+        )
+        if ob.workflow_stage in _AT_REST
+    }
+
+
+# ---- decisions --------------------------------------------------------------------------------
 
 
 def controller_decision(
@@ -184,14 +291,14 @@ def controller_decision(
     *,
     decided_by: str,
     notes: str,
-    adjusted_amount=None,
+    adjusted_amount: Decimal | None = None,
 ):
-    """Record the Controller's decision, then move the obligation along where it can go on."""
+    """Record the Controller's decision, then let the orchestrator carry the case on."""
     with _lock:
         with state.session() as session:
             now = _aware(state.sim.now())
-            result = controller_decide(
-                session,
+            run = run_for(state, session)
+            result = run.apply_controller_decision(
                 obligation_id,
                 decision,
                 now=now,
@@ -199,8 +306,146 @@ def controller_decision(
                 notes=notes,
                 adjusted_amount=adjusted_amount,
             )
-            drive(session, obligation_id, now=now)
-            return result
+            run.advance_obligation(obligation_id, now=now)
+        state.events.append(
+            Event(
+                "decision",
+                obligation_id,
+                {
+                    "decision": decision,
+                    "decided_by": decided_by,
+                    "notes": notes,
+                    "adjusted_amount": None if adjusted_amount is None else str(adjusted_amount),
+                },
+            )
+        )
+        return result
+
+
+def rule_decision(
+    state: DemoState, name: str, learning_id: str, *, decided_by: str, notes: str
+) -> None:
+    """Approve, reject or revoke a learned rule as the Controller."""
+    with _lock:
+        now = _aware(state.sim.now())
+        with state.session() as session:
+            if name == "approve":
+                approve_rule(session, learning_id, decided_by=decided_by, now=now)
+            elif name == "reject":
+                reject_rule(session, learning_id, decided_by=decided_by, notes=notes, now=now)
+            else:
+                revoke_rule(session, learning_id, decided_by=decided_by, reason=notes, now=now)
+        state.events.append(
+            Event(
+                "rule",
+                None,
+                {
+                    "name": name,
+                    "learning_id": learning_id,
+                    "decided_by": decided_by,
+                    "notes": notes,
+                },
+            )
+        )
+
+
+# ---- a person changes which files the agents may use ------------------------------------------
+
+
+def set_selection(state: DemoState, obligation_id: str, excluded: list[str]) -> DemoState:
+    """Take files out of one case's selection (or put them back) and run the case again.
+
+    The case is genuinely re-run: the world is rebuilt from day one with the removal in force and
+    every earlier event replayed, except that the changed case stops right after Ingestion, where
+    the removal takes effect. Later steps of that case are for the person to run again.
+    """
+    global _state
+    with _lock:
+        with state.session() as session:
+            if session.get(m.TrueUpObligation, obligation_id) is None:
+                raise LookupError(f"No obligation {obligation_id}.")
+        case_id = f"CASE-{obligation_id.removeprefix('OBL-')}"
+        offered = {f.file_id for f in universe().for_case(case_id)}
+        unknown = sorted(set(excluded) - offered)
+        if unknown:
+            raise UnknownFileError(f"{', '.join(unknown)} is not a file of {case_id}")
+        wanted = frozenset(excluded)
+        had = state.overrides.get(obligation_id)
+        if (had is None and not wanted) or (had is not None and had.excluded == wanted):
+            return state
+        overrides = dict(state.overrides)
+        overrides[obligation_id] = FileOverride(
+            excluded=wanted, decided_by=DEMO_USER, restored=not wanted
+        )
+        fresh = load_demo_close(judge=state.judge, overrides=overrides)
+        _replay(fresh, state.events, obligation_id)
+        _state = fresh
+        return fresh
+
+
+def _replay(fresh: DemoState, events: list[Event], changed: str) -> None:
+    cut = False
+    for event in events:
+        if cut and event.obligation_id == changed:
+            continue
+        try:
+            _apply(fresh, event)
+        except (
+            ControllerWorkspaceError,
+            IllegalTransitionError,
+            LearningError,
+            LookupError,
+            CloseMovedOnError,
+        ) as exc:
+            fresh.dropped.append(f"{event.kind} {event.obligation_id or ''}: {exc}".strip())
+            continue
+        if (
+            event.kind == "advance"
+            and event.obligation_id == changed
+            and _ingestion_ran(fresh, changed)
+        ):
+            cut = True
+
+
+def _apply(state: DemoState, event: Event) -> None:
+    args = event.args
+    if event.kind == "advance":
+        assert event.obligation_id is not None
+        advance_case(state, event.obligation_id)
+    elif event.kind == "decision":
+        assert event.obligation_id is not None
+        adjusted = args["adjusted_amount"]
+        controller_decision(
+            state,
+            event.obligation_id,
+            args["decision"],
+            decided_by=args["decided_by"],
+            notes=args["notes"],
+            adjusted_amount=None if adjusted is None else Decimal(adjusted),
+        )
+    elif event.kind == "rule":
+        rule_decision(
+            state,
+            args["name"],
+            args["learning_id"],
+            decided_by=args["decided_by"],
+            notes=args["notes"],
+        )
+    else:
+        advance_to_january(state)
+
+
+def _ingestion_ran(state: DemoState, obligation_id: str) -> bool:
+    with state.session() as session:
+        return (
+            session.scalars(
+                select(m.TrueUpAgentRun).where(
+                    m.TrueUpAgentRun.obligation_id == obligation_id,
+                    m.TrueUpAgentRun.agent_name == "ingestion",
+                )
+            ).first()
+            is not None
+        )
 
 
 def _aware(moment: datetime) -> datetime:
@@ -210,89 +455,3 @@ def _aware(moment: datetime) -> datetime:
 def controller(state: DemoState) -> str:
     with state.session() as session:
         return controller_id(session)
-
-
-def drive(session: Session, obligation_id: str, *, now: datetime) -> None:
-    """Run the agent that owns the obligation's state until it reaches a resting state."""
-    for _ in range(20):
-        ob = session.get(m.TrueUpObligation, obligation_id)
-        step = _STEPS.get((ob.workflow_stage, ob.next_action))
-        if step is None:
-            return
-        before = (ob.workflow_stage, ob.next_action)
-        step(session, obligation_id, now)
-        session.flush()
-        session.refresh(ob)
-        if (ob.workflow_stage, ob.next_action) == before:
-            return
-
-
-def _search(session: Session, obligation_id: str, now: datetime) -> None:
-    lookup(session, obligation_id, now=now)
-
-
-def _gather(session: Session, obligation_id: str, now: datetime) -> None:
-    ob = session.get(m.TrueUpObligation, obligation_id)
-    case_id = f"CASE-{obligation_id.removeprefix('OBL-')}"
-    universe = load_universe(SEED_DIR)
-    if any(c.case_id == case_id for c in universe.cases):
-        try:
-            selection = ingest(universe, case_id, now=now, seed_dir=SEED_DIR, session=session)
-        except llm.LLMError:
-            selection = ingest(
-                universe, case_id, now=now, seed_dir=SEED_DIR, judge=rule_judge, session=session
-            )
-        extractor = None if llm.available() else _offline_extractor()
-        try:
-            collect_evidence(
-                universe,
-                selection,
-                now=now,
-                seed_dir=SEED_DIR,
-                extractor=extractor,
-                session=session,
-                obligation_id=obligation_id,
-            )
-        except EvidenceError:
-            pass
-    advance(ob, _S.CLASSIFYING, _A.CLASSIFY, "orchestrator", at=now)
-
-
-def _offline_extractor():
-    try:
-        module = importlib.import_module("trueup.agents.evidence_rules")
-    except ImportError:
-        return None
-    return getattr(module, "rule_extractor", None)
-
-
-def _classify(session: Session, obligation_id: str, now: datetime) -> None:
-    classify(session, obligation_id, now=now)
-
-
-def _estimate(session: Session, obligation_id: str, now: datetime) -> None:
-    estimate(session, obligation_id, now=now)
-
-
-def _policy(session: Session, obligation_id: str, now: datetime) -> None:
-    enforce(session, obligation_id, now=now)
-
-
-def _draft(session: Session, obligation_id: str, now: datetime) -> None:
-    draft_entry(session, obligation_id, now=now)
-    post_simulated(session, obligation_id, now=now)
-
-
-def _outreach(session: Session, obligation_id: str, now: datetime) -> None:
-    send_outreach(session, obligation_id, now=now)
-
-
-_STEPS = {
-    (_S.SEARCHING_AP, _A.SEARCH_AP): _search,
-    (_S.GATHERING_EVIDENCE, _A.GATHER_EVIDENCE): _gather,
-    (_S.CLASSIFYING, _A.CLASSIFY): _classify,
-    (_S.ESTIMATING, _A.ESTIMATE): _estimate,
-    (_S.ESTIMATING, _A.VERIFY_POLICY): _policy,
-    (_S.READY_TO_DRAFT, _A.DRAFT_ENTRY): _draft,
-    (_S.AWAITING_OUTREACH, _A.SEND_OUTREACH): _outreach,
-}

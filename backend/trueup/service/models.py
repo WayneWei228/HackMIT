@@ -45,6 +45,10 @@ class CaseRow(Strict):
     stage: FrontStage
     status: CaseStatus
     can_start: bool
+    current_agent: str | None
+    stages_completed: list[str]
+    log_count: int
+    handoff_count: int
     workflow_stage: str
     next_action: str
     updated_at: str
@@ -92,8 +96,38 @@ class Header(Strict):
     started: bool
     status: CaseStatus
     stage: FrontStage
+    current_agent: str | None
+    stages_completed: list[str]
+    log_count: int
+    handoff_count: int
     workflow_stage: str
     next_action: str
+
+
+class StageReceived(Strict):
+    """The handoff a stage actually received, described from the recorded handoff."""
+
+    from_agent: str
+    handoff_seq: int
+    payload_kind: str
+    summary: str
+    counts: dict[str, int]
+
+
+class StageCheck(Strict):
+    """One check a stage ran, composed from the run rows and records it produced."""
+
+    check_id: str
+    label: str
+    status: Literal["PASS", "FLAG", "INFO", "PENDING"]
+    body: str
+    log_seq: int | None
+    evidence_ids: list[str]
+
+
+class StageExtras(Strict):
+    received: StageReceived | None = None
+    stage_checks: list[StageCheck] = Field(default_factory=list)
 
 
 class SourceFile(Strict):
@@ -103,11 +137,12 @@ class SourceFile(Strict):
     format: str
     size_label: str
     selected: bool
+    user_removed: bool
     reason: str | None
     preview: dict[str, Any]
 
 
-class IngestionView(Strict):
+class IngestionView(StageExtras):
     available: bool
     judge: str | None
     files_loaded: int
@@ -138,7 +173,7 @@ class EvidenceDocument(Strict):
     fact_ids: list[str]
 
 
-class EvidenceView(Strict):
+class EvidenceView(StageExtras):
     available: bool
     summary: str | None
     documents: list[EvidenceDocument]
@@ -152,7 +187,7 @@ class Signal(Strict):
     points_to: str
 
 
-class ObligationView(Strict):
+class ObligationView(StageExtras):
     available: bool
     purchase_type: str
     purchase_type_label: str
@@ -207,7 +242,7 @@ class InputCard(Strict):
     sub: str | None
 
 
-class EstimationView(Strict):
+class EstimationView(StageExtras):
     available: bool
     outcome: str | None
     outcome_note: str | None
@@ -285,7 +320,7 @@ class ControllerView(Strict):
     record: ControllerRecord | None
 
 
-class VerificationView(Strict):
+class VerificationView(StageExtras):
     available: bool
     policy_decision: str | None
     policy_summary: str | None
@@ -302,6 +337,13 @@ class VerificationView(Strict):
     outreach: list[OutreachMessage]
 
 
+class Escalation(Strict):
+    reason: Literal["INSUFFICIENT_INFORMATION"]
+    missing: list[str]
+    message: str
+    routed_to: Literal["OUTREACH", "CONTROLLER", "BLOCKED"]
+
+
 class ObligationDetail(Strict):
     header: Header
     ingestion: IngestionView
@@ -310,6 +352,115 @@ class ObligationDetail(Strict):
     estimation: EstimationView
     verification: VerificationView
     timeline: list[TimelineEntry]
+    escalation: Escalation | None = None
+
+
+# ---- the run log and the handoffs ----------------------------------------------------------------
+
+LogKind = Literal["AGENT", "VERIFICATION", "REVIEW", "CONTROLLER", "HUMAN_OVERRIDE", "SYSTEM"]
+Method = Literal["CODE", "LLM", "HUMAN"]
+
+
+class LogCheck(Strict):
+    check_id: str
+    passed: bool
+    sentence: str
+    expected: str | None
+    actual: str | None
+
+
+class LogVerification(Strict):
+    verdict: Literal["PERMIT", "BLOCK", "REVIEW", "OUTREACH"]
+    passed: int
+    total: int
+    policy_version: str
+    checks: list[LogCheck]
+
+
+class LogSource(Strict):
+    file_name: str | None
+    file_id: str | None
+    evidence_id: str | None
+    quote: str | None
+
+
+class LogRule(Strict):
+    rule_id: str
+    fired: bool
+    sentence: str
+
+
+class LogDetail(Strict):
+    facts_used: list[Any]
+    uncertainties: list[str]
+    input_ids: list[str]
+    output_ids: list[str]
+    sources: list[LogSource]
+    rules: list[LogRule]
+    duration_ms: int | None
+
+
+class LogEntry(Strict):
+    seq: int
+    run_id: int
+    run_ref: str
+    at: str
+    agent: str
+    action: str
+    kind: LogKind
+    method: Method | None
+    stage_from: str | None
+    stage_to: str | None
+    title: str
+    summary: str
+    detail: LogDetail
+    verification: LogVerification | None
+
+
+class LogView(Strict):
+    obligation_id: str
+    entries: list[LogEntry]
+
+
+class Handoff(Strict):
+    seq: int
+    at: str
+    from_agent: str
+    to_agent: str
+    stage_from: str
+    stage_to: str
+    payload_kind: str
+    payload: dict[str, Any]
+    run_id: int | None
+    run_ref: str | None
+    record_ids: list[str]
+    verification: LogVerification | None
+
+
+class HandoffsView(Strict):
+    obligation_id: str
+    handoffs: list[Handoff]
+
+
+class StageRun(Strict):
+    agent: str
+    stage_from: str
+    stage_to: str
+    duration_ms: int
+    log_seqs: list[int]
+    handoff_seqs: list[int]
+
+
+class AdvanceResult(Strict):
+    case: ObligationDetail
+    stage_run: StageRun | None
+    done: bool
+    resting_state: str | None
+    message: str
+
+
+class SelectionRequest(Strict):
+    excluded_file_ids: list[str] = Field(default_factory=list, max_length=50)
 
 
 # ---- learning ------------------------------------------------------------------------------------

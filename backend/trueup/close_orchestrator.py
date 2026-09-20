@@ -14,8 +14,9 @@ simulator's clock and outreach replies.
 from __future__ import annotations
 
 import functools
-from collections.abc import Callable, Iterator
-from dataclasses import dataclass
+import time
+from collections.abc import Callable, Collection, Iterator, Mapping
+from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
@@ -40,6 +41,7 @@ from trueup.agents import (
     policy_agent,
     reconciliation_agent,
     reviewer_agent,
+    selection_override,
 )
 from trueup.agents.controller_workspace import ReviewPacket, Summarizer
 from trueup.agents.evidence_agent import Extractor
@@ -116,6 +118,15 @@ class Controller(Protocol):
 
 
 @dataclass(frozen=True)
+class FileOverride:
+    """A person's change to what Ingestion selected for one obligation."""
+
+    excluded: frozenset[str] = frozenset()
+    decided_by: str = "demo user"
+    restored: bool = False
+
+
+@dataclass(frozen=True)
 class CloseSettings:
     universe: FileUniverse | None = None
     seed_dir: Path | str = ingestion.SEED_DIR
@@ -126,6 +137,7 @@ class CloseSettings:
     narrator: Narrator | None = None
     review_narrator: reviewer_agent.Narrator | None = None
     verify: bool = True
+    file_overrides: Mapping[str, FileOverride] = field(default_factory=dict)
 
 
 NO_EVIDENCE = CloseSettings(gather_evidence=False)
@@ -147,6 +159,20 @@ class Step(BaseModel):
     from_state: str | None
     to_state: str | None
     note: str = ""
+
+
+class StepOutcome(BaseModel):
+    """What one call to `step_obligation` did: one agent's turn, through its gate."""
+
+    obligation_id: str
+    ran: bool
+    agent: str | None
+    action: str | None
+    stage_from: str
+    stage_to: str
+    duration_ms: int
+    reason: str | None
+    done: bool
 
 
 class PhaseReport(BaseModel):
@@ -223,6 +249,76 @@ def _gated(method: Callable[..., Any]) -> Callable[..., Any]:
     return wrapper
 
 
+# States whose one agent turn leaves the obligation waiting for someone outside the loop.
+_ONE_SHOT = frozenset({OUTREACH, CONTROLLER, BLOCKED, WAIT})
+
+
+def selection_waiting(session: Session, ob: m.TrueUpObligation) -> ingestion.IngestionResult | None:
+    """Ingestion's effective selection for this obligation, if Evidence has not read it yet."""
+    last_selection = _latest_run(session, ob.obligation_id, ingestion.AGENT_NAME)
+    if last_selection is None:
+        return None
+    last_evidence = _latest_run(session, ob.obligation_id, evidence_agent.AGENT_NAME)
+    if last_evidence is not None and last_evidence.run_id > last_selection.run_id:
+        return None
+    result = ingestion.IngestionResult(
+        case_id=f"CASE-{ob.obligation_id.removeprefix('OBL-')}",
+        files_loaded=len(last_selection.facts_used_json or []),
+        decisions=[ingestion.FileDecision(**d) for d in last_selection.facts_used_json or []],
+        judge=last_selection.decision_summary.rsplit(" using the ", 1)[-1].rstrip("."),
+    )
+    override = selection_override.latest_override(session, ob.obligation_id)
+    if override is not None and override.run_id > last_selection.run_id:
+        result = selection_override.apply_exclusions(result, override.excluded)
+    return result
+
+
+def pending_agent(session: Session, ob: m.TrueUpObligation) -> str | None:
+    """The agent whose turn is next for this obligation, or None when it is at rest."""
+    state = _state(ob)
+    if state == GATHER:
+        return evidence_agent.AGENT_NAME if selection_waiting(session, ob) else ingestion.AGENT_NAME
+    if state in (CONTROLLER, BLOCKED):
+        return reviewer_agent.AGENT_NAME if reviewer_agent.needs_review(session, ob) else None
+    if state == OUTREACH:
+        asked = session.scalars(
+            select(m.TrueUpEvidence).where(
+                m.TrueUpEvidence.obligation_id == ob.obligation_id,
+                m.TrueUpEvidence.evidence_type == e.EvidenceCardType.OUTREACH_RESPONSE,
+                m.TrueUpEvidence.source_table == outreach_agent.SOURCE_TABLE,
+            )
+        ).first()
+        return None if asked else outreach_agent.AGENT_NAME
+    if state == WAIT:
+        return (
+            journal_entry_service.AGENT_NAME
+            if ob.accrual_status == e.AccrualStatus.DRAFTED
+            else None
+        )
+    return _AGENT_OF_STATE.get(state)
+
+
+_AGENT_OF_STATE: dict[State, str] = {
+    SEARCH: invoice_lookup_agent.AGENT_NAME,
+    CLASSIFY: classification_agent.AGENT_NAME,
+    ESTIMATE: estimation_agent.AGENT_NAME,
+    POLICY: policy_agent.AGENT_NAME,
+    DRAFT: journal_entry_service.AGENT_NAME,
+    RECONCILE: reconciliation_agent.AGENT_NAME,
+    LEARN: learning_agent.AGENT_NAME,
+}
+
+
+def _latest_run(session: Session, obligation_id: str, agent: str) -> m.TrueUpAgentRun | None:
+    return session.scalars(
+        select(m.TrueUpAgentRun)
+        .where(
+            m.TrueUpAgentRun.obligation_id == obligation_id, m.TrueUpAgentRun.agent_name == agent
+        )
+        .order_by(m.TrueUpAgentRun.run_id.desc())
+    ).first()
+
+
 class CloseRun:
     """One close in progress: the session, the simulator, the caller's Controller and settings."""
 
@@ -281,8 +377,70 @@ class CloseRun:
         )
 
     @_gated
-    def settle(self, *, now: datetime, period: str | None = None) -> int:
-        """Move every obligation as far as it can go now. Returns how many steps were taken."""
+    def step_obligation(self, obligation_id: str, *, now: datetime) -> StepOutcome:
+        """Run exactly one agent for the obligation's current state, through its gate, and stop.
+
+        The agents and their order are those of `advance_obligation`; the only difference is that
+        the turn that selects files and the turn that reads them are separate steps.
+        """
+        now = _aware(now)
+        ob = self._obligation(obligation_id)
+        before = _state(ob)
+        mark = len(self.steps)
+        handler = self._step_handlers().get(before)
+        started = time.perf_counter()
+        reason: str | None = None
+        outcome: bool | str = "resting"
+        if handler is None:
+            reason = f"{before[0].value} is a resting state"
+            self._remember(obligation_id, reason)
+        else:
+            try:
+                outcome = handler(ob, now)
+            except _AGENT_ERRORS as exc:
+                reason = f"refused: {type(exc).__name__}: {exc}"
+                self._error(f"{obligation_id}: {reason}")
+                self._remember(obligation_id, reason)
+                outcome = reason
+        if isinstance(outcome, str) and reason is None:
+            reason = self._remember(obligation_id, outcome)
+        elapsed = int((time.perf_counter() - started) * 1000)
+        recorded = [s for s in self.steps[mark:] if s.obligation_id == obligation_id]
+        agent = next((s for s in recorded if s.agent != AGENT_NAME), None) or next(
+            iter(recorded), None
+        )
+        after = _state(ob)
+        ran = agent is not None
+        # A one-shot state is finished by its own turn; being moved into it leaves that turn to run.
+        done = (
+            not ran
+            or self._handlers().get(after) is None
+            or (before == after and after in _ONE_SHOT)
+        )
+        return StepOutcome(
+            obligation_id=obligation_id,
+            ran=ran,
+            agent=agent.agent if agent else None,
+            action=agent.action if agent else None,
+            stage_from=_label(before) or "",
+            stage_to=_label(after) or "",
+            duration_ms=elapsed,
+            reason=reason,
+            done=done,
+        )
+
+    @_gated
+    def settle(
+        self,
+        *,
+        now: datetime,
+        period: str | None = None,
+        obligation_ids: Collection[str] | None = None,
+    ) -> int:
+        """Move every obligation as far as it can go now. Returns how many steps were taken.
+
+        `obligation_ids` limits the work to those obligations, so cases nobody has started stay put.
+        """
         now = _aware(now)
         before = len(self.steps)
         self._reviewed = set()
@@ -290,11 +448,48 @@ class CloseRun:
             mark = len(self.steps)
             self._match_arrivals(now)
             for ob in self._obligations(period):
-                self.advance_obligation(ob.obligation_id, now=now)
+                if obligation_ids is None or ob.obligation_id in obligation_ids:
+                    self.advance_obligation(ob.obligation_id, now=now)
             self._offer_rules(now)
             if len(self.steps) == mark:
                 break
         return len(self.steps) - before
+
+    @_gated
+    def apply_controller_decision(
+        self,
+        obligation_id: str,
+        decision: e.ControllerDecision | str,
+        *,
+        now: datetime,
+        decided_by: str,
+        notes: str,
+        adjusted_amount: Decimal | None = None,
+    ) -> Any:
+        """Record a Controller decision made outside the loop, verified like any other move."""
+        now = _aware(now)
+        ob = self._obligation(obligation_id)
+        before = _state(ob)
+        result = controller_workspace.decide(
+            self.session,
+            obligation_id,
+            decision,
+            now=now,
+            decided_by=decided_by,
+            notes=notes,
+            adjusted_amount=adjusted_amount,
+        )
+        self._reviewed.add(obligation_id)
+        self._record(
+            obligation_id,
+            controller_workspace.AGENT_NAME,
+            "decide",
+            before,
+            _state(ob),
+            now,
+            f"{result.decision.value} by {result.decided_by}",
+        )
+        return result
 
     # -- phases ------------------------------------------------------------------------------
 
@@ -451,6 +646,9 @@ class CloseRun:
             LEARN: self._learn,
         }
 
+    def _step_handlers(self) -> dict[State, Callable[[m.TrueUpObligation, datetime], bool | str]]:
+        return {**self._handlers(), GATHER: self._gather_step}
+
     def _search(self, ob: m.TrueUpObligation, now: datetime) -> bool:
         before = _state(ob)
         result = invoice_lookup_agent.lookup(self.session, ob.obligation_id, now=now)
@@ -466,25 +664,78 @@ class CloseRun:
         return True
 
     def _gather(self, ob: m.TrueUpObligation, now: datetime) -> bool:
+        picked = self._gather_select(ob, now)
+        return self._gather_extract(ob, now, picked)
+
+    def _gather_step(self, ob: m.TrueUpObligation, now: datetime) -> bool | str:
+        """Step mode: Ingestion's turn first, then Evidence's turn on what Ingestion handed over."""
+        if not self.settings.gather_evidence or self._case_for(ob) is None:
+            return self._gather_extract(ob, now, None)
+        picked = self._selection_waiting(ob)
+        if picked is None:
+            self._gather_select(ob, now)
+            return True
+        return self._gather_extract(ob, now, picked)
+
+    def _gather_select(
+        self, ob: m.TrueUpObligation, now: datetime
+    ) -> ingestion.IngestionResult | None:
         case = self._case_for(ob) if self.settings.gather_evidence else None
-        if case is not None:
-            picked = ingestion.ingest(
-                self._universe_or_load(),
-                case.case_id,
+        if case is None:
+            return None
+        universe = self._universe_or_load()
+        picked = ingestion.ingest(
+            universe,
+            case.case_id,
+            now=now,
+            seed_dir=self.settings.seed_dir,
+            judge=self.settings.judge,
+            session=self.session,
+            obligation_id=ob.obligation_id,
+        )
+        self._record(
+            ob.obligation_id,
+            ingestion.AGENT_NAME,
+            "select_files",
+            None,
+            None,
+            now,
+            f"selected {len(picked.selected)} of {picked.files_loaded} files ({picked.judge})",
+        )
+        change = self.settings.file_overrides.get(ob.obligation_id)
+        if change is not None and (change.excluded or change.restored):
+            selection_override.record_override(
+                self.session,
+                ob,
+                universe,
+                case,
+                picked,
+                change.excluded,
+                decided_by=change.decided_by,
                 now=now,
                 seed_dir=self.settings.seed_dir,
-                judge=self.settings.judge,
-                session=self.session,
+                extractor=self.settings.extractor or default_extractor(),
+                restored=change.restored,
             )
             self._record(
                 ob.obligation_id,
-                ingestion.AGENT_NAME,
-                "select_files",
+                selection_override.AGENT_NAME,
+                selection_override.ACTION,
                 None,
                 None,
                 now,
-                f"selected {len(picked.selected)} of {picked.files_loaded} files ({picked.judge})",
+                f"{change.decided_by} removed {len(change.excluded)} files",
             )
+            picked = selection_override.apply_exclusions(picked, change.excluded)
+        return picked
+
+    def _gather_extract(
+        self,
+        ob: m.TrueUpObligation,
+        now: datetime,
+        picked: ingestion.IngestionResult | None,
+    ) -> bool:
+        if picked is not None:
             evidence = evidence_agent.collect_evidence(
                 self._universe_or_load(),
                 picked,
@@ -505,9 +756,13 @@ class CloseRun:
             )
         before = _state(ob)
         advance(ob, *CLASSIFY, AGENT_NAME, at=now)
-        note = "evidence handed to Classification" if case else "no evidence gathered"
+        note = "evidence handed to Classification" if picked else "no evidence gathered"
         self._record(ob.obligation_id, AGENT_NAME, "hand_off", before, CLASSIFY, now, note)
         return True
+
+    def _selection_waiting(self, ob: m.TrueUpObligation) -> ingestion.IngestionResult | None:
+        """Ingestion's selection, when it has run and Evidence has not yet read it."""
+        return selection_waiting(self.session, ob)
 
     def _classify(self, ob: m.TrueUpObligation, now: datetime) -> bool:
         before = _state(ob)

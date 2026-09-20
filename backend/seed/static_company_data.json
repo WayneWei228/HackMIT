@@ -857,9 +857,9 @@
       "config_value_json": [
         {
           "person_id": "CONTROLLER-001",
-          "name": "Maya Chen",
+          "name": "Rudraksh Awasthi",
           "role": "Controller",
-          "email": "maya.chen@northstar.example"
+          "email": "rudraksh.awasthi@northstar.example"
         },
         {
           "person_id": "AP-001",

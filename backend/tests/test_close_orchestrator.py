@@ -515,3 +515,46 @@ def test_evidence_and_ingestion_never_move_the_workflow():
     for module in (evidence_agent, ingestion):
         assert "advance(" not in inspect.getsource(module)
     assert "advance(ob, *CLASSIFY" in inspect.getsource(orchestrator)
+
+
+def test_stepping_one_agent_at_a_time_takes_the_same_road_as_running_to_rest():
+    sim = fresh()
+    sim.advance_to(CLOSE)
+    with sim.session() as session:
+        run_obj = CloseRun(session, sim, None, None)
+        run_obj.detect(PERIOD, now=CLOSE)
+        steps = []
+        for _ in range(30):
+            step = run_obj.step_obligation(ASUS, now=CLOSE)
+            if step.ran:
+                steps.append((step.agent, step.stage_from, step.stage_to))
+            if step.done:
+                break
+        agents = [agent for agent, _, _ in steps]
+        assert agents[:7] == [
+            "invoice_lookup",
+            "ingestion",
+            "evidence",
+            "classification",
+            "estimation",
+            "policy",
+            "reviewer",
+        ]
+        assert orchestrator.pending_agent(session, session.get(m.TrueUpObligation, ASUS)) is None
+        stepped = session.get(m.TrueUpObligation, ASUS)
+        assert (stepped.workflow_stage, stepped.current_workpaper_id) == (
+            S.AWAITING_CONTROLLER,
+            "WP-OBL-ASUS-2026-12-01",
+        )
+
+    other = fresh()
+    other.advance_to(CLOSE)
+    with other.session() as session:
+        rested = CloseRun(session, other, None, None)
+        rested.detect(PERIOD, now=CLOSE)
+        rested.advance_obligation(ASUS, now=CLOSE)
+        looped = session.get(m.TrueUpObligation, ASUS)
+        assert (looped.workflow_stage, looped.current_workpaper_id) == (
+            S.AWAITING_CONTROLLER,
+            "WP-OBL-ASUS-2026-12-01",
+        )

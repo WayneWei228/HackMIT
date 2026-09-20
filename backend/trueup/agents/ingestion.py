@@ -77,6 +77,7 @@ def ingest(
     seed_dir: Path | str = SEED_DIR,
     judge: Judge | None = None,
     session: Session | None = None,
+    obligation_id: str | None = None,
 ) -> IngestionResult:
     case = next(c for c in universe.cases if c.case_id == case_id)
     files = [f for f in universe.visible_at(now) if f.case_id == case_id]
@@ -97,7 +98,7 @@ def ingest(
         judge=getattr(judge, "__name__", "custom"),
     )
     if session is not None:
-        _log(session, case, result, files, unreadable + unjudged, now)
+        _log(session, case, result, files, unreadable + unjudged, now, obligation_id)
     return result
 
 
@@ -168,6 +169,7 @@ def _log(
     files: list[FileEntry],
     uncertain: list[str],
     now: datetime,
+    obligation_id: str | None = None,
 ) -> None:
     names = {f.file_id: f.name for f in files}
     AgentRunLog(session).append(
@@ -180,6 +182,7 @@ def _log(
         ),
         output_summary="Handing off to Evidence: " + ", ".join(names[i] for i in result.selected),
         at=now,
+        obligation_id=obligation_id,
         facts_used=[d.model_dump() for d in result.decisions],
         uncertainties=[f"No usable decision or text for {i}" for i in uncertain] or None,
         input_record_ids=[f.file_id for f in files],

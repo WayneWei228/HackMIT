@@ -21,10 +21,14 @@ from trueup.agents.controller_workspace import (
     controller_id,
     review_queue,
 )
+from trueup.agents.document_support import support_gaps
+from trueup.agents.selection_override import latest_override
+from trueup.close_orchestrator import pending_agent
 from trueup.ingest.manifest import CaseEntry, FileEntry, FileUniverse
 from trueup.ingest.readers import UnsupportedFile, read_text
 from trueup.learning.rules import CandidateRule
 from trueup.service import models as v
+from trueup.service import runlog, stagechecks
 from trueup.store import enums as e
 from trueup.store import models as m
 from trueup.store.types import coerce_money
@@ -67,6 +71,8 @@ CHECK_LABELS = {
     "partial_period_offsets": "Partial-period offsets",
     "prior_close_comparison": "Compare to prior close",
 }
+# Rows that only the run log shows; the case timeline keeps to the working agents.
+LOG_ONLY_AGENTS = {"verifier", "reviewer", "human_override", "orchestrator", "ingestion"}
 CASE_CATEGORY = "Accruals"
 PROFILE_BY_CATEGORY = {
     e.VendorCategory.SAAS: "Software subscription",
@@ -176,7 +182,11 @@ def _period_obligations(session: Session, period: str) -> list[m.TrueUpObligatio
     )
 
 
-def front_stage(ob: m.TrueUpObligation) -> v.FrontStage:
+def front_stage(session: Session, ob: m.TrueUpObligation) -> v.FrontStage:
+    """The screen the case is on: the stage of the agent whose turn is next, else where it rests."""
+    agent = pending_agent(session, ob)
+    if agent is not None:
+        return runlog.AGENT_STAGE.get(agent, "Verification")  # type: ignore[return-value]
     stage, action = ob.workflow_stage, ob.next_action
     if stage in (_S.DETECTED, _S.SEARCHING_AP):
         return "Ingestion"
@@ -193,11 +203,12 @@ def front_stage(ob: m.TrueUpObligation) -> v.FrontStage:
 
 
 def case_status(ob: m.TrueUpObligation) -> v.CaseStatus:
+    """A resting status appears only once the case has reached the state that produces it."""
     stage = ob.workflow_stage
     if stage in (_S.CLOSED, _S.CLOSED_NO_ACCRUAL):
         return "Complete"
-    if stage in (_S.AWAITING_ACTUAL_INVOICE, _S.READY_TO_DRAFT):
-        return "Close-ready"
+    if stage == _S.AWAITING_ACTUAL_INVOICE:
+        return "Close-ready" if ob.accrual_status == e.AccrualStatus.POSTED_SIMULATED else "Running"
     if stage == _S.AWAITING_CONTROLLER:
         return "Needs review"
     if stage == _S.BLOCKED:
@@ -224,12 +235,14 @@ def _vendor(session: Session, vendor_id: str) -> m.CompanyVendor:
 # ---- the close ----------------------------------------------------------------------------------
 
 
-def close_view(session: Session, *, period: str, phase: v.Phase, now: datetime) -> v.CloseView:
+def close_view(
+    session: Session, *, period: str, phase: v.Phase, now: datetime, universe: FileUniverse
+) -> v.CloseView:
     people = _config(session, "people") or []
     names = {p["person_id"]: p["name"] for p in people}
     controller = controller_id(session)
     obligations = _period_obligations(session, period)
-    rows = [case_row(session, ob, phase=phase) for ob in obligations]
+    rows = [case_row(session, ob, phase=phase, universe=universe) for ob in obligations]
     pending = session.scalars(
         select(m.TrueUpLearningRule).where(
             m.TrueUpLearningRule.status == e.LearningStatus.REPLAY_PASSED
@@ -253,21 +266,29 @@ def close_view(session: Session, *, period: str, phase: v.Phase, now: datetime) 
     )
 
 
-def case_row(session: Session, ob: m.TrueUpObligation, *, phase: v.Phase) -> v.CaseRow:
+def case_row(
+    session: Session, ob: m.TrueUpObligation, *, phase: v.Phase, universe: FileUniverse
+) -> v.CaseRow:
     wp = _workpaper(session, ob)
     vendor = _vendor(session, ob.vendor_id)
+    trace = runlog.build_trace(session, ob, universe)
+    classified = trace.latest("classification") is not None
     return v.CaseRow(
         obligation_id=ob.obligation_id,
         vendor_id=ob.vendor_id,
         vendor_name=vendor.vendor_name,
         initials=initials(vendor.vendor_name),
-        item=ITEM_LABELS.get(ob.purchase_type, "Accrual"),
+        item=ITEM_LABELS.get(ob.purchase_type, "Accrual") if classified else "Accrual",
         category=CASE_CATEGORY,
-        purchase_type=TREATMENT_LABELS[ob.purchase_type],
+        purchase_type=TREATMENT_LABELS[ob.purchase_type] if classified else "Not classified yet",
         amount=money(wp.proposed_amount) if wp is not None else None,
-        stage=front_stage(ob),
+        stage=front_stage(session, ob),
         status=case_status(ob),
         can_start=phase != "JANUARY" and is_pending(ob),
+        current_agent=pending_agent(session, ob),
+        stages_completed=runlog.stages_completed(trace.runs),
+        log_count=len(trace.entries),
+        handoff_count=len(trace.handoffs),
         workflow_stage=ob.workflow_stage.value,
         next_action=ob.next_action.value,
         updated_at=utc_iso(ob.updated_at),
@@ -288,40 +309,99 @@ def obligation_detail(
     universe: FileUniverse,
     seed_dir: Path,
     now: datetime,
+    durations: dict[str, int] | None = None,
 ) -> v.ObligationDetail | None:
     ob = session.get(m.TrueUpObligation, obligation_id)
     if ob is None:
         return None
     wp = _workpaper(session, ob)
-    runs = _runs(session, obligation_id)
+    trace = runlog.build_trace(session, ob, universe, durations)
+    runs = trace.runs
     accounts = _accounts(session)
     case = _case_for(universe, ob)
-    cards = list(
-        session.scalars(
-            select(m.TrueUpEvidence)
-            .where(m.TrueUpEvidence.obligation_id == obligation_id)
-            .order_by(m.TrueUpEvidence.evidence_id)
-        )
-    )
+    cards = trace.cards
     files = {f.file_id: f for f in universe.files}
-    facts = [_fact(c, files) for c in cards if c.source_table == "document"]
-    ingestion = (
-        _ingestion(session, universe, case, now)
-        if not is_pending(ob)
-        else v.IngestionView(
-            available=False, judge=None, files_loaded=0, selected_count=0, summary=None, files=[]
-        )
+    facts = _dedupe_facts(
+        [_fact(c, files) for c in cards if c.source_table == "document"]
+        if trace.latest("evidence", "extract_facts")
+        else []
     )
-    header = _header(session, ob, wp, case, accounts)
+    ingestion = _ingestion(session, universe, case, now, ob, trace)
+    header = _header(session, ob, wp, case, accounts, trace)
     evidence = _evidence(runs, universe, ingestion, facts, seed_dir)
+    obligation = _obligation_view(ob, wp, runs, evidence.facts, header)
+    estimation = _estimation(session, ob, wp, runs, accounts, header)
+    verification = _verification(session, ob, wp, runs, cards, accounts, header, now)
+    views = {
+        "Ingestion": ingestion,
+        "Evidence": evidence,
+        "Obligation": obligation,
+        "Estimation": estimation,
+        "Verification": verification,
+    }
+    main_agent = {
+        "Ingestion": "ingestion",
+        "Evidence": "evidence",
+        "Obligation": "classification",
+        "Estimation": "estimation",
+        "Verification": "policy",
+    }
+    for stage, view in views.items():
+        if trace.latest(main_agent[stage]) is not None:
+            view.received = stagechecks.received_for(stage, trace)
+            view.stage_checks = stagechecks.checks_for(stage, trace, session)
     return v.ObligationDetail(
         header=header,
         ingestion=ingestion,
         evidence=evidence,
-        obligation=_obligation_view(ob, wp, runs, evidence.facts, header),
-        estimation=_estimation(session, ob, wp, runs, accounts, header),
-        verification=_verification(session, ob, wp, runs, cards, accounts, header, now),
-        timeline=[_timeline(r) for r in runs],
+        obligation=obligation,
+        estimation=estimation,
+        verification=verification,
+        timeline=[]
+        if is_pending(ob)
+        else [_timeline(r) for r in runs if r.agent_name not in LOG_ONLY_AGENTS],
+        escalation=escalation_of(session, ob),
+    )
+
+
+def _dedupe_facts(facts: list[v.EvidenceFact]) -> list[v.EvidenceFact]:
+    """One fact per label, value and source file."""
+    seen: set[tuple[str, str, str | None]] = set()
+    unique = []
+    for fact in facts:
+        marker = (fact.label, fact.value, fact.file_id)
+        if marker not in seen:
+            seen.add(marker)
+            unique.append(fact)
+    return unique
+
+
+def escalation_of(session: Session, ob: m.TrueUpObligation) -> v.Escalation | None:
+    """Set when the documents a person left selected cannot support the case, and it rests."""
+    routed = {
+        _S.AWAITING_OUTREACH: "OUTREACH",
+        _S.AWAITING_CONTROLLER: "CONTROLLER",
+        _S.BLOCKED: "BLOCKED",
+    }.get(ob.workflow_stage)
+    if routed is None:
+        return None
+    gaps = support_gaps(session, ob)
+    if not gaps:
+        return None
+    lost = [g.label for g in gaps]
+    who = {
+        "OUTREACH": "Outreach asks the owner for it.",
+        "CONTROLLER": "The Controller decides what happens next.",
+        "BLOCKED": "The case is blocked for the Controller.",
+    }[routed]
+    return v.Escalation(
+        reason="INSUFFICIENT_INFORMATION",
+        missing=lost,
+        message=(
+            f"The documents still selected no longer support the {' and '.join(lost)}, so the "
+            f"agent will not estimate from what it cannot support. {who}"
+        ),
+        routed_to=routed,  # type: ignore[arg-type]
     )
 
 
@@ -336,10 +416,14 @@ def _header(
     wp: m.TrueUpWorkpaper | None,
     case: CaseEntry | None,
     accounts: dict[str, str],
+    trace: runlog.Trace,
 ) -> v.Header:
     vendor = _vendor(session, ob.vendor_id)
     prior = _prior_check(wp)
-    chips = [TREATMENT_LABELS[ob.purchase_type], f"Vendor {vendor.vendor_id}"]
+    classified = trace.latest("classification") is not None
+    chips = [f"Vendor {vendor.vendor_id}"]
+    if classified:
+        chips.insert(0, TREATMENT_LABELS[ob.purchase_type])
     gl = _account_label(accounts, wp.expense_account if wp else None)
     if gl:
         chips.append(f"GL {gl.split(' - ')[0]}")
@@ -357,7 +441,11 @@ def _header(
         difference=signed(prior["delta"]) if prior else None,
         started=not is_pending(ob),
         status=case_status(ob),
-        stage=front_stage(ob),
+        stage=front_stage(session, ob),
+        current_agent=pending_agent(session, ob),
+        stages_completed=runlog.stages_completed(trace.runs),
+        log_count=len(trace.entries),
+        handoff_count=len(trace.handoffs),
         workflow_stage=ob.workflow_stage.value,
         next_action=ob.next_action.value,
     )
@@ -374,29 +462,22 @@ def _prior_check(wp: m.TrueUpWorkpaper | None) -> dict[str, Any] | None:
 
 
 def _ingestion(
-    session: Session, universe: FileUniverse, case: CaseEntry | None, now: datetime
+    session: Session,
+    universe: FileUniverse,
+    case: CaseEntry | None,
+    now: datetime,
+    ob: m.TrueUpObligation,
+    trace: runlog.Trace,
 ) -> v.IngestionView:
-    if case is None:
+    run = trace.latest("ingestion", "select_files")
+    if case is None or run is None:
         return v.IngestionView(
             available=False, judge=None, files_loaded=0, selected_count=0, summary=None, files=[]
         )
     visible = [f for f in universe.for_case(case.case_id) if _utc(f.available_at) <= _utc(now)]
-    ids = {f.file_id for f in universe.for_case(case.case_id)}
-    run = None
-    for candidate in reversed(
-        list(
-            session.scalars(
-                select(m.TrueUpAgentRun)
-                .where(m.TrueUpAgentRun.agent_name == "ingestion")
-                .order_by(m.TrueUpAgentRun.created_at, m.TrueUpAgentRun.run_id)
-            )
-        )
-    ):
-        inputs = set(candidate.input_record_ids_json or [])
-        if inputs and inputs <= ids:
-            run = candidate
-            break
-    decisions = {d["file_id"]: d for d in (run.facts_used_json if run else [])}
+    decisions = {d["file_id"]: d for d in run.facts_used_json or []}
+    override = latest_override(session, ob.obligation_id)
+    removed = override.excluded if override and override.run_id > run.run_id else frozenset()
     files = [
         v.SourceFile(
             file_id=f.file_id,
@@ -404,18 +485,25 @@ def _ingestion(
             kind=f.kind,
             format=f.format,
             size_label=f.size_label,
-            selected=bool(decisions.get(f.file_id, {}).get("selected")),
-            reason=decisions.get(f.file_id, {}).get("reason"),
+            selected=bool(decisions.get(f.file_id, {}).get("selected"))
+            and f.file_id not in removed,
+            user_removed=f.file_id in removed
+            and bool(decisions.get(f.file_id, {}).get("selected")),
+            reason=(
+                "Removed by the user in the demo"
+                if f.file_id in removed and decisions.get(f.file_id, {}).get("selected")
+                else decisions.get(f.file_id, {}).get("reason")
+            ),
             preview=f.preview,
         )
         for f in visible
     ]
     return v.IngestionView(
-        available=run is not None,
+        available=True,
         judge=_judge_name(run),
         files_loaded=len(files),
         selected_count=sum(f.selected for f in files),
-        summary=run.decision_summary if run else None,
+        summary=run.decision_summary,
         files=files,
     )
 
@@ -528,10 +616,11 @@ def _obligation_view(
         for s in (classify_run.facts_used_json if classify_run else [])
         if s["name"] != "cross_check"
     ]
+    classified = classify_run is not None
     return v.ObligationView(
-        available=classify_run is not None,
-        purchase_type=ob.purchase_type.value,
-        purchase_type_label=TREATMENT_LABELS[ob.purchase_type],
+        available=classified,
+        purchase_type=ob.purchase_type.value if classified else "",
+        purchase_type_label=TREATMENT_LABELS[ob.purchase_type] if classified else "",
         rationale=classify_run.decision_summary if classify_run else None,
         signals=signals,
         service_start=ob.service_start_date.isoformat(),
@@ -758,11 +847,12 @@ def _verification(
         )
         for r in (policy_run.facts_used_json if policy_run else [])
     ]
-    entries = _entries(wp, accounts) if wp is not None else []
+    judged = policy_run is not None
+    entries = _entries(wp, accounts) if wp is not None and judged else []
     accrual = next((x for x in entries if x.entry_type in ("ACCRUAL", "PROPOSED")), None)
     prior = _prior_check(wp)
     assertions: list[v.Row] = []
-    if wp is not None:
+    if wp is not None and judged:
         assertions = [
             v.Row(label="Recommended accrual", value=money(wp.proposed_amount)),
             v.Row(label="Basis", value=wp.calculation_expression),
@@ -781,9 +871,9 @@ def _verification(
             assertions.append(v.Row(label="Journal impact", value=f"{total} debit, {total} credit"))
     title, body = _final_note(header.status, ob, wp, rules)
     return v.VerificationView(
-        available=policy_run is not None,
-        policy_decision=wp.policy_decision.value if wp is not None else None,
-        policy_summary=wp.policy_summary if wp is not None else None,
+        available=judged,
+        policy_decision=wp.policy_decision.value if wp is not None and judged else None,
+        policy_summary=wp.policy_summary if wp is not None and judged else None,
         rules=rules,
         passed=sum(r.status == "PASS" for r in rules),
         total=len(rules),
