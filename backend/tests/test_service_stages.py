@@ -188,6 +188,7 @@ def test_the_learned_rule_still_changes_openai_when_approved_before_estimation(a
         advance(api, OPENAI)
     assert api.get(f"/api/obligations/{OPENAI}").json()["header"]["supported"] is None
     drive(api, OPENAI)
+    assert api.post("/api/close/run").status_code == 200
     assert api.post("/api/close/advance-to-january").status_code == 200
     assert table(api)["OpenAI"][1] == "18600.00"
 

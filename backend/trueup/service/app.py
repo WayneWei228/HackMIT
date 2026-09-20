@@ -108,6 +108,11 @@ def create_app() -> FastAPI:
             state = demo.current()
             if state.phase != "CLOSED":
                 raise HTTPException(status_code=409, detail="Run the December close first.")
+            if demo.pending_cases(state):
+                raise HTTPException(
+                    status_code=409,
+                    detail="Start every case first; a case not started by January is locked out.",
+                )
             touched = demo.advance_to_january(state)
         return v.ActionResult(
             ok=True,

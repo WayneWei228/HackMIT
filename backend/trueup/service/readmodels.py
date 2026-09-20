@@ -288,7 +288,8 @@ def close_view(
         pending_rules=len(pending),
         actions=v.CloseActions(
             can_run_close=phase != "JANUARY" and any(is_pending(ob) for ob in obligations),
-            can_advance_to_january=phase == "CLOSED",
+            can_advance_to_january=phase == "CLOSED"
+            and not any(is_pending(ob) for ob in obligations),
             can_advance_to_vendor_reply=phase == "JANUARY" and _has_open_request(session),
         ),
         timeline=timeline.clock_stops(

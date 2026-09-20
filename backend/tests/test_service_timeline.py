@@ -71,7 +71,7 @@ def test_the_clock_stays_on_close_starts_until_an_accrual_is_actually_posted(api
     assert calendar["CLOSE_STARTS"]["state"] == "CURRENT"
     assert calendar["CLOSE_STARTS"]["detail"] == "1 of 5 cases started"
     assert calendar["ACCRUALS_POSTED"]["state"] == "UPCOMING"
-    assert api.get("/api/close").json()["actions"]["can_advance_to_january"] is True
+    assert api.get("/api/close").json()["actions"]["can_advance_to_january"] is False
 
 
 def test_a_case_part_way_through_is_in_progress_with_no_claim_about_verification(api):

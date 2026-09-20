@@ -271,6 +271,15 @@ def run_close(state: DemoState) -> list[str]:
         return [oid for oid in pending if start_case(state, oid)]
 
 
+def pending_cases(state: DemoState) -> list[str]:
+    with state.session() as session:
+        return [
+            ob.obligation_id
+            for ob in session.scalars(select(m.TrueUpObligation)).all()
+            if is_pending(ob)
+        ]
+
+
 def advance_to_january(state: DemoState) -> list[str]:
     """Deliver the owners' replies, then let the January invoices grade the December accruals."""
     with _lock:

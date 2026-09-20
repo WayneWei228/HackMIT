@@ -94,7 +94,7 @@ def test_starting_one_case_moves_only_that_case_and_fills_every_screen(api):
     others = {k: c["status"] for k, c in cases.items() if k != "Mintlify"}
     assert set(others.values()) == {"Pending"}
     close = api.get("/api/close").json()
-    assert close["phase"] == "CLOSED" and close["actions"]["can_advance_to_january"]
+    assert close["phase"] == "CLOSED" and not close["actions"]["can_advance_to_january"]
     detail = api.get(f"/api/obligations/{MINTLIFY}").json()
     assert detail["header"]["started"] is True
     for screen in ("ingestion", "evidence", "obligation", "estimation", "verification"):
@@ -112,15 +112,16 @@ def test_starting_a_started_case_is_a_no_op(api):
     assert api.post("/api/obligations/OBL-NOPE/start").status_code == 404
 
 
-def test_advance_to_january_needs_a_started_case_and_ends_starting(api):
+def test_advance_to_january_waits_until_every_case_has_started(api):
     assert api.post("/api/close/advance-to-january").status_code == 409
     api.post(f"/api/obligations/{MINTLIFY}/start")
+    blocked = api.post("/api/close/advance-to-january")
+    assert blocked.status_code == 409 and "Start every case" in blocked.json()["detail"]
+    assert api.get("/api/close").json()["actions"]["can_advance_to_january"] is False
+    assert api.post("/api/close/run").status_code == 200
+    assert api.get("/api/close").json()["actions"]["can_advance_to_january"] is True
     assert api.post("/api/close/advance-to-january").status_code == 200
-    late = api.post(f"/api/obligations/{ASUS}/start")
-    assert late.status_code == 409 and "January" in late.json()["detail"]
     assert api.post("/api/close/run").status_code == 409
-    cases = status_by_vendor(api)
-    assert cases["ASUS"]["status"] == "Pending" and cases["ASUS"]["can_start"] is False
     assert api.post(f"/api/obligations/{MINTLIFY}/start").status_code == 200
 
 
