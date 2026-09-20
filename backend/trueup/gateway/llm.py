@@ -1,35 +1,61 @@
 """The only module allowed to call a language model.
 
-Uses the Anthropic SDK when ANTHROPIC_API_KEY is set, otherwise shells out to
-the local claude CLI in headless mode. Engines call complete/complete_json for
-ambiguity resolution, narrative, and rule distillation, never a model directly.
+Uses the OpenAI SDK against either of two backends:
+- OpenAI directly: set OPENAI_API_KEY (and OPENAI_BASE_URL for compatible endpoints).
+- OpenAI models on AWS Bedrock: set AWS_BEARER_TOKEN_BEDROCK (and AWS_REGION, default
+  us-east-2). Used only when OPENAI_API_KEY is not set.
+Set MODEL_ID to pick the model. Engines call complete/complete_json for extraction,
+narration, and diagnosis, never a model directly.
 """
 
 from __future__ import annotations
 
 import json
 import os
-import subprocess
+import re
 
 from pydantic import BaseModel, ValidationError
 
 from trueup.gateway import tracing
 
-DEFAULT_MODEL = "claude-sonnet-5"
-CLI_TIMEOUT_SECONDS = 300
+DEFAULT_MODEL = "gpt-5"
+BEDROCK_DEFAULT_MODEL = "openai.gpt-oss-120b-1:0"
+BEDROCK_DEFAULT_REGION = "us-east-2"
+JSON_ATTEMPTS = 2
+# gpt-oss models on Bedrock return their chain of thought inline before the answer.
+_REASONING = re.compile(r"<reasoning>.*?</reasoning>", re.DOTALL)
 
 
 class LLMError(Exception):
     """Raised when the model call fails or returns unusable output."""
 
 
+def _use_bedrock() -> bool:
+    return not os.environ.get("OPENAI_API_KEY") and bool(os.environ.get("AWS_BEARER_TOKEN_BEDROCK"))
+
+
+def available() -> bool:
+    """True when credentials are configured, so callers can skip live model steps."""
+    return bool(os.environ.get("OPENAI_API_KEY")) or _use_bedrock()
+
+
 @tracing.span("CHAIN", name="llm.complete")
 def complete(prompt: str, system: str | None = None, model: str | None = None) -> str:
     """Return the model's text completion for the prompt."""
-    model = model or DEFAULT_MODEL
-    if os.environ.get("ANTHROPIC_API_KEY"):
-        return _complete_sdk(prompt, system, model)
-    return _complete_cli(prompt, system, model)
+    default = BEDROCK_DEFAULT_MODEL if _use_bedrock() else DEFAULT_MODEL
+    model = model or os.environ.get("MODEL_ID") or default
+    messages = [{"role": "user", "content": prompt}]
+    if system is not None:
+        messages.insert(0, {"role": "system", "content": system})
+    try:
+        response = _client().chat.completions.create(model=model, messages=messages)
+    except Exception as exc:
+        raise LLMError(f"OpenAI call failed: {exc}") from exc
+    text = response.choices[0].message.content if response.choices else None
+    text = _REASONING.sub("", text or "").strip()
+    if not text:
+        raise LLMError("OpenAI returned no text content")
+    return text
 
 
 @tracing.span("CHAIN", name="llm.complete_json")
@@ -39,75 +65,66 @@ def complete_json(
     system: str | None = None,
     model: str | None = None,
 ) -> BaseModel:
-    """Return a validated instance of `schema` parsed from the model's output."""
+    """Return a validated instance of `schema` parsed from the model's output.
+
+    Retries once when the reply is not valid JSON for the schema.
+    """
     json_schema = json.dumps(schema.model_json_schema())
     wrapped = (
         f"{prompt}\n\n"
         "Respond with a single JSON object matching this JSON schema, "
         f"with no surrounding text or code fences:\n{json_schema}"
     )
-    raw = complete(wrapped, system=system, model=model)
-    try:
-        return schema.model_validate_json(_strip_fences(raw))
-    except ValidationError as exc:
-        raise LLMError(f"model output did not match {schema.__name__}: {exc}") from exc
+    last_error: Exception | None = None
+    for _ in range(JSON_ATTEMPTS):
+        raw = complete(wrapped, system=system, model=model)
+        try:
+            return schema.model_validate_json(_extract_json_object(raw))
+        except (ValidationError, ValueError) as exc:
+            last_error = exc
+    raise LLMError(f"model output did not match {schema.__name__}: {last_error}") from last_error
 
 
-def _complete_sdk(prompt: str, system: str | None, model: str) -> str:
-    import anthropic
+def _client():
+    from openai import OpenAI
 
-    kwargs: dict = {}
-    if system is not None:
-        kwargs["system"] = system
-    try:
-        client = anthropic.Anthropic()
-        message = client.messages.create(
-            model=model,
-            max_tokens=4096,
-            messages=[{"role": "user", "content": prompt}],
-            **kwargs,
+    if _use_bedrock():
+        region = os.environ.get("AWS_REGION", BEDROCK_DEFAULT_REGION)
+        return OpenAI(
+            api_key=os.environ["AWS_BEARER_TOKEN_BEDROCK"],
+            base_url=f"https://bedrock-runtime.{region}.amazonaws.com/openai/v1",
         )
-    except Exception as exc:
-        raise LLMError(f"Anthropic SDK call failed: {exc}") from exc
-    text = "".join(block.text for block in message.content if block.type == "text")
-    if not text:
-        raise LLMError("Anthropic SDK returned no text content")
-    return text
+    return OpenAI()
 
 
-def _complete_cli(prompt: str, system: str | None, model: str) -> str:
-    cmd = ["claude", "-p", "--output-format", "json", "--model", model]
-    if system is not None:
-        cmd += ["--append-system-prompt", system]
-    try:
-        proc = subprocess.run(
-            cmd,
-            input=prompt,
-            capture_output=True,
-            text=True,
-            timeout=CLI_TIMEOUT_SECONDS,
-        )
-    except (OSError, subprocess.TimeoutExpired) as exc:
-        raise LLMError(f"claude CLI unavailable or timed out: {exc}") from exc
-    if proc.returncode != 0:
-        raise LLMError(f"claude CLI exited {proc.returncode}: {proc.stderr.strip()}")
-    try:
-        payload = json.loads(proc.stdout)
-    except json.JSONDecodeError as exc:
-        raise LLMError(f"claude CLI returned invalid JSON: {exc}") from exc
-    if payload.get("is_error"):
-        raise LLMError(f"claude CLI reported an error: {payload.get('result')}")
-    result = payload.get("result")
-    if not isinstance(result, str):
-        raise LLMError("claude CLI JSON payload has no text result")
-    return result
-
-
-def _strip_fences(text: str) -> str:
-    text = text.strip()
-    if text.startswith("```"):
-        first_newline = text.index("\n") if "\n" in text else len(text)
-        text = text[first_newline + 1 :]
-        if text.rstrip().endswith("```"):
-            text = text.rstrip()[:-3]
-    return text.strip()
+def _extract_json_object(text: str) -> str:
+    """Return the first balanced {...} object in `text`, ignoring prose and code fences."""
+    start = text.find("{")
+    while start != -1:
+        depth = 0
+        in_string = False
+        escaped = False
+        for i in range(start, len(text)):
+            char = text[i]
+            if in_string:
+                if escaped:
+                    escaped = False
+                elif char == "\\":
+                    escaped = True
+                elif char == '"':
+                    in_string = False
+            elif char == '"':
+                in_string = True
+            elif char == "{":
+                depth += 1
+            elif char == "}":
+                depth -= 1
+                if depth == 0:
+                    candidate = text[start : i + 1]
+                    try:
+                        json.loads(candidate)
+                    except json.JSONDecodeError:
+                        break
+                    return candidate
+        start = text.find("{", start + 1)
+    raise ValueError(f"no JSON object found in model reply: {text[:200]!r}")

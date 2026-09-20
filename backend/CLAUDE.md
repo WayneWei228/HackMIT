@@ -7,7 +7,7 @@
 
 ## Rules
 - All money is integer cents. Never use floats for currency.
-- Every model call goes through `trueup/gateway/llm.py` (Claude). Every Jev call goes through `trueup/gateway/jev.py`. Never call either anywhere else.
+- Every model call goes through `trueup/gateway/llm.py` (OpenAI). Every Jev call goes through `trueup/gateway/jev.py`. Never call either anywhere else.
 - A language model never outputs a dollar amount. Amounts come only from `trueup/estimators`.
 - Every proposed journal entry must carry `evidence[]` and balance exactly. `ProposedJE` enforces both.
 - Agents must never read `future_invoices`. It is the simulator's answer key.

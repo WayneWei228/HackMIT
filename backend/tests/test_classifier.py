@@ -93,3 +93,44 @@ def test_contradictory_columns_are_caught_without_any_model(world):
         found = classifier.find_contradictions(header, line)
     assert "blanket item category has no validity dates" in found
     assert "framework order has no validity dates" in found
+
+
+def test_columns_say_fixed_but_description_says_usage(world, monkeypatch):
+    """Twilio-style trap from the startup-output branch: clean columns, usage-based description."""
+    monkeypatch.setenv("TYPESAFE_API_KEY", "x")
+    with get_session(world) as s:
+        s.add(
+            POHeader(
+                po_number="PO-2026-1005",
+                vendor_id="V-TWIL",
+                order_type="NB",
+                created_date="2026-11-01",
+                status="Open",
+                total_amount_cents=500_000,
+            )
+        )
+        s.add(
+            POLine(
+                po_line_id="PO-2026-1005-001",
+                po_number="PO-2026-1005",
+                item_category="",
+                gl_account_code="610400",
+                quantity_ordered=1,
+                unit_price_cents=500_000,
+                quantity_received=1,
+                quantity_billed=0,
+                line_description="Monthly SMS usage charges billed per message sent",
+            )
+        )
+
+    def fake(state, questions):
+        return {
+            "amount_type": jev.JevAnswer(choice="dynamic", confidence=0.92, probabilities={}),
+            "cadence": jev.JevAnswer(choice="recurring", confidence=0.9, probabilities={}),
+        }
+
+    monkeypatch.setattr(jev, "classify", fake)
+    result = _classify(world, "PO-2026-1005-001")
+    assert result.final == Classification(amount_type="fixed", cadence="one_time")
+    assert result.needs_human and not result.contradictions
+    assert result.suggested == Classification(amount_type="dynamic", cadence="recurring")

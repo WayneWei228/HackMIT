@@ -1,0 +1,41 @@
+[
+  {
+    "outreach_key": "OPENAI-2026-12-USAGE_CONFIRMATION",
+    "available_at": "2027-01-02T10:00:00Z",
+    "recipient_role": "SERVICE_OWNER",
+    "response_text": "Riley here. The full December export is in: 930,000 API calls for December 1 through December 31.",
+    "parsed_truth": {
+      "resolved": true,
+      "service_received": true,
+      "quantity": "930000",
+      "unit": "API_CALL"
+    },
+    "service_evidence_on_response": {
+      "service_evidence_id": "USE-OPENAI-2026-12-CONFIRMED",
+      "vendor_id": "VEN-OPENAI",
+      "contract_id": "CON-OPENAI",
+      "po_id": "PO-OPENAI-2026",
+      "service_start_date": "2026-12-01",
+      "service_end_date": "2026-12-31",
+      "evidence_type": "SYSTEM_USAGE",
+      "quantity": "930000",
+      "unit": "API_CALL",
+      "accepted_amount": null,
+      "source_system": "ENGINEERING_PLATFORM",
+      "confirmed_by_person_id": "ENG-001",
+      "confirmation_status": "SYSTEM_VERIFIED",
+      "created_at": "2027-01-02T10:00:00Z"
+    }
+  },
+  {
+    "outreach_key": "ASUS-2026-12-IN_SERVICE_DATE",
+    "available_at": "2027-01-04T10:00:00Z",
+    "recipient_role": "SERVICE_OWNER",
+    "response_text": "The laptops went out to the new engineers over the holidays. I do not have the exact in-service dates yet.",
+    "parsed_truth": {
+      "resolved": false,
+      "reason": "INSUFFICIENT_RESPONSE"
+    },
+    "service_evidence_on_response": null
+  }
+]

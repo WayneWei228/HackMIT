@@ -115,6 +115,24 @@ class CardStatement(Base):
     pending_cents: Mapped[int]
 
 
+class DocumentRecord(Base):
+    """A source document (PDF or text) and the fields the Evidence agent extracted from it.
+
+    `text_sha256` is the extraction cache key: unchanged text is never re-sent to the model.
+    """
+
+    __tablename__ = "documents"
+
+    document_id: Mapped[str] = mapped_column(String(60), primary_key=True)
+    text_sha256: Mapped[str] = mapped_column(String(64))
+    source_path: Mapped[str | None] = mapped_column(String(300), default=None)
+    document_type: Mapped[str] = mapped_column(String(30))
+    vendor_name: Mapped[str | None] = mapped_column(String(120), default=None)
+    text: Mapped[str] = mapped_column(Text)
+    extract_json: Mapped[dict] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(default=_utcnow)
+
+
 class FutureInvoice(Base):
     """The simulated world's hidden future. Agents must never read this table.
 

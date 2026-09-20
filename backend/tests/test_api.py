@@ -44,3 +44,22 @@ def test_evidence_route_only_serves_whitelisted_tables(client):
         ).status_code
         == 200
     )
+
+
+def test_documents_are_served_as_evidence(client):
+    from trueup.db import DocumentRecord, get_session
+
+    with get_session(api.get_db()) as session:
+        session.add(
+            DocumentRecord(
+                document_id="CTR-001",
+                text_sha256="x",
+                document_type="CONTRACT",
+                vendor_name="Mintlify",
+                text="Fee is $1,200 per month",
+                extract_json={"monthly_fee_dollars": 1200.0},
+            )
+        )
+    doc = client.get("/evidence", params={"source_table": "documents", "row_id": "CTR-001"}).json()
+    assert doc["vendor_name"] == "Mintlify"
+    assert doc["extract_json"] == {"monthly_fee_dollars": 1200.0}

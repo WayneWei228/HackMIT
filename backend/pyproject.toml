@@ -8,9 +8,12 @@ dependencies = [
     "uvicorn>=0.30",
     "sqlalchemy>=2.0",
     "pydantic>=2.0",
-    "anthropic>=0.40",
     "python-dotenv>=1.0",
     "typesafe-sdk>=0.7.0",
+    "openai>=1.50",
+    "pypdf>=5",
+    "openpyxl>=3.1.5",
+    "python-docx>=1.2.0",
 ]
 
 [dependency-groups]
@@ -18,6 +21,7 @@ dev = [
     "pytest>=8.0",
     "ruff>=0.6",
     "httpx>=0.27",
+    "reportlab>=5.0.1",
 ]
 
 [tool.uv]
@@ -29,6 +33,9 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.per-file-ignores]
+"data/startup/generate_pdfs.py" = ["E501"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -1,0 +1,92 @@
+{
+  "expected_outcomes": [
+    {
+      "period": "2026-10",
+      "vendor_id": "VEN-OPENAI",
+      "scenario": "escalator_history",
+      "invoice_id": "INV-OPENAI-2026-10",
+      "expected_actual_amount": "14800.00",
+      "expected_root_cause": "MISSED_ESCALATOR",
+      "invoice_arrival_time": "2026-11-01T05:00:00Z",
+      "expected_baseline_accrual": "11840.00",
+      "expected_close_status": null
+    },
+    {
+      "period": "2026-12",
+      "vendor_id": "VEN-NOTABILITY",
+      "scenario": "prepaid_wrong_treatment",
+      "invoice_id": "INV-NOTABILITY-2026-12",
+      "expected_actual_amount": "21600.00",
+      "expected_root_cause": null,
+      "invoice_arrival_time": "2026-11-24T10:00:00Z",
+      "expected_baseline_accrual": "1800.00",
+      "expected_close_status": "BLOCKED"
+    },
+    {
+      "period": "2026-11",
+      "vendor_id": "VEN-OPENAI",
+      "scenario": "escalator_history",
+      "invoice_id": "INV-OPENAI-2026-11",
+      "expected_actual_amount": "15600.00",
+      "expected_root_cause": "MISSED_ESCALATOR",
+      "invoice_arrival_time": "2026-12-01T05:00:00Z",
+      "expected_baseline_accrual": "12480.00",
+      "expected_close_status": null
+    },
+    {
+      "period": "2026-11",
+      "vendor_id": "VEN-MINTLIFY",
+      "scenario": "clean_fixed_history",
+      "invoice_id": "INV-MINTLIFY-2026-11",
+      "expected_actual_amount": "1200.00",
+      "expected_root_cause": null,
+      "invoice_arrival_time": "2026-12-01T06:00:00Z",
+      "expected_baseline_accrual": "1200.00",
+      "expected_close_status": null
+    },
+    {
+      "period": "2026-12",
+      "vendor_id": "VEN-MINTLIFY",
+      "scenario": "clean_fixed",
+      "invoice_id": "INV-MINTLIFY-2026-12",
+      "expected_actual_amount": "1400.00",
+      "expected_root_cause": null,
+      "invoice_arrival_time": "2027-01-03T09:00:00Z",
+      "expected_baseline_accrual": "1400.00",
+      "expected_close_status": "DONE"
+    },
+    {
+      "period": "2026-12",
+      "vendor_id": "VEN-OPENAI",
+      "scenario": "outreach_required",
+      "invoice_id": "INV-OPENAI-2026-12",
+      "expected_actual_amount": "18600.00",
+      "expected_root_cause": "USAGE_VARIANCE",
+      "invoice_arrival_time": "2027-01-05T09:00:00Z",
+      "expected_baseline_accrual": "11520.00",
+      "expected_close_status": "WAITING"
+    },
+    {
+      "period": "2026-12",
+      "vendor_id": "VEN-META",
+      "scenario": "wrong_invoice_amount",
+      "invoice_id": "INV-META-2026-12",
+      "expected_actual_amount": "30000.00",
+      "expected_root_cause": "SOURCE_DATA_ERROR",
+      "invoice_arrival_time": "2027-01-07T09:00:00Z",
+      "expected_baseline_accrual": "24700.00",
+      "expected_close_status": "DONE"
+    },
+    {
+      "period": "2026-12",
+      "vendor_id": "VEN-ASUS",
+      "scenario": "receipt_based_partial",
+      "invoice_id": "INV-ASUS-2026-12",
+      "expected_actual_amount": "32000.00",
+      "expected_root_cause": null,
+      "invoice_arrival_time": "2027-01-08T09:00:00Z",
+      "expected_baseline_accrual": "32000.00",
+      "expected_close_status": "NEEDS_REVIEW"
+    }
+  ]
+}

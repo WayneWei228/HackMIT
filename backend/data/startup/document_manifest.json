@@ -1,0 +1,61 @@
+{
+  "document_root": "pdf",
+  "documents": [
+    {
+      "document_id": "CTR-001",
+      "pdf": "pdf/CTR-001.pdf"
+    },
+    {
+      "document_id": "INV-MINTLIFY-SEP",
+      "pdf": "pdf/INV-MINTLIFY-SEP.pdf"
+    },
+    {
+      "document_id": "INV-MINTLIFY-OCT",
+      "pdf": "pdf/INV-MINTLIFY-OCT.pdf"
+    },
+    {
+      "document_id": "INV-MINTLIFY-NOV",
+      "pdf": "pdf/INV-MINTLIFY-NOV.pdf"
+    },
+    {
+      "document_id": "INV-MINTLIFY-DEC",
+      "pdf": "pdf/INV-MINTLIFY-DEC.pdf"
+    },
+    {
+      "document_id": "CTR-002",
+      "pdf": "pdf/CTR-002.pdf"
+    },
+    {
+      "document_id": "INV-OPENAI-SEP",
+      "pdf": "pdf/INV-OPENAI-SEP.pdf"
+    },
+    {
+      "document_id": "INV-OPENAI-OCT",
+      "pdf": "pdf/INV-OPENAI-OCT.pdf"
+    },
+    {
+      "document_id": "INV-OPENAI-NOV",
+      "pdf": "pdf/INV-OPENAI-NOV.pdf"
+    },
+    {
+      "document_id": "USG-OPENAI-DEC",
+      "pdf": "pdf/USG-OPENAI-DEC.pdf"
+    },
+    {
+      "document_id": "PO-003",
+      "pdf": "pdf/PO-003.pdf"
+    },
+    {
+      "document_id": "GR-ASUS-DEC",
+      "pdf": "pdf/GR-ASUS-DEC.pdf"
+    },
+    {
+      "document_id": "CAMPAIGN-004",
+      "pdf": "pdf/CAMPAIGN-004.pdf"
+    },
+    {
+      "document_id": "META-DELIVERY-DEC",
+      "pdf": "pdf/META-DELIVERY-DEC.pdf"
+    }
+  ]
+}

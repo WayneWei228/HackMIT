@@ -6,7 +6,9 @@ from trueup.db import get_engine, init_db
 
 @pytest.fixture(autouse=True)
 def no_external_keys(monkeypatch):
-    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("AWS_BEARER_TOKEN_BEDROCK", raising=False)
+    monkeypatch.delenv("MODEL_ID", raising=False)
     monkeypatch.delenv("TYPESAFE_API_KEY", raising=False)
     monkeypatch.delenv("NEATLOGS_API_KEY", raising=False)
 

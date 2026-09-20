@@ -1,0 +1,1115 @@
+{
+  "meta": {
+    "generator": "trueup.simulator",
+    "seed": 42,
+    "company": "Northstar Analytics, Inc.",
+    "currency": "USD",
+    "simulation_start": "2026-12-01T08:00:00Z",
+    "historical_periods": [
+      "2026-09",
+      "2026-10",
+      "2026-11"
+    ],
+    "live_periods": [
+      "2026-12",
+      "2027-01"
+    ]
+  },
+  "company_vendors": [
+    {
+      "vendor_id": "VEN-MINTLIFY",
+      "vendor_name": "Mintlify",
+      "vendor_category": "SAAS",
+      "billing_cadence": "MONTHLY",
+      "default_currency": "USD",
+      "billing_contact_email": "billing@mintlify.example",
+      "is_active": true
+    },
+    {
+      "vendor_id": "VEN-OPENAI",
+      "vendor_name": "OpenAI",
+      "vendor_category": "AI_CREDITS",
+      "billing_cadence": "USAGE_BASED",
+      "default_currency": "USD",
+      "billing_contact_email": "billing@openai.example",
+      "is_active": true
+    },
+    {
+      "vendor_id": "VEN-ASUS",
+      "vendor_name": "ASUS",
+      "vendor_category": "OTHER",
+      "billing_cadence": "AD_HOC",
+      "default_currency": "USD",
+      "billing_contact_email": "orders@asus.example",
+      "is_active": true
+    },
+    {
+      "vendor_id": "VEN-META",
+      "vendor_name": "Meta",
+      "vendor_category": "MARKETING",
+      "billing_cadence": "AD_HOC",
+      "default_currency": "USD",
+      "billing_contact_email": "ads-billing@meta.example",
+      "is_active": true
+    },
+    {
+      "vendor_id": "VEN-NOTABILITY",
+      "vendor_name": "Notability",
+      "vendor_category": "SAAS",
+      "billing_cadence": "ANNUAL",
+      "default_currency": "USD",
+      "billing_contact_email": "billing@notability.example",
+      "is_active": true
+    }
+  ],
+  "company_contracts": [
+    {
+      "contract_row_id": "CON-MINTLIFY-V1",
+      "contract_id": "CON-MINTLIFY",
+      "contract_version": 1,
+      "vendor_id": "VEN-MINTLIFY",
+      "contract_name": "Mintlify Master Subscription Agreement",
+      "status": "SUPERSEDED",
+      "effective_start_date": "2026-01-01",
+      "effective_end_date": "2026-11-30",
+      "billing_model": "FIXED_FEE",
+      "base_rate": "1200.00",
+      "rate_unit": "MONTH",
+      "billing_frequency": "MONTHLY_IN_ARREARS",
+      "escalator_percent": null,
+      "escalator_effective_date": null,
+      "service_owner_id": "ENG-001",
+      "procurement_owner_id": "PROC-001",
+      "contract_text": "4.1 Customer shall pay a monthly subscription fee of $1,200 for the Standard Workspace plan, invoiced monthly in arrears."
+    },
+    {
+      "contract_row_id": "CON-MINTLIFY-V2",
+      "contract_id": "CON-MINTLIFY",
+      "contract_version": 2,
+      "vendor_id": "VEN-MINTLIFY",
+      "contract_name": "Mintlify Master Subscription Agreement, Amendment 1",
+      "status": "ACTIVE",
+      "effective_start_date": "2026-12-01",
+      "effective_end_date": "2027-11-30",
+      "billing_model": "FIXED_FEE",
+      "base_rate": "1400.00",
+      "rate_unit": "MONTH",
+      "billing_frequency": "MONTHLY_IN_ARREARS",
+      "escalator_percent": null,
+      "escalator_effective_date": null,
+      "service_owner_id": "ENG-001",
+      "procurement_owner_id": "PROC-001",
+      "contract_text": "Amendment 1, signed November 18, 2026. 4.2 Commencing December 1, 2026, the monthly subscription fee for the Standard Workspace plan shall increase from $1,200 to $1,400 per month for the remainder of the term."
+    },
+    {
+      "contract_row_id": "CON-OPENAI-V1",
+      "contract_id": "CON-OPENAI",
+      "contract_version": 1,
+      "vendor_id": "VEN-OPENAI",
+      "contract_name": "OpenAI API Services Agreement",
+      "status": "ACTIVE",
+      "effective_start_date": "2026-01-01",
+      "effective_end_date": "2027-12-31",
+      "billing_model": "USAGE_BASED",
+      "base_rate": "0.016",
+      "rate_unit": "API_CALL",
+      "billing_frequency": "VARIABLE",
+      "escalator_percent": "25",
+      "escalator_effective_date": "2026-09-01",
+      "service_owner_id": "ENG-001",
+      "procurement_owner_id": "PROC-001",
+      "contract_text": "3.1 Usage fees are $0.016 per API call. 3.2 Effective September 1, 2026, tier pricing increases all usage fees by 25 percent to $0.020 per API call."
+    },
+    {
+      "contract_row_id": "CON-NOTABILITY-V1",
+      "contract_id": "CON-NOTABILITY",
+      "contract_version": 1,
+      "vendor_id": "VEN-NOTABILITY",
+      "contract_name": "Notability Team Subscription",
+      "status": "ACTIVE",
+      "effective_start_date": "2026-12-01",
+      "effective_end_date": "2027-11-30",
+      "billing_model": "FIXED_FEE",
+      "base_rate": "1800.00",
+      "rate_unit": "MONTH",
+      "billing_frequency": "ANNUAL",
+      "escalator_percent": null,
+      "escalator_effective_date": null,
+      "service_owner_id": "OPS-001",
+      "procurement_owner_id": "PROC-001",
+      "contract_text": "Team plan, 12 months, $21,600 billed annually in advance. Service term December 1, 2026 through November 30, 2027."
+    }
+  ],
+  "company_purchase_orders": [
+    {
+      "po_id": "PO-MINTLIFY-2026",
+      "po_number": "PO-2026-1001",
+      "vendor_id": "VEN-MINTLIFY",
+      "contract_id": "CON-MINTLIFY",
+      "status": "OPEN",
+      "order_type": "FRAMEWORK",
+      "entity_id": "ENT-001",
+      "cost_center": "CC-ENG-100",
+      "po_owner_id": "ENG-001",
+      "approved_total": "14400.00",
+      "currency": "USD",
+      "service_start_date": "2026-01-01",
+      "service_end_date": "2026-12-31",
+      "gl_account": "610100",
+      "description": "Mintlify documentation platform, Standard Workspace plan, 2026",
+      "line_items_json": [
+        {
+          "po_line_id": "PO-2026-1001-001",
+          "item_category": "SERVICE",
+          "gl_account_code": "610100",
+          "quantity_ordered": "12",
+          "unit_price": "1200.00",
+          "quantity_received": "11",
+          "quantity_billed": "11",
+          "line_description": "Mintlify Standard Workspace plan, monthly subscription",
+          "service_start_date": "2026-01-01",
+          "service_end_date": "2026-12-31",
+          "receipt_required": false,
+          "useful_life_months": null,
+          "in_service_date": null
+        }
+      ]
+    },
+    {
+      "po_id": "PO-OPENAI-2026",
+      "po_number": "PO-2026-1002",
+      "vendor_id": "VEN-OPENAI",
+      "contract_id": "CON-OPENAI",
+      "status": "OPEN",
+      "order_type": "BLANKET",
+      "entity_id": "ENT-001",
+      "cost_center": "CC-ENG-100",
+      "po_owner_id": "ENG-001",
+      "approved_total": "240000.00",
+      "currency": "USD",
+      "service_start_date": "2026-01-01",
+      "service_end_date": "2026-12-31",
+      "gl_account": "610200",
+      "description": "OpenAI API usage under annual commitment",
+      "line_items_json": [
+        {
+          "po_line_id": "PO-2026-1002-001",
+          "item_category": "BLANKET_LIMIT",
+          "gl_account_code": "610200",
+          "quantity_ordered": null,
+          "unit_price": "0.016",
+          "quantity_received": "0",
+          "quantity_billed": "0",
+          "line_description": "OpenAI API consumption under annual commitment",
+          "service_start_date": "2026-01-01",
+          "service_end_date": "2026-12-31",
+          "receipt_required": false,
+          "useful_life_months": null,
+          "in_service_date": null
+        }
+      ]
+    },
+    {
+      "po_id": "PO-ASUS-2026",
+      "po_number": "PO-2026-1003",
+      "vendor_id": "VEN-ASUS",
+      "contract_id": null,
+      "status": "OPEN",
+      "order_type": "STANDARD",
+      "entity_id": "ENT-001",
+      "cost_center": "CC-OPS-100",
+      "po_owner_id": "OPS-001",
+      "approved_total": "40000.00",
+      "currency": "USD",
+      "service_start_date": null,
+      "service_end_date": null,
+      "gl_account": "150200",
+      "description": "25 laptops for new engineers",
+      "line_items_json": [
+        {
+          "po_line_id": "PO-2026-1003-001",
+          "item_category": "MATERIAL",
+          "gl_account_code": "150200",
+          "quantity_ordered": "25",
+          "unit_price": "1600.00",
+          "quantity_received": "0",
+          "quantity_billed": "0",
+          "line_description": "ASUS ExpertBook laptop, 16 GB, 512 GB",
+          "service_start_date": null,
+          "service_end_date": null,
+          "receipt_required": true,
+          "useful_life_months": 36,
+          "in_service_date": null
+        }
+      ]
+    },
+    {
+      "po_id": "PO-META-2026",
+      "po_number": "PO-2026-1004",
+      "vendor_id": "VEN-META",
+      "contract_id": null,
+      "status": "OPEN",
+      "order_type": "PROJECT",
+      "entity_id": "ENT-001",
+      "cost_center": "CC-MKT-300",
+      "po_owner_id": "MKT-001",
+      "approved_total": "30000.00",
+      "currency": "USD",
+      "service_start_date": "2026-12-01",
+      "service_end_date": "2026-12-31",
+      "gl_account": "610500",
+      "description": "Product launch advertising campaign, not to exceed $30,000",
+      "line_items_json": [
+        {
+          "po_line_id": "PO-2026-1004-001",
+          "item_category": "BLANKET_LIMIT",
+          "gl_account_code": "610500",
+          "quantity_ordered": "1",
+          "unit_price": "30000.00",
+          "quantity_received": "0",
+          "quantity_billed": "0",
+          "line_description": "Meta ads for the product-launch campaign, billed on delivery",
+          "service_start_date": "2026-12-01",
+          "service_end_date": "2026-12-31",
+          "receipt_required": true,
+          "useful_life_months": null,
+          "in_service_date": null
+        }
+      ]
+    }
+  ],
+  "company_service_evidence": [
+    {
+      "service_evidence_id": "USE-OPENAI-2026-09",
+      "vendor_id": "VEN-OPENAI",
+      "contract_id": "CON-OPENAI",
+      "po_id": "PO-OPENAI-2026",
+      "service_start_date": "2026-09-01",
+      "service_end_date": "2026-09-30",
+      "evidence_type": "SYSTEM_USAGE",
+      "quantity": "730000",
+      "unit": "API_CALL",
+      "accepted_amount": null,
+      "source_system": "ENGINEERING_PLATFORM",
+      "confirmed_by_person_id": null,
+      "confirmation_status": "SYSTEM_VERIFIED",
+      "created_at": "2026-09-30T23:00:00Z"
+    },
+    {
+      "service_evidence_id": "USE-OPENAI-2026-10",
+      "vendor_id": "VEN-OPENAI",
+      "contract_id": "CON-OPENAI",
+      "po_id": "PO-OPENAI-2026",
+      "service_start_date": "2026-10-01",
+      "service_end_date": "2026-10-31",
+      "evidence_type": "SYSTEM_USAGE",
+      "quantity": "740000",
+      "unit": "API_CALL",
+      "accepted_amount": null,
+      "source_system": "ENGINEERING_PLATFORM",
+      "confirmed_by_person_id": null,
+      "confirmation_status": "SYSTEM_VERIFIED",
+      "created_at": "2026-10-31T23:00:00Z"
+    },
+    {
+      "service_evidence_id": "USE-OPENAI-2026-11",
+      "vendor_id": "VEN-OPENAI",
+      "contract_id": "CON-OPENAI",
+      "po_id": "PO-OPENAI-2026",
+      "service_start_date": "2026-11-01",
+      "service_end_date": "2026-11-30",
+      "evidence_type": "SYSTEM_USAGE",
+      "quantity": "780000",
+      "unit": "API_CALL",
+      "accepted_amount": null,
+      "source_system": "ENGINEERING_PLATFORM",
+      "confirmed_by_person_id": null,
+      "confirmation_status": "SYSTEM_VERIFIED",
+      "created_at": "2026-11-30T23:00:00Z"
+    }
+  ],
+  "company_non_po_spend": [],
+  "company_ap_invoices": [
+    {
+      "invoice_id": "INV-MINTLIFY-2026-09",
+      "vendor_id": "VEN-MINTLIFY",
+      "invoice_number": "MINT-2026-001",
+      "invoice_date": "2026-09-30",
+      "received_at": "2026-10-01T06:00:00Z",
+      "service_start_date": "2026-09-01",
+      "service_end_date": "2026-09-30",
+      "amount": "1200.00",
+      "currency": "USD",
+      "po_id": "PO-MINTLIFY-2026",
+      "contract_id": "CON-MINTLIFY",
+      "status": "PAID",
+      "duplicate_flag": false,
+      "credit_flag": false,
+      "description": "Mintlify Standard Workspace subscription, September 2026",
+      "line_items_json": null,
+      "created_at": "2026-10-01T06:00:00Z",
+      "updated_at": "2026-10-15T10:00:00Z"
+    },
+    {
+      "invoice_id": "INV-MINTLIFY-2026-10",
+      "vendor_id": "VEN-MINTLIFY",
+      "invoice_number": "MINT-2026-002",
+      "invoice_date": "2026-10-31",
+      "received_at": "2026-11-01T06:00:00Z",
+      "service_start_date": "2026-10-01",
+      "service_end_date": "2026-10-31",
+      "amount": "1200.00",
+      "currency": "USD",
+      "po_id": "PO-MINTLIFY-2026",
+      "contract_id": "CON-MINTLIFY",
+      "status": "PAID",
+      "duplicate_flag": false,
+      "credit_flag": false,
+      "description": "Mintlify Standard Workspace subscription, October 2026",
+      "line_items_json": null,
+      "created_at": "2026-11-01T06:00:00Z",
+      "updated_at": "2026-11-15T10:00:00Z"
+    },
+    {
+      "invoice_id": "INV-MINTLIFY-2026-11",
+      "vendor_id": "VEN-MINTLIFY",
+      "invoice_number": "MINT-2026-003",
+      "invoice_date": "2026-11-30",
+      "received_at": "2026-12-01T06:00:00Z",
+      "service_start_date": "2026-11-01",
+      "service_end_date": "2026-11-30",
+      "amount": "1200.00",
+      "currency": "USD",
+      "po_id": "PO-MINTLIFY-2026",
+      "contract_id": "CON-MINTLIFY",
+      "status": "POSTED",
+      "duplicate_flag": false,
+      "credit_flag": false,
+      "description": "Mintlify Standard Workspace subscription, November 2026",
+      "line_items_json": null,
+      "created_at": "2026-12-01T06:00:00Z",
+      "updated_at": "2026-12-01T07:30:00Z"
+    },
+    {
+      "invoice_id": "INV-OPENAI-2026-09",
+      "vendor_id": "VEN-OPENAI",
+      "invoice_number": "OA-2026-001",
+      "invoice_date": "2026-09-30",
+      "received_at": "2026-10-01T05:00:00Z",
+      "service_start_date": "2026-09-01",
+      "service_end_date": "2026-09-30",
+      "amount": "14600.00",
+      "currency": "USD",
+      "po_id": "PO-OPENAI-2026",
+      "contract_id": "CON-OPENAI",
+      "status": "PAID",
+      "duplicate_flag": false,
+      "credit_flag": false,
+      "description": "OpenAI API usage, September 2026",
+      "line_items_json": null,
+      "created_at": "2026-10-01T05:00:00Z",
+      "updated_at": "2026-10-16T10:00:00Z"
+    },
+    {
+      "invoice_id": "INV-OPENAI-2026-10",
+      "vendor_id": "VEN-OPENAI",
+      "invoice_number": "OA-2026-002",
+      "invoice_date": "2026-10-31",
+      "received_at": "2026-11-01T05:00:00Z",
+      "service_start_date": "2026-10-01",
+      "service_end_date": "2026-10-31",
+      "amount": "14800.00",
+      "currency": "USD",
+      "po_id": "PO-OPENAI-2026",
+      "contract_id": "CON-OPENAI",
+      "status": "PAID",
+      "duplicate_flag": false,
+      "credit_flag": false,
+      "description": "OpenAI API usage, October 2026",
+      "line_items_json": null,
+      "created_at": "2026-11-01T05:00:00Z",
+      "updated_at": "2026-11-16T10:00:00Z"
+    },
+    {
+      "invoice_id": "INV-OPENAI-2026-11",
+      "vendor_id": "VEN-OPENAI",
+      "invoice_number": "OA-2026-003",
+      "invoice_date": "2026-11-30",
+      "received_at": "2026-12-01T05:00:00Z",
+      "service_start_date": "2026-11-01",
+      "service_end_date": "2026-11-30",
+      "amount": "15600.00",
+      "currency": "USD",
+      "po_id": "PO-OPENAI-2026",
+      "contract_id": "CON-OPENAI",
+      "status": "POSTED",
+      "duplicate_flag": false,
+      "credit_flag": false,
+      "description": "OpenAI API usage, November 2026",
+      "line_items_json": null,
+      "created_at": "2026-12-01T05:00:00Z",
+      "updated_at": "2026-12-01T07:30:00Z"
+    },
+    {
+      "invoice_id": "INV-NOTABILITY-2026-12",
+      "vendor_id": "VEN-NOTABILITY",
+      "invoice_number": "NOTE-2026-001",
+      "invoice_date": "2026-11-24",
+      "received_at": "2026-11-24T10:00:00Z",
+      "service_start_date": "2026-12-01",
+      "service_end_date": "2027-11-30",
+      "amount": "21600.00",
+      "currency": "USD",
+      "po_id": null,
+      "contract_id": "CON-NOTABILITY",
+      "status": "PAID",
+      "duplicate_flag": false,
+      "credit_flag": false,
+      "description": "Notability team subscription, December 2026 to November 2027",
+      "line_items_json": null,
+      "created_at": "2026-11-24T10:00:00Z",
+      "updated_at": "2026-11-28T10:00:00Z"
+    }
+  ],
+  "company_gl_entries": [
+    {
+      "gl_entry_id": "GL-MINTLIFY-2026-09",
+      "period": "2026-10",
+      "posting_date": "2026-10-02",
+      "vendor_id": "VEN-MINTLIFY",
+      "obligation_id": null,
+      "entry_type": "AP_INVOICE",
+      "status": "POSTED",
+      "description": "Mintlify Standard Workspace subscription, September 2026 (MINT-2026-001)",
+      "lines_json": [
+        {
+          "account_code": "610100",
+          "debit": "1200.00",
+          "credit": "0.00",
+          "description": "Mintlify Standard Workspace subscription, September 2026 (MINT-2026-001)"
+        },
+        {
+          "account_code": "200100",
+          "debit": "0.00",
+          "credit": "1200.00",
+          "description": "Mintlify Standard Workspace subscription, September 2026 (MINT-2026-001)"
+        }
+      ],
+      "source_workpaper_id": null,
+      "reversal_of_gl_entry_id": null,
+      "created_at": "2026-10-02T09:00:00Z"
+    },
+    {
+      "gl_entry_id": "GL-MINTLIFY-2026-10",
+      "period": "2026-11",
+      "posting_date": "2026-11-02",
+      "vendor_id": "VEN-MINTLIFY",
+      "obligation_id": null,
+      "entry_type": "AP_INVOICE",
+      "status": "POSTED",
+      "description": "Mintlify Standard Workspace subscription, October 2026 (MINT-2026-002)",
+      "lines_json": [
+        {
+          "account_code": "610100",
+          "debit": "1200.00",
+          "credit": "0.00",
+          "description": "Mintlify Standard Workspace subscription, October 2026 (MINT-2026-002)"
+        },
+        {
+          "account_code": "200100",
+          "debit": "0.00",
+          "credit": "1200.00",
+          "description": "Mintlify Standard Workspace subscription, October 2026 (MINT-2026-002)"
+        }
+      ],
+      "source_workpaper_id": null,
+      "reversal_of_gl_entry_id": null,
+      "created_at": "2026-11-02T09:00:00Z"
+    },
+    {
+      "gl_entry_id": "GL-MINTLIFY-2026-11",
+      "period": "2026-12",
+      "posting_date": "2026-12-01",
+      "vendor_id": "VEN-MINTLIFY",
+      "obligation_id": null,
+      "entry_type": "AP_INVOICE",
+      "status": "POSTED",
+      "description": "Mintlify Standard Workspace subscription, November 2026 (MINT-2026-003)",
+      "lines_json": [
+        {
+          "account_code": "610100",
+          "debit": "1200.00",
+          "credit": "0.00",
+          "description": "Mintlify Standard Workspace subscription, November 2026 (MINT-2026-003)"
+        },
+        {
+          "account_code": "200100",
+          "debit": "0.00",
+          "credit": "1200.00",
+          "description": "Mintlify Standard Workspace subscription, November 2026 (MINT-2026-003)"
+        }
+      ],
+      "source_workpaper_id": null,
+      "reversal_of_gl_entry_id": null,
+      "created_at": "2026-12-01T07:30:00Z"
+    },
+    {
+      "gl_entry_id": "GL-MINTLIFY-2026-11-ACCRUAL",
+      "period": "2026-11",
+      "posting_date": "2026-11-30",
+      "vendor_id": "VEN-MINTLIFY",
+      "obligation_id": null,
+      "entry_type": "ACCRUAL",
+      "status": "REVERSED",
+      "description": "Mintlify November 2026 accrual",
+      "lines_json": [
+        {
+          "account_code": "610100",
+          "debit": "1200.00",
+          "credit": "0.00",
+          "description": "Mintlify November 2026 accrual"
+        },
+        {
+          "account_code": "210100",
+          "debit": "0.00",
+          "credit": "1200.00",
+          "description": "Mintlify November 2026 accrual"
+        }
+      ],
+      "source_workpaper_id": null,
+      "reversal_of_gl_entry_id": null,
+      "created_at": "2026-11-30T18:00:00Z"
+    },
+    {
+      "gl_entry_id": "GL-MINTLIFY-2026-11-ACCRUAL-REV",
+      "period": "2026-12",
+      "posting_date": "2026-12-01",
+      "vendor_id": "VEN-MINTLIFY",
+      "obligation_id": null,
+      "entry_type": "ACCRUAL_REVERSAL",
+      "status": "POSTED",
+      "description": "Reverse Mintlify November 2026 accrual",
+      "lines_json": [
+        {
+          "account_code": "210100",
+          "debit": "1200.00",
+          "credit": "0.00",
+          "description": "Reverse Mintlify November 2026 accrual"
+        },
+        {
+          "account_code": "610100",
+          "debit": "0.00",
+          "credit": "1200.00",
+          "description": "Reverse Mintlify November 2026 accrual"
+        }
+      ],
+      "source_workpaper_id": null,
+      "reversal_of_gl_entry_id": "GL-MINTLIFY-2026-11-ACCRUAL",
+      "created_at": "2026-12-01T06:30:00Z"
+    },
+    {
+      "gl_entry_id": "GL-OPENAI-2026-09",
+      "period": "2026-10",
+      "posting_date": "2026-10-01",
+      "vendor_id": "VEN-OPENAI",
+      "obligation_id": null,
+      "entry_type": "AP_INVOICE",
+      "status": "POSTED",
+      "description": "OpenAI API usage, September 2026 (OA-2026-001)",
+      "lines_json": [
+        {
+          "account_code": "610200",
+          "debit": "14600.00",
+          "credit": "0.00",
+          "description": "OpenAI API usage, September 2026 (OA-2026-001)"
+        },
+        {
+          "account_code": "200100",
+          "debit": "0.00",
+          "credit": "14600.00",
+          "description": "OpenAI API usage, September 2026 (OA-2026-001)"
+        }
+      ],
+      "source_workpaper_id": null,
+      "reversal_of_gl_entry_id": null,
+      "created_at": "2026-10-01T06:30:00Z"
+    },
+    {
+      "gl_entry_id": "GL-OPENAI-2026-10",
+      "period": "2026-11",
+      "posting_date": "2026-11-01",
+      "vendor_id": "VEN-OPENAI",
+      "obligation_id": null,
+      "entry_type": "AP_INVOICE",
+      "status": "POSTED",
+      "description": "OpenAI API usage, October 2026 (OA-2026-002)",
+      "lines_json": [
+        {
+          "account_code": "610200",
+          "debit": "14800.00",
+          "credit": "0.00",
+          "description": "OpenAI API usage, October 2026 (OA-2026-002)"
+        },
+        {
+          "account_code": "200100",
+          "debit": "0.00",
+          "credit": "14800.00",
+          "description": "OpenAI API usage, October 2026 (OA-2026-002)"
+        }
+      ],
+      "source_workpaper_id": null,
+      "reversal_of_gl_entry_id": null,
+      "created_at": "2026-11-01T06:30:00Z"
+    },
+    {
+      "gl_entry_id": "GL-OPENAI-2026-10-ACCRUAL",
+      "period": "2026-10",
+      "posting_date": "2026-10-31",
+      "vendor_id": "VEN-OPENAI",
+      "obligation_id": null,
+      "entry_type": "ACCRUAL",
+      "status": "REVERSED",
+      "description": "OpenAI October 2026 accrual",
+      "lines_json": [
+        {
+          "account_code": "610200",
+          "debit": "11840.00",
+          "credit": "0.00",
+          "description": "OpenAI October 2026 accrual"
+        },
+        {
+          "account_code": "210100",
+          "debit": "0.00",
+          "credit": "11840.00",
+          "description": "OpenAI October 2026 accrual"
+        }
+      ],
+      "source_workpaper_id": null,
+      "reversal_of_gl_entry_id": null,
+      "created_at": "2026-10-31T18:00:00Z"
+    },
+    {
+      "gl_entry_id": "GL-OPENAI-2026-10-ACCRUAL-REV",
+      "period": "2026-11",
+      "posting_date": "2026-11-01",
+      "vendor_id": "VEN-OPENAI",
+      "obligation_id": null,
+      "entry_type": "ACCRUAL_REVERSAL",
+      "status": "POSTED",
+      "description": "Reverse OpenAI October 2026 accrual",
+      "lines_json": [
+        {
+          "account_code": "210100",
+          "debit": "11840.00",
+          "credit": "0.00",
+          "description": "Reverse OpenAI October 2026 accrual"
+        },
+        {
+          "account_code": "610200",
+          "debit": "0.00",
+          "credit": "11840.00",
+          "description": "Reverse OpenAI October 2026 accrual"
+        }
+      ],
+      "source_workpaper_id": null,
+      "reversal_of_gl_entry_id": "GL-OPENAI-2026-10-ACCRUAL",
+      "created_at": "2026-11-01T05:30:00Z"
+    },
+    {
+      "gl_entry_id": "GL-OPENAI-2026-11",
+      "period": "2026-12",
+      "posting_date": "2026-12-01",
+      "vendor_id": "VEN-OPENAI",
+      "obligation_id": null,
+      "entry_type": "AP_INVOICE",
+      "status": "POSTED",
+      "description": "OpenAI API usage, November 2026 (OA-2026-003)",
+      "lines_json": [
+        {
+          "account_code": "610200",
+          "debit": "15600.00",
+          "credit": "0.00",
+          "description": "OpenAI API usage, November 2026 (OA-2026-003)"
+        },
+        {
+          "account_code": "200100",
+          "debit": "0.00",
+          "credit": "15600.00",
+          "description": "OpenAI API usage, November 2026 (OA-2026-003)"
+        }
+      ],
+      "source_workpaper_id": null,
+      "reversal_of_gl_entry_id": null,
+      "created_at": "2026-12-01T06:30:00Z"
+    },
+    {
+      "gl_entry_id": "GL-OPENAI-2026-11-ACCRUAL",
+      "period": "2026-11",
+      "posting_date": "2026-11-30",
+      "vendor_id": "VEN-OPENAI",
+      "obligation_id": null,
+      "entry_type": "ACCRUAL",
+      "status": "REVERSED",
+      "description": "OpenAI November 2026 accrual",
+      "lines_json": [
+        {
+          "account_code": "610200",
+          "debit": "12480.00",
+          "credit": "0.00",
+          "description": "OpenAI November 2026 accrual"
+        },
+        {
+          "account_code": "210100",
+          "debit": "0.00",
+          "credit": "12480.00",
+          "description": "OpenAI November 2026 accrual"
+        }
+      ],
+      "source_workpaper_id": null,
+      "reversal_of_gl_entry_id": null,
+      "created_at": "2026-11-30T18:00:00Z"
+    },
+    {
+      "gl_entry_id": "GL-OPENAI-2026-11-ACCRUAL-REV",
+      "period": "2026-12",
+      "posting_date": "2026-12-01",
+      "vendor_id": "VEN-OPENAI",
+      "obligation_id": null,
+      "entry_type": "ACCRUAL_REVERSAL",
+      "status": "POSTED",
+      "description": "Reverse OpenAI November 2026 accrual",
+      "lines_json": [
+        {
+          "account_code": "210100",
+          "debit": "12480.00",
+          "credit": "0.00",
+          "description": "Reverse OpenAI November 2026 accrual"
+        },
+        {
+          "account_code": "610200",
+          "debit": "0.00",
+          "credit": "12480.00",
+          "description": "Reverse OpenAI November 2026 accrual"
+        }
+      ],
+      "source_workpaper_id": null,
+      "reversal_of_gl_entry_id": "GL-OPENAI-2026-11-ACCRUAL",
+      "created_at": "2026-12-01T05:30:00Z"
+    },
+    {
+      "gl_entry_id": "GL-NOTABILITY-2026-12",
+      "period": "2026-11",
+      "posting_date": "2026-11-25",
+      "vendor_id": "VEN-NOTABILITY",
+      "obligation_id": null,
+      "entry_type": "AP_INVOICE",
+      "status": "POSTED",
+      "description": "Notability annual subscription prepaid (NOTE-2026-001)",
+      "lines_json": [
+        {
+          "account_code": "150100",
+          "debit": "21600.00",
+          "credit": "0.00",
+          "description": "Notability annual subscription prepaid (NOTE-2026-001)"
+        },
+        {
+          "account_code": "200100",
+          "debit": "0.00",
+          "credit": "21600.00",
+          "description": "Notability annual subscription prepaid (NOTE-2026-001)"
+        }
+      ],
+      "source_workpaper_id": null,
+      "reversal_of_gl_entry_id": null,
+      "created_at": "2026-11-25T09:00:00Z"
+    },
+    {
+      "gl_entry_id": "GL-NOTABILITY-2026-12-MANUAL",
+      "period": "2026-12",
+      "posting_date": "2026-12-01",
+      "vendor_id": "VEN-NOTABILITY",
+      "obligation_id": null,
+      "entry_type": "MANUAL_ADJUSTMENT",
+      "status": "POSTED",
+      "description": "Expense Notability annual subscription in full",
+      "lines_json": [
+        {
+          "account_code": "610100",
+          "debit": "21600.00",
+          "credit": "0.00",
+          "description": "Expense Notability annual subscription in full"
+        },
+        {
+          "account_code": "150100",
+          "debit": "0.00",
+          "credit": "21600.00",
+          "description": "Expense Notability annual subscription in full"
+        }
+      ],
+      "source_workpaper_id": null,
+      "reversal_of_gl_entry_id": null,
+      "created_at": "2026-12-01T07:00:00Z"
+    }
+  ],
+  "company_config": [
+    {
+      "config_key": "people",
+      "config_value_json": [
+        {
+          "person_id": "CONTROLLER-001",
+          "name": "Maya Chen",
+          "role": "Controller",
+          "email": "maya.chen@northstar.example"
+        },
+        {
+          "person_id": "AP-001",
+          "name": "Jordan Patel",
+          "role": "AP Specialist",
+          "email": "jordan.patel@northstar.example"
+        },
+        {
+          "person_id": "PROC-001",
+          "name": "Avery Rivera",
+          "role": "Procurement Manager",
+          "email": "avery.rivera@northstar.example"
+        },
+        {
+          "person_id": "ENG-001",
+          "name": "Riley Kim",
+          "role": "Engineering Service Owner",
+          "email": "riley.kim@northstar.example"
+        },
+        {
+          "person_id": "OPS-001",
+          "name": "Taylor Morgan",
+          "role": "Operations Owner",
+          "email": "taylor.morgan@northstar.example"
+        },
+        {
+          "person_id": "MKT-001",
+          "name": "Priya Nair",
+          "role": "Marketing Owner",
+          "email": "priya.nair@northstar.example"
+        }
+      ],
+      "updated_at": "2026-12-01T08:00:00Z"
+    },
+    {
+      "config_key": "ownership_map",
+      "config_value_json": {
+        "controller": "CONTROLLER-001",
+        "default_ap_owner": "AP-001",
+        "vendors": {
+          "VEN-MINTLIFY": {
+            "service_owner_id": "ENG-001",
+            "procurement_owner_id": "PROC-001",
+            "po_owner_id": "ENG-001"
+          },
+          "VEN-OPENAI": {
+            "service_owner_id": "ENG-001",
+            "procurement_owner_id": "PROC-001",
+            "po_owner_id": "ENG-001"
+          },
+          "VEN-ASUS": {
+            "service_owner_id": "OPS-001",
+            "procurement_owner_id": "PROC-001",
+            "po_owner_id": "OPS-001"
+          },
+          "VEN-META": {
+            "service_owner_id": "MKT-001",
+            "procurement_owner_id": "PROC-001",
+            "po_owner_id": "MKT-001"
+          },
+          "VEN-NOTABILITY": {
+            "service_owner_id": "OPS-001",
+            "procurement_owner_id": "PROC-001",
+            "po_owner_id": null
+          }
+        }
+      },
+      "updated_at": "2026-12-01T08:00:00Z"
+    },
+    {
+      "config_key": "accounting_periods",
+      "config_value_json": {
+        "2026-09": {
+          "status": "CLOSED",
+          "phase": "HISTORICAL",
+          "period_start": "2026-09-01",
+          "period_end": "2026-09-30",
+          "close_cutoff": "2026-09-30T23:59:00Z"
+        },
+        "2026-10": {
+          "status": "CLOSED",
+          "phase": "HISTORICAL",
+          "period_start": "2026-10-01",
+          "period_end": "2026-10-31",
+          "close_cutoff": "2026-10-31T23:59:00Z"
+        },
+        "2026-11": {
+          "status": "CLOSED",
+          "phase": "HISTORICAL",
+          "period_start": "2026-11-01",
+          "period_end": "2026-11-30",
+          "close_cutoff": "2026-11-30T23:59:00Z"
+        },
+        "2026-12": {
+          "status": "OPEN",
+          "phase": "LIVE",
+          "period_start": "2026-12-01",
+          "period_end": "2026-12-31",
+          "close_cutoff": "2026-12-31T23:59:00Z"
+        },
+        "2027-01": {
+          "status": "OPEN",
+          "phase": "LIVE",
+          "period_start": "2027-01-01",
+          "period_end": "2027-01-31",
+          "close_cutoff": "2027-01-31T23:59:00Z"
+        }
+      },
+      "updated_at": "2026-12-01T08:00:00Z"
+    },
+    {
+      "config_key": "approval_thresholds",
+      "config_value_json": {
+        "controller_review_above_usd": "25000",
+        "mandatory_review_above_usd": "100000",
+        "de_minimis_threshold_usd": "5000"
+      },
+      "updated_at": "2026-12-01T08:00:00Z"
+    },
+    {
+      "config_key": "policy_rules",
+      "config_value_json": [
+        {
+          "rule_id": "POL-01",
+          "text": "Never auto-post a case that requires Controller review"
+        },
+        {
+          "rule_id": "POL-02",
+          "text": "Never accrue when a matching AP invoice exists"
+        },
+        {
+          "rule_id": "POL-03",
+          "text": "Require evidence of service receipt for receipt or usage-based spend"
+        },
+        {
+          "rule_id": "POL-04",
+          "text": "Require an open accounting period"
+        },
+        {
+          "rule_id": "POL-05",
+          "text": "Require a balanced journal entry"
+        },
+        {
+          "rule_id": "POL-06",
+          "text": "Require an active contract or PO, or an approved fallback"
+        },
+        {
+          "rule_id": "POL-07",
+          "text": "Capitalize equipment over the threshold and depreciate it over its life"
+        },
+        {
+          "rule_id": "POL-08",
+          "text": "Record prepaid services as an asset and expense them over the term"
+        }
+      ],
+      "updated_at": "2026-12-01T08:00:00Z"
+    },
+    {
+      "config_key": "allowed_gl_accounts",
+      "config_value_json": [
+        {
+          "account_code": "610100",
+          "name": "SaaS Expense",
+          "type": "EXPENSE"
+        },
+        {
+          "account_code": "610200",
+          "name": "Cloud & Data Expense",
+          "type": "EXPENSE"
+        },
+        {
+          "account_code": "610300",
+          "name": "Consulting Expense",
+          "type": "EXPENSE"
+        },
+        {
+          "account_code": "610400",
+          "name": "Office & Supplies Expense",
+          "type": "EXPENSE"
+        },
+        {
+          "account_code": "610500",
+          "name": "Marketing & Travel Expense",
+          "type": "EXPENSE"
+        },
+        {
+          "account_code": "610600",
+          "name": "Depreciation Expense",
+          "type": "EXPENSE"
+        },
+        {
+          "account_code": "150100",
+          "name": "Prepaid Expenses",
+          "type": "ASSET"
+        },
+        {
+          "account_code": "150200",
+          "name": "Fixed Assets - Computer Equipment",
+          "type": "ASSET"
+        },
+        {
+          "account_code": "150290",
+          "name": "Accumulated Depreciation",
+          "type": "CONTRA_ASSET"
+        },
+        {
+          "account_code": "210100",
+          "name": "Accrued Expenses",
+          "type": "LIABILITY"
+        },
+        {
+          "account_code": "210200",
+          "name": "Accrued Card Expenses",
+          "type": "LIABILITY"
+        },
+        {
+          "account_code": "200100",
+          "name": "Accounts Payable",
+          "type": "LIABILITY"
+        }
+      ],
+      "updated_at": "2026-12-01T08:00:00Z"
+    },
+    {
+      "config_key": "capitalization_policy",
+      "config_value_json": {
+        "threshold_usd": "5000",
+        "useful_life_months": 36
+      },
+      "updated_at": "2026-12-01T08:00:00Z"
+    },
+    {
+      "config_key": "simulation_clock",
+      "config_value_json": {
+        "current_time": "2026-12-01T08:00:00Z"
+      },
+      "updated_at": "2026-12-01T08:00:00Z"
+    },
+    {
+      "config_key": "company_profile",
+      "config_value_json": {
+        "name": "Northstar Analytics, Inc.",
+        "currency": "USD",
+        "close_cycle": "CALENDAR_MONTH",
+        "entities": [
+          "ENT-001"
+        ],
+        "accounting_basis": "ACCRUAL"
+      },
+      "updated_at": "2026-12-01T08:00:00Z"
+    }
+  ]
+}

@@ -26,6 +26,7 @@ from trueup.db import (
     CardStatement,
     CloseItem,
     Contract,
+    DocumentRecord,
     LearningEntry,
     OutreachRequest,
     POHeader,
@@ -42,6 +43,7 @@ app = FastAPI(title="TrueUp")
 EVIDENCE_TABLES = {
     "vendors": Vendor,
     "contracts": Contract,
+    "documents": DocumentRecord,
     "po_headers": POHeader,
     "po_lines": POLine,
     "ap_invoices": APInvoice,
