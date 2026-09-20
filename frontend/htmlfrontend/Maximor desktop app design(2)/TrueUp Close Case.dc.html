@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#F7F7F4;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+a{color:#2E7D45;text-decoration:none}
+a:hover{color:#1C5730}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:#DEDED7;border-radius:8px}
+::-webkit-scrollbar-track{background:transparent}
+[data-hscroll]::-webkit-scrollbar{height:0;width:0}
+@keyframes pulseRing{0%{transform:scale(.72);opacity:.5}70%{transform:scale(1.5);opacity:0}100%{transform:scale(1.5);opacity:0}}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important}}
+</style>
+</helmet>
+<div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:#1D1F1B;display:flex;height:100vh;min-height:620px;background:#FCFCFA;overflow-x:auto;overflow-y:hidden">
+
+  <aside style="width:232px;flex:none;background:#F6F6F3;border-right:1px solid #E7E7E2;display:flex;flex-direction:column;padding:22px 0 18px">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:0 20px 24px">
+      <div style="font-size:13.5px;font-weight:600;letter-spacing:0.2em;color:#1D1F1B">TRUEUP</div>
+      <svg width="17" height="17" viewBox="0 0 17 17" fill="none"><circle cx="7.6" cy="7.6" r="5.1" stroke="#767B72" stroke-width="1.3"></circle><path d="M11.4 11.4L14.6 14.6" stroke="#767B72" stroke-width="1.3" stroke-linecap="round"></path></svg>
+    </div>
+
+    <nav style="display:flex;flex-direction:column;gap:1px;padding:0 12px">
+      <div style="display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:7px;font-size:14.5px;color:#33362F;cursor:pointer" style-hover="background:#EDEDE7">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M2.6 7.6L9 2.6l6.4 5v7.1a.9.9 0 0 1-.9.9H3.5a.9.9 0 0 1-.9-.9z" stroke="#5E635A" stroke-width="1.25" stroke-linejoin="round"></path></svg>
+        Home
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:7px;font-size:14.5px;color:#1D1F1B;cursor:pointer" style-hover="background:#EDEDE7">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M3.6 2.3h7L14.4 6v9.7H3.6z" stroke="#5E635A" stroke-width="1.25" stroke-linejoin="round"></path><path d="M10.6 2.3V6h3.8" stroke="#5E635A" stroke-width="1.25" stroke-linejoin="round"></path></svg>
+        <span style="flex:1">Close</span>
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 4.6L6 7.6l3-3" stroke="#8E938A" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+      </div>
+      <div style="display:flex;align-items:center;padding:7px 10px 7px 42px;border-radius:7px;font-size:14px;color:#1D1F1B;background:#E9EFE8;cursor:pointer">Active cases</div>
+      <a href="TrueUp All Cases.dc.html" style="display:flex;align-items:center;padding:7px 10px 7px 42px;border-radius:7px;font-size:14px;color:#5A5F57;transition:background .16s ease-out" style-hover="background:#EDEDE7;color:#1D1F1B">All cases</a>
+      <div style="display:flex;align-items:center;padding:7px 10px 7px 42px;border-radius:7px;font-size:14px;color:#5A5F57;cursor:pointer" style-hover="background:#EDEDE7">Journals</div>
+      <div style="display:flex;align-items:center;padding:7px 10px 7px 42px;border-radius:7px;font-size:14px;color:#5A5F57;cursor:pointer" style-hover="background:#EDEDE7">Reconciliations</div>
+
+      <div style="height:18px"></div>
+      <a href="TrueUp Vendors.dc.html" style="display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:7px;font-size:14.5px;color:#33362F;cursor:pointer" style-hover="background:#EDEDE7;color:#1D1F1B">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="2.5" y="3.4" width="13" height="11.2" rx="1.6" stroke="#5E635A" stroke-width="1.25"></rect><path d="M2.5 7.2h13" stroke="#5E635A" stroke-width="1.25"></path><circle cx="5.6" cy="10.8" r="1" fill="#5E635A"></circle></svg>
+        Vendors
+      </a>
+      <div style="display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:7px;font-size:14.5px;color:#33362F;cursor:pointer" style-hover="background:#EDEDE7">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M3.6 2.3h7L14.4 6v9.7H3.6z" stroke="#5E635A" stroke-width="1.25" stroke-linejoin="round"></path><path d="M10.6 2.3V6h3.8" stroke="#5E635A" stroke-width="1.25" stroke-linejoin="round"></path></svg>
+        Documents
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:7px;font-size:14.5px;color:#33362F;cursor:pointer" style-hover="background:#EDEDE7">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="2.5" y="3" width="13" height="12" rx="1.6" stroke="#5E635A" stroke-width="1.25"></rect><path d="M5.2 11.4l2.4-2.9 2.2 1.9 2.8-3.3" stroke="#5E635A" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        Insights
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:7px;font-size:14.5px;color:#33362F;cursor:pointer" style-hover="background:#EDEDE7">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="2.6" stroke="#5E635A" stroke-width="1.25"></circle><circle cx="9" cy="9" r="6.1" stroke="#5E635A" stroke-width="1.25" stroke-dasharray="2.2 2.4"></circle></svg>
+        Settings
+      </div>
+    </nav>
+
+    <div style="flex:1"></div>
+
+    <div style="padding:0 12px">
+      <div style="height:1px;background:#E4E4DD;margin:0 8px 16px"></div>
+      <div style="display:flex;align-items:center;gap:10px;padding:6px 10px;border-radius:7px;cursor:pointer" style-hover="background:#EDEDE7">
+        <div style="flex:1">
+          <div style="font-size:14px;color:#1D1F1B">December 2026</div>
+          <div style="font-size:12.5px;color:#8E938A;margin-top:2px">Controller</div>
+        </div>
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4.4 2.6l3 3.4-3 3.4" stroke="#8E938A" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+      </div>
+      <div style="display:flex;align-items:center;gap:11px;padding:10px 10px 4px">
+        <div style="width:34px;height:34px;flex:none;border-radius:50%;background:#26503A;color:#F3F4F0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;letter-spacing:0.03em">TS</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:14px;color:#1D1F1B">Taylor Smith</div>
+          <div style="font-size:12.5px;color:#8E938A;margin-top:2px">Mintlify</div>
+        </div>
+        <div style="font-size:15px;color:#9AA096;letter-spacing:0.06em;cursor:pointer">•••</div>
+      </div>
+    </div>
+  </aside>
+
+  <main style="flex:1;min-width:760px;display:flex;flex-direction:column;overflow:hidden">
+    <div style="padding:26px 34px 0;flex:none">
+      <div style="font-size:10.5px;font-weight:500;letter-spacing:0.15em;color:#8E938A">CLOSE &nbsp;/&nbsp; ACTIVE CASE</div>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:24px;margin-top:14px">
+        <div style="min-width:0">
+          <div style="font-family:Newsreader,'Times New Roman',serif;font-size:46px;line-height:1.02;letter-spacing:-0.012em;color:#16180F">Mintlify</div>
+          <div style="font-family:Newsreader,'Times New Roman',serif;font-size:36px;line-height:1.1;letter-spacing:-0.008em;color:#16180F;margin-top:2px">December accrual</div>
+          <div style="display:flex;align-items:center;gap:15px;margin-top:15px;font-size:15px;color:#75796F">
+            <span>Recurring fixed</span>
+            <span style="color:#D6D6CF">|</span>
+            <span>Vendor VND-0412</span>
+            <span style="color:#D6D6CF">|</span>
+            <span>GL 6042 - Subscriptions</span>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex:none;padding-top:6px">
+          <button style="display:flex;align-items:center;gap:9px;padding:9px 14px;border-radius:8px;border:1px solid #E2E2DB;background:#FFFFFF;font:400 13.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#33362F;cursor:pointer;white-space:nowrap;box-shadow:0 1px 1.5px rgba(30,32,28,0.04)" style-hover="background:#FAFAF7">
+            <svg width="14" height="16" viewBox="0 0 14 16" fill="none"><path d="M2.2 1.6h6.3L11.8 5v9.4H2.2z" stroke="#6E736A" stroke-width="1.1" stroke-linejoin="round"></path><path d="M8.5 1.6V5h3.3" stroke="#6E736A" stroke-width="1.1" stroke-linejoin="round"></path><path d="M4.4 8.2h5.2M4.4 10.6h3.6" stroke="#6E736A" stroke-width="1.1" stroke-linecap="round"></path></svg>
+            View case notes
+          </button>
+          <button style="width:38px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:8px;border:1px solid transparent;background:transparent;color:#6E736A;font-size:15px;letter-spacing:0.06em;cursor:pointer" style-hover="background:#F1F1EC">•••</button>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin-top:26px;padding-bottom:22px">
+        <div style="padding-right:24px">
+          <div style="font-size:10.5px;font-weight:500;letter-spacing:0.13em;color:#8A8F86">PREVIOUS ACCRUAL</div>
+          <div style="font-family:Newsreader,'Times New Roman',serif;font-size:28px;color:#16180F;margin-top:9px;line-height:1">$1,200</div>
+        </div>
+        <div style="padding:0 24px;border-left:1px solid #E7E7E2">
+          <div style="font-size:10.5px;font-weight:500;letter-spacing:0.13em;color:#8A8F86">SUPPORTED</div>
+          <div style="font-family:Newsreader,'Times New Roman',serif;font-size:28px;color:#A8ADA3;margin-top:9px;line-height:1">—</div>
+        </div>
+        <div style="padding:0 24px;border-left:1px solid #E7E7E2">
+          <div style="font-size:10.5px;font-weight:500;letter-spacing:0.13em;color:#8A8F86">DIFFERENCE</div>
+          <div style="font-family:Newsreader,'Times New Roman',serif;font-size:28px;color:#A8ADA3;margin-top:9px;line-height:1">—</div>
+        </div>
+        <div style="padding:0 24px;border-left:1px solid #E7E7E2">
+          <div style="font-size:10.5px;font-weight:500;letter-spacing:0.13em;color:#8A8F86">STATUS</div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:9px">
+            <span style="width:9px;height:9px;border-radius:50%;background:#2E8047;flex:none"></span>
+            <span style="font-family:Newsreader,'Times New Roman',serif;font-size:24px;color:#16180F;line-height:1">Running</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:10px;padding-bottom:12px;color:#5A5F57">
+        <div ref="{{ tabsRef }}" data-hscroll="1" style="flex:1;min-width:0;display:flex;align-items:center;gap:3px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;padding-bottom:1px;maskImage:{{ tabsMask }};WebkitMaskImage:{{ tabsMask }}">
+        <button onClick="{{ tab_all }}" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;border:1px solid transparent;background:transparent;font:500 13px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;cursor:pointer;white-space:nowrap;backgroundColor:{{ tbg_all }};borderColor:{{ tbd_all }};boxShadow:{{ tsh_all }};color:{{ tfg_all }};fontWeight:{{ tfw_all }}" style-hover="background:#F1F1EC">
+          <svg width="14" height="15" viewBox="0 0 14 15" fill="none"><rect x="1.6" y="1.4" width="10.8" height="12.2" rx="1.4" stroke="#4E7D5C" stroke-width="1.15"></rect><path d="M4.2 5.2h5.6M4.2 7.6h5.6M4.2 10h3.4" stroke="#4E7D5C" stroke-width="1.15" stroke-linecap="round"></path></svg>
+          All sources (10)
+        </button>
+        <button onClick="{{ tab_agreement }}" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;border:1px solid transparent;background:transparent;font:400 13px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;cursor:pointer;white-space:nowrap;backgroundColor:{{ tbg_agreement }};borderColor:{{ tbd_agreement }};boxShadow:{{ tsh_agreement }};color:{{ tfg_agreement }};fontWeight:{{ tfw_agreement }}" style-hover="background:#F1F1EC">
+          <svg width="14" height="15" viewBox="0 0 14 15" fill="none"><path d="M2.3 1.5h6L11.7 5v8.5H2.3z" stroke="#8E938A" stroke-width="1.1" stroke-linejoin="round"></path><path d="M8.3 1.5V5h3.4" stroke="#8E938A" stroke-width="1.1" stroke-linejoin="round"></path></svg>
+          Mintlify agreement (1)
+        </button>
+        <button onClick="{{ tab_ap }}" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;border:1px solid transparent;background:transparent;font:400 13px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;cursor:pointer;white-space:nowrap;backgroundColor:{{ tbg_ap }};borderColor:{{ tbd_ap }};boxShadow:{{ tsh_ap }};color:{{ tfg_ap }};fontWeight:{{ tfw_ap }}" style-hover="background:#F1F1EC">
+          <svg width="14" height="15" viewBox="0 0 14 15" fill="none"><rect x="1.8" y="1.6" width="10.4" height="11.8" rx="1.3" stroke="#8E938A" stroke-width="1.1"></rect><path d="M1.8 5.4h10.4M5.6 5.4v8" stroke="#8E938A" stroke-width="1.1"></path></svg>
+          AP history (1)
+        </button>
+        <button onClick="{{ tab_prior }}" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;border:1px solid transparent;background:transparent;font:400 13px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;cursor:pointer;white-space:nowrap;backgroundColor:{{ tbg_prior }};borderColor:{{ tbd_prior }};boxShadow:{{ tsh_prior }};color:{{ tfg_prior }};fontWeight:{{ tfw_prior }}" style-hover="background:#F1F1EC">
+          <svg width="14" height="15" viewBox="0 0 14 15" fill="none"><path d="M2.3 1.5h6L11.7 5v8.5H2.3z" stroke="#8E938A" stroke-width="1.1" stroke-linejoin="round"></path><path d="M4.6 8h4.8M4.6 10.4h3" stroke="#8E938A" stroke-width="1.1" stroke-linecap="round"></path></svg>
+          Prior close (1)
+        </button>
+        <button onClick="{{ tab_vendor }}" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;border:1px solid transparent;background:transparent;font:400 13px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;cursor:pointer;white-space:nowrap;backgroundColor:{{ tbg_vendor }};borderColor:{{ tbd_vendor }};boxShadow:{{ tsh_vendor }};color:{{ tfg_vendor }};fontWeight:{{ tfw_vendor }}" style-hover="background:#F1F1EC">
+          <svg width="14" height="15" viewBox="0 0 14 15" fill="none"><rect x="1.8" y="2.4" width="10.4" height="10.2" rx="1.3" stroke="#8E938A" stroke-width="1.1"></rect><path d="M1.8 5.8h10.4" stroke="#8E938A" stroke-width="1.1"></path></svg>
+          Vendor master (1)
+        </button>
+        <button onClick="{{ tab_gl }}" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;border:1px solid transparent;background:transparent;font:400 13px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;cursor:pointer;white-space:nowrap;backgroundColor:{{ tbg_gl }};borderColor:{{ tbd_gl }};boxShadow:{{ tsh_gl }};color:{{ tfg_gl }};fontWeight:{{ tfw_gl }}" style-hover="background:#F1F1EC">
+          <svg width="14" height="15" viewBox="0 0 14 15" fill="none"><circle cx="7" cy="7.5" r="5.4" stroke="#8E938A" stroke-width="1.1"></circle><path d="M7 4.4v6.2M4.6 7.5h4.8" stroke="#8E938A" stroke-width="1.1" stroke-linecap="round"></path></svg>
+          General ledger (1)
+        </button>
+        </div>
+        <div style="display:flex;align-items:center;gap:2px;flex:none">
+        <button style="width:34px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:8px;border:1px solid transparent;background:transparent;cursor:pointer" style-hover="background:#F1F1EC">
+          <svg width="16" height="16" viewBox="0 0 17 17" fill="none"><circle cx="7.6" cy="7.6" r="5.1" stroke="#767B72" stroke-width="1.3"></circle><path d="M11.4 11.4L14.6 14.6" stroke="#767B72" stroke-width="1.3" stroke-linecap="round"></path></svg>
+        </button>
+        <button style="display:flex;align-items:center;gap:7px;padding:8px 10px;border-radius:8px;border:1px solid transparent;background:transparent;font:400 13px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#5A5F57;cursor:pointer;white-space:nowrap" style-hover="background:#F1F1EC">
+          Sort: Relevance
+          <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M3 4.6L6 7.6l3-3" stroke="#8E938A" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        </button>
+        </div>
+      </div>
+    </div>
+
+    <div style="height:1px;background:#E7E7E2;flex:none"></div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:20px;padding:13px 34px;flex:none">
+      <div style="display:flex;align-items:center;gap:11px;min-width:0">
+        <span style="position:relative;width:9px;height:9px;flex:none">
+          <span style="position:absolute;inset:0;border-radius:50%;background:#2E8047"></span>
+          <span style="position:absolute;inset:-4px;border-radius:50%;border:1.3px solid rgba(46,128,71,.55);animation:pulseRing 2.6s cubic-bezier(.22,.61,.36,1) infinite;transition:opacity .3s ease-out;opacity:{{ pulseOp }}"></span>
+        </span>
+        <span style="font-size:13.5px;font-weight:500;color:#1D1F1B;white-space:nowrap">Ingestion agent</span>
+        <span style="font-size:13.5px;color:#9AA096;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ statusText }}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px;flex:none;font-size:13px">
+        <span style="color:#8E938A">10 files loaded</span>
+        <span style="color:#DDDDD6">|</span>
+        <span style="color:#1D1F1B;font-weight:500">{{ selCount }} selected</span>
+      </div>
+    </div>
+
+    <div style="flex:1;overflow-y:auto;padding:0 34px 34px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(164px,1fr));gap:13px">
+
+        <div onClick="{{ go_agreement }}" style="position:relative;height:288px;overflow:hidden;background:#FFFFFF;border:1px solid #E9E9E3;border-radius:7px;cursor:pointer;transition:box-shadow .15s;blockSize:{{ cardH }};borderColor:{{ bd_agreement }};boxShadow:{{ sh_agreement }};display:{{ show_agreement }}">
+          <sc-if value="{{ sel_agreement }}" hint-placeholder-val="{{ true }}"><div style="position:absolute;top:10px;right:11px;background:#E3EFE2;color:#2C6B3C;font-size:8.5px;font-weight:600;letter-spacing:0.1em;padding:4px 6px;border-radius:3px">SELECTED</div></sc-if>
+          <div style="padding:29px 14px 0">
+            <div style="font-family:Newsreader,'Times New Roman',serif;font-size:19px;line-height:1.1;color:#16180F">Mintlify</div>
+            <div style="font-size:9.5px;color:#7E837A;margin-top:5px">Master Subscription Agreement</div>
+            <div style="height:1px;background:#EAEAE3;margin:11px 0 11px"></div>
+            <div style="font-size:9.5px;font-weight:600;color:#2D302A">4. Fees and Payment</div>
+            <div style="display:flex;gap:7px;margin-top:9px">
+              <div style="font-size:8.5px;color:#A0A59B;flex:none">4.2</div>
+              <div style="font-size:8.5px;line-height:1.7;color:#4A4E46;text-wrap:pretty">Commencing December 1, 2026, the monthly subscription fee for the Standard Workspace plan shall increase from $1,200 to $1,400 per month for the remainder of the term.</div>
+            </div>
+          </div>
+          <div style="position:absolute;left:0;right:0;bottom:0;display:flex;align-items:center;gap:9px;padding:20px 14px 13px;background:linear-gradient(to bottom,rgba(255,255,255,0),#FFFFFF 26%)">
+            <svg width="14" height="16" viewBox="0 0 14 16" fill="none" style="flex:none"><path d="M2.2 1.6h6.3L11.8 5v9.4H2.2z" stroke="#9AA096" stroke-width="1.1" stroke-linejoin="round"></path><path d="M8.5 1.6V5h3.3" stroke="#9AA096" stroke-width="1.1" stroke-linejoin="round"></path></svg>
+            <div style="min-width:0">
+              <div style="font-size:12.5px;color:#1D1F1B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Mintlify agreement</div>
+              <div style="font-size:11px;color:#9AA096;margin-top:3px">PDF &nbsp;·&nbsp; 14 pages</div>
+            </div>
+          </div>
+        </div>
+
+        <div onClick="{{ go_ap }}" style="position:relative;height:288px;overflow:hidden;background:#FFFFFF;border:1px solid #E9E9E3;border-radius:7px;cursor:pointer;transition:box-shadow .15s;blockSize:{{ cardH }};borderColor:{{ bd_ap }};boxShadow:{{ sh_ap }};display:{{ show_ap }}">
+          <sc-if value="{{ sel_ap }}" hint-placeholder-val="{{ true }}"><div style="position:absolute;top:10px;right:11px;background:#E3EFE2;color:#2C6B3C;font-size:8.5px;font-weight:600;letter-spacing:0.1em;padding:4px 6px;border-radius:3px">SELECTED</div></sc-if>
+          <div style="padding:29px 14px 0">
+            <div style="font-family:Newsreader,'Times New Roman',serif;font-size:19px;line-height:1.1;color:#16180F">Accounts Payable</div>
+            <div style="font-size:9.5px;color:#7E837A;margin-top:5px">Vendor History</div>
+            <div style="display:grid;grid-template-columns:52px 1fr auto;gap:0 6px;margin-top:14px;font-size:7.5px;letter-spacing:0.08em;color:#A0A59B;padding-bottom:5px;border-bottom:1px solid #EAEAE3">
+              <div>DATE</div><div>DESCRIPTION</div><div style="text-align:right">AMOUNT</div>
+            </div>
+            <div style="display:grid;grid-template-columns:52px 1fr auto;gap:8px 6px;margin-top:8px;font-size:8.5px;color:#4A4E46">
+              <div>10/01/2026</div><div>Mintlify subscription</div><div style="text-align:right">$1,200</div>
+              <div>09/01/2026</div><div>Mintlify subscription</div><div style="text-align:right">$1,200</div>
+              <div>08/01/2026</div><div>Mintlify subscription</div><div style="text-align:right">$1,200</div>
+              <div>07/01/2026</div><div>Mintlify subscription</div><div style="text-align:right">$1,200</div>
+            </div>
+          </div>
+          <div style="position:absolute;left:0;right:0;bottom:0;display:flex;align-items:center;gap:9px;padding:20px 14px 13px;background:linear-gradient(to bottom,rgba(255,255,255,0),#FFFFFF 26%)">
+            <svg width="14" height="16" viewBox="0 0 14 16" fill="none" style="flex:none"><path d="M2.2 1.6h6.3L11.8 5v9.4H2.2z" stroke="#9AA096" stroke-width="1.1" stroke-linejoin="round"></path><path d="M8.5 1.6V5h3.3" stroke="#9AA096" stroke-width="1.1" stroke-linejoin="round"></path></svg>
+            <div style="min-width:0">
+              <div style="font-size:12.5px;color:#1D1F1B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">AP history</div>
+              <div style="font-size:11px;color:#9AA096;margin-top:3px">XLSX &nbsp;·&nbsp; 24 rows</div>
+            </div>
+          </div>
+        </div>
+
+        <div onClick="{{ go_prior }}" style="position:relative;height:288px;overflow:hidden;background:#FFFFFF;border:1px solid #E9E9E3;border-radius:7px;cursor:pointer;transition:box-shadow .15s;blockSize:{{ cardH }};borderColor:{{ bd_prior }};boxShadow:{{ sh_prior }};display:{{ show_prior }}">
+          <sc-if value="{{ sel_prior }}" hint-placeholder-val="{{ true }}"><div style="position:absolute;top:10px;right:11px;background:#E3EFE2;color:#2C6B3C;font-size:8.5px;font-weight:600;letter-spacing:0.1em;padding:4px 6px;border-radius:3px">SELECTED</div></sc-if>
+          <div style="padding:29px 14px 0">
+            <div style="font-family:Newsreader,'Times New Roman',serif;font-size:19px;line-height:1.1;color:#16180F">December 2026</div>
+            <div style="font-size:9.5px;color:#7E837A;margin-top:5px">Close Memo</div>
+            <div style="display:grid;grid-template-columns:38px 1fr;gap:6px 6px;margin-top:14px;font-size:8.5px;color:#4A4E46">
+              <div style="color:#A0A59B">To</div><div>Controller</div>
+              <div style="color:#A0A59B">From</div><div>Finance Operations</div>
+              <div style="color:#A0A59B">Date</div><div>Dec 3, 2026</div>
+              <div style="color:#A0A59B">Subject</div><div>Mintlify subscription accrual</div>
+            </div>
+            <div style="font-size:8.5px;line-height:1.75;color:#4A4E46;margin-top:12px;text-wrap:pretty">We will accrue Mintlify at the increased $1,400 monthly rate starting December 1, 2026, per the amended agreement signed in November.</div>
+          </div>
+          <div style="position:absolute;left:0;right:0;bottom:0;display:flex;align-items:center;gap:9px;padding:20px 14px 13px;background:linear-gradient(to bottom,rgba(255,255,255,0),#FFFFFF 26%)">
+            <svg width="14" height="16" viewBox="0 0 14 16" fill="none" style="flex:none"><path d="M2.2 1.6h6.3L11.8 5v9.4H2.2z" stroke="#9AA096" stroke-width="1.1" stroke-linejoin="round"></path><path d="M8.5 1.6V5h3.3" stroke="#9AA096" stroke-width="1.1" stroke-linejoin="round"></path></svg>
+            <div style="min-width:0">
+              <div style="font-size:12.5px;color:#1D1F1B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Prior close</div>
+              <div style="font-size:11px;color:#9AA096;margin-top:3px">DOCX &nbsp;·&nbsp; 3 pages</div>
+            </div>
+          </div>
+        </div>
+
+        <div onClick="{{ go_vendor }}" style="position:relative;height:288px;overflow:hidden;background:#FFFFFF;border:1px solid #E9E9E3;border-radius:7px;cursor:pointer;transition:box-shadow .15s;blockSize:{{ cardH }};borderColor:{{ bd_vendor }};boxShadow:{{ sh_vendor }};display:{{ show_vendor }}">
+          <sc-if value="{{ sel_vendor }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;top:10px;right:11px;background:#E3EFE2;color:#2C6B3C;font-size:8.5px;font-weight:600;letter-spacing:0.1em;padding:4px 6px;border-radius:3px">SELECTED</div></sc-if>
+          <div style="padding:29px 14px 0">
+            <div style="font-family:Newsreader,'Times New Roman',serif;font-size:19px;line-height:1.1;color:#16180F">Vendor Master</div>
+            <div style="font-size:8px;letter-spacing:0.1em;color:#A0A59B;margin-top:6px">VENDOR RECORD</div>
+            <div style="display:grid;grid-template-columns:1fr auto;gap:9px 8px;margin-top:14px;font-size:8.5px;color:#4A4E46">
+              <div style="color:#A0A59B">Vendor ID</div><div style="text-align:right">VND-0412</div>
+              <div style="color:#A0A59B">Legal name</div><div style="text-align:right">Mintlify, Inc.</div>
+              <div style="color:#A0A59B">Entity type</div><div style="text-align:right">Corporation</div>
+              <div style="color:#A0A59B">Status</div><div style="text-align:right">Active</div>
+              <div style="color:#A0A59B">Pay terms</div><div style="text-align:right">Net 30</div>
+              <div style="color:#A0A59B">Address</div><div style="text-align:right;line-height:1.5">548 Market St<br>San Francisco, CA 94104</div>
+              <div style="color:#A0A59B">Tax ID</div><div style="text-align:right">XX-XXX7890</div>
+            </div>
+          </div>
+          <div style="position:absolute;left:0;right:0;bottom:0;display:flex;align-items:center;gap:9px;padding:20px 14px 13px;background:linear-gradient(to bottom,rgba(255,255,255,0),#FFFFFF 26%)">
+            <svg width="14" height="16" viewBox="0 0 14 16" fill="none" style="flex:none"><path d="M2.2 1.6h6.3L11.8 5v9.4H2.2z" stroke="#9AA096" stroke-width="1.1" stroke-linejoin="round"></path><path d="M8.5 1.6V5h3.3" stroke="#9AA096" stroke-width="1.1" stroke-linejoin="round"></path></svg>
+            <div style="min-width:0">
+              <div style="font-size:12.5px;color:#1D1F1B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Vendor master</div>
+              <div style="font-size:11px;color:#9AA096;margin-top:3px">PDF &nbsp;·&nbsp; 2 pages</div>
+            </div>
+          </div>
+        </div>
+
+        <div onClick="{{ go_gl }}" style="position:relative;height:288px;overflow:hidden;background:#FFFFFF;border:1px solid #E9E9E3;border-radius:7px;cursor:pointer;transition:box-shadow .15s;blockSize:{{ cardH }};borderColor:{{ bd_gl }};boxShadow:{{ sh_gl }};display:{{ show_gl }}">
+          <sc-if value="{{ sel_gl }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;top:10px;right:11px;background:#E3EFE2;color:#2C6B3C;font-size:8.5px;font-weight:600;letter-spacing:0.1em;padding:4px 6px;border-radius:3px">SELECTED</div></sc-if>
+          <div style="padding:29px 14px 0">
+            <div style="font-family:Newsreader,'Times New Roman',serif;font-size:19px;line-height:1.1;color:#16180F">General Ledger</div>
+            <div style="font-size:9.5px;color:#7E837A;margin-top:5px">Account Activity</div>
+            <div style="display:grid;grid-template-columns:52px 1fr auto;gap:0 6px;margin-top:14px;font-size:7.5px;letter-spacing:0.08em;color:#A0A59B;padding-bottom:5px;border-bottom:1px solid #EAEAE3">
+              <div>DATE</div><div>JE / DESCRIPTION</div><div style="text-align:right">AMOUNT</div>
+            </div>
+            <div style="display:grid;grid-template-columns:52px 1fr auto;gap:8px 6px;margin-top:8px;font-size:8.5px;color:#4A4E46">
+              <div>11/01/2026</div><div>JE-10283</div><div style="text-align:right">$1,200</div>
+              <div>10/31/2026</div><div>JE-09821</div><div style="text-align:right">$1,200</div>
+              <div>09/30/2026</div><div>JE-88202</div><div style="text-align:right">$1,200</div>
+              <div>08/31/2026</div><div>JE-77211</div><div style="text-align:right">$1,200</div>
+            </div>
+          </div>
+          <div style="position:absolute;left:0;right:0;bottom:0;display:flex;align-items:center;gap:9px;padding:20px 14px 13px;background:linear-gradient(to bottom,rgba(255,255,255,0),#FFFFFF 26%)">
+            <svg width="14" height="16" viewBox="0 0 14 16" fill="none" style="flex:none"><path d="M2.2 1.6h6.3L11.8 5v9.4H2.2z" stroke="#9AA096" stroke-width="1.1" stroke-linejoin="round"></path><path d="M8.5 1.6V5h3.3" stroke="#9AA096" stroke-width="1.1" stroke-linejoin="round"></path></svg>
+            <div style="min-width:0">
+              <div style="font-size:12.5px;color:#1D1F1B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">General ledger</div>
+              <div style="font-size:11px;color:#9AA096;margin-top:3px">XLSX &nbsp;·&nbsp; 48 rows</div>
+            </div>
+          </div>
+        </div>
+
+        <div onClick="{{ go_invoice }}" style="position:relative;height:288px;overflow:hidden;background:#FFFFFF;border:1px solid #E9E9E3;border-radius:7px;cursor:pointer;transition:box-shadow .15s;blockSize:{{ cardH }};borderColor:{{ bd_invoice }};boxShadow:{{ sh_invoice }};display:{{ show_invoice }}">
+          <sc-if value="{{ sel_invoice }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;top:10px;right:11px;background:#E3EFE2;color:#2C6B3C;font-size:8.5px;font-weight:600;letter-spacing:0.1em;padding:4px 6px;border-radius:3px">SELECTED</div></sc-if>
+          <div style="padding:29px 14px 0">
+            <div style="font-family:Newsreader,'Times New Roman',serif;font-size:18px;line-height:1.1;color:#16180F">Invoice INV-77631</div>
+            <div style="font-size:9.5px;color:#7E837A;margin-top:5px">Mintlify, Inc.</div>
+            <div style="display:grid;grid-template-columns:1fr auto;gap:10px 8px;margin-top:16px;font-size:8.5px;color:#4A4E46">
+              <div style="color:#A0A59B">Invoice #</div><div style="text-align:right">INV-77631</div>
+              <div style="color:#A0A59B">Date</div><div style="text-align:right">12/01/2026</div>
+              <div style="color:#A0A59B">Due date</div><div style="text-align:right">12/01/2026</div>
+            </div>
+            <div style="height:1px;background:#EAEAE3;margin:14px 0 12px"></div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;font-size:9.5px;font-weight:600;color:#1D1F1B">
+              <div>Total</div><div>$1,200</div>
+            </div>
+            <div style="height:5px;background:#F0F0EA;border-radius:2px;margin-top:22px"></div>
+            <div style="height:5px;background:#F0F0EA;border-radius:2px;margin-top:7px;width:68%"></div>
+          </div>
+          <div style="position:absolute;left:0;right:0;bottom:0;display:flex;align-items:center;gap:9px;padding:20px 14px 13px;background:linear-gradient(to bottom,rgba(255,255,255,0),#FFFFFF 26%)">
+            <svg width="14" height="16" viewBox="0 0 14 16" fill="none" style="flex:none"><path d="M2.2 1.6h6.3L11.8 5v9.4H2.2z" stroke="#9AA096" stroke-width="1.1" stroke-linejoin="round"></path><path d="M8.5 1.6V5h3.3" stroke="#9AA096" stroke-width="1.1" stroke-linejoin="round"></path></svg>
+            <div style="min-width:0">
+              <div style="font-size:12.5px;color:#1D1F1B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Vendor invoice</div>
+              <div style="font-size:11px;color:#9AA096;margin-top:3px">PDF &nbsp;·&nbsp; 1 page</div>
+            </div>
+          </div>
+        </div>
+
+        <div onClick="{{ go_po }}" style="position:relative;height:288px;overflow:hidden;background:#FFFFFF;border:1px solid #E9E9E3;border-radius:7px;cursor:pointer;transition:box-shadow .15s;blockSize:{{ cardH }};borderColor:{{ bd_po }};boxShadow:{{ sh_po }};display:{{ show_po }}">
+          <sc-if value="{{ sel_po }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;top:10px;right:11px;background:#E3EFE2;color:#2C6B3C;font-size:8.5px;font-weight:600;letter-spacing:0.1em;padding:4px 6px;border-radius:3px">SELECTED</div></sc-if>
+          <div style="padding:29px 14px 0">
+            <div style="font-family:Newsreader,'Times New Roman',serif;font-size:19px;line-height:1.1;color:#16180F">Order Form</div>
+            <div style="font-size:9.5px;color:#7E837A;margin-top:5px">Mintlify</div>
+            <div style="display:grid;grid-template-columns:1fr auto;gap:10px 8px;margin-top:16px;font-size:8.5px;color:#4A4E46">
+              <div style="color:#A0A59B">Customer</div><div style="text-align:right">TrueUp, Inc.</div>
+              <div style="color:#A0A59B">Order date</div><div style="text-align:right">11/15/2024</div>
+              <div style="color:#A0A59B">Term</div><div style="text-align:right">12 months</div>
+              <div style="color:#A0A59B">Plan</div><div style="text-align:right">Standard Workspace</div>
+            </div>
+            <div style="height:5px;background:#F0F0EA;border-radius:2px;margin-top:26px"></div>
+            <div style="height:5px;background:#F0F0EA;border-radius:2px;margin-top:7px"></div>
+            <div style="height:5px;background:#F0F0EA;border-radius:2px;margin-top:7px;width:52%"></div>
+          </div>
+          <div style="position:absolute;left:0;right:0;bottom:0;display:flex;align-items:center;gap:9px;padding:20px 14px 13px;background:linear-gradient(to bottom,rgba(255,255,255,0),#FFFFFF 26%)">
+            <svg width="14" height="16" viewBox="0 0 14 16" fill="none" style="flex:none"><path d="M2.2 1.6h6.3L11.8 5v9.4H2.2z" stroke="#9AA096" stroke-width="1.1" stroke-linejoin="round"></path><path d="M8.5 1.6V5h3.3" stroke="#9AA096" stroke-width="1.1" stroke-linejoin="round"></path></svg>
+            <div style="min-width:0">
+              <div style="font-size:12.5px;color:#1D1F1B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">PO / Order form</div>
+              <div style="font-size:11px;color:#9AA096;margin-top:3px">PDF &nbsp;·&nbsp; 6 pages</div>
+            </div>
+          </div>
+        </div>
+
+        <div onClick="{{ go_email }}" style="position:relative;height:288px;overflow:hidden;background:#FFFFFF;border:1px solid #E9E9E3;border-radius:7px;cursor:pointer;transition:box-shadow .15s;blockSize:{{ cardH }};borderColor:{{ bd_email }};boxShadow:{{ sh_email }};display:{{ show_email }}">
+          <sc-if value="{{ sel_email }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;top:10px;right:11px;background:#E3EFE2;color:#2C6B3C;font-size:8.5px;font-weight:600;letter-spacing:0.1em;padding:4px 6px;border-radius:3px">SELECTED</div></sc-if>
+          <div style="padding:29px 14px 0">
+            <div style="font-family:Newsreader,'Times New Roman',serif;font-size:18px;line-height:1.1;color:#16180F">Re: Mintlify renewal</div>
+            <div style="display:grid;grid-template-columns:34px 1fr;gap:6px 6px;margin-top:14px;font-size:8px;color:#4A4E46">
+              <div style="color:#A0A59B">From</div><div>Alex Chen &lt;alex@mintlify.com&gt;</div>
+              <div style="color:#A0A59B">To</div><div>finance@trueup.com</div>
+              <div style="color:#A0A59B">Date</div><div>Oct 20, 2026</div>
+            </div>
+            <div style="font-size:8.5px;line-height:1.75;color:#4A4E46;margin-top:14px;text-wrap:pretty">Hi team,<br>Just following up on the upcoming renewal. The new pricing will be $1,400 per month starting December 1, 2026 as discussed.<br>Best,<br>Alex</div>
+          </div>
+          <div style="position:absolute;left:0;right:0;bottom:0;display:flex;align-items:center;gap:9px;padding:20px 14px 13px;background:linear-gradient(to bottom,rgba(255,255,255,0),#FFFFFF 26%)">
+            <svg width="15" height="16" viewBox="0 0 15 16" fill="none" style="flex:none"><rect x="1.6" y="3.4" width="11.8" height="9" rx="1.3" stroke="#9AA096" stroke-width="1.1"></rect><path d="M1.9 4.4l5.6 4.1 5.6-4.1" stroke="#9AA096" stroke-width="1.1" stroke-linejoin="round"></path></svg>
+            <div style="min-width:0">
+              <div style="font-size:12.5px;color:#1D1F1B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Email thread</div>
+              <div style="font-size:11px;color:#9AA096;margin-top:3px">EML &nbsp;·&nbsp; 12 messages</div>
+            </div>
+          </div>
+        </div>
+
+        <div onClick="{{ go_slack }}" style="position:relative;height:288px;overflow:hidden;background:#FFFFFF;border:1px solid #E9E9E3;border-radius:7px;cursor:pointer;transition:box-shadow .15s;blockSize:{{ cardH }};borderColor:{{ bd_slack }};boxShadow:{{ sh_slack }};display:{{ show_slack }}">
+          <sc-if value="{{ sel_slack }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;top:10px;right:11px;background:#E3EFE2;color:#2C6B3C;font-size:8.5px;font-weight:600;letter-spacing:0.1em;padding:4px 6px;border-radius:3px">SELECTED</div></sc-if>
+          <div style="padding:29px 14px 0">
+            <div style="font-family:Newsreader,'Times New Roman',serif;font-size:18px;line-height:1.1;color:#16180F">Slack – #vendor</div>
+            <div style="font-size:9.5px;color:#7E837A;margin-top:5px">8 messages</div>
+            <div style="margin-top:15px;display:flex;flex-direction:column;gap:11px">
+              <div>
+                <div style="display:flex;align-items:baseline;gap:7px"><span style="font-size:8.5px;font-weight:600;color:#2D302A">Priya</span><span style="font-size:8px;color:#A0A59B">10/14</span></div>
+                <div style="font-size:8.5px;line-height:1.7;color:#4A4E46;margin-top:3px">Heads-up — Mintlify is increasing pricing to $1,400 in Dec.</div>
+              </div>
+              <div>
+                <div style="display:flex;align-items:baseline;gap:7px"><span style="font-size:8.5px;font-weight:600;color:#2D302A">Matt</span><span style="font-size:8px;color:#A0A59B">10/14</span></div>
+                <div style="font-size:8.5px;line-height:1.7;color:#4A4E46;margin-top:3px">Shall we pull this for the accrual?</div>
+              </div>
+              <div>
+                <div style="display:flex;align-items:baseline;gap:7px"><span style="font-size:8.5px;font-weight:600;color:#2D302A">Priya</span><span style="font-size:8px;color:#A0A59B">10/15</span></div>
+                <div style="font-size:8.5px;line-height:1.7;color:#4A4E46;margin-top:3px">Shared the updated agreement in this thread.</div>
+              </div>
+            </div>
+          </div>
+          <div style="position:absolute;left:0;right:0;bottom:0;display:flex;align-items:center;gap:9px;padding:20px 14px 13px;background:linear-gradient(to bottom,rgba(255,255,255,0),#FFFFFF 26%)">
+            <svg width="14" height="16" viewBox="0 0 14 16" fill="none" style="flex:none"><rect x="1.8" y="2.2" width="10.4" height="11.6" rx="1.4" stroke="#9AA096" stroke-width="1.1"></rect><path d="M4.4 6h5.2M4.4 9.4h3.4" stroke="#9AA096" stroke-width="1.1" stroke-linecap="round"></path></svg>
+            <div style="min-width:0">
+              <div style="font-size:12.5px;color:#1D1F1B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Slack export</div>
+              <div style="font-size:11px;color:#9AA096;margin-top:3px">TXT &nbsp;·&nbsp; 8 messages</div>
+            </div>
+          </div>
+        </div>
+
+        <div onClick="{{ go_usage }}" style="position:relative;height:288px;overflow:hidden;background:#FFFFFF;border:1px solid #E9E9E3;border-radius:7px;cursor:pointer;transition:box-shadow .15s;blockSize:{{ cardH }};borderColor:{{ bd_usage }};boxShadow:{{ sh_usage }};display:{{ show_usage }}">
+          <sc-if value="{{ sel_usage }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;top:10px;right:11px;background:#E3EFE2;color:#2C6B3C;font-size:8.5px;font-weight:600;letter-spacing:0.1em;padding:4px 6px;border-radius:3px">SELECTED</div></sc-if>
+          <div style="padding:29px 14px 0">
+            <div style="font-family:Newsreader,'Times New Roman',serif;font-size:19px;line-height:1.1;color:#16180F">Usage Report</div>
+            <div style="font-size:9.5px;color:#7E837A;margin-top:5px">Mintlify</div>
+            <div style="display:flex;align-items:flex-end;gap:5px;height:62px;margin-top:20px">
+              <div style="flex:1;height:34%;background:#EDEDE6;border-radius:1px"></div>
+              <div style="flex:1;height:46%;background:#EDEDE6;border-radius:1px"></div>
+              <div style="flex:1;height:30%;background:#EDEDE6;border-radius:1px"></div>
+              <div style="flex:1;height:58%;background:#EDEDE6;border-radius:1px"></div>
+              <div style="flex:1;height:44%;background:#EDEDE6;border-radius:1px"></div>
+              <div style="flex:1;height:72%;background:#EDEDE6;border-radius:1px"></div>
+              <div style="flex:1;height:62%;background:#EDEDE6;border-radius:1px"></div>
+              <div style="flex:1;height:88%;background:#EDEDE6;border-radius:1px"></div>
+              <div style="flex:1;height:100%;background:#E4E4DC;border-radius:1px"></div>
+            </div>
+            <div style="height:5px;background:#F0F0EA;border-radius:2px;margin-top:20px"></div>
+            <div style="height:5px;background:#F0F0EA;border-radius:2px;margin-top:7px"></div>
+            <div style="height:5px;background:#F0F0EA;border-radius:2px;margin-top:7px;width:58%"></div>
+          </div>
+          <div style="position:absolute;left:0;right:0;bottom:0;display:flex;align-items:center;gap:9px;padding:20px 14px 13px;background:linear-gradient(to bottom,rgba(255,255,255,0),#FFFFFF 26%)">
+            <svg width="14" height="16" viewBox="0 0 14 16" fill="none" style="flex:none"><path d="M2.2 1.6h6.3L11.8 5v9.4H2.2z" stroke="#9AA096" stroke-width="1.1" stroke-linejoin="round"></path><path d="M8.5 1.6V5h3.3" stroke="#9AA096" stroke-width="1.1" stroke-linejoin="round"></path></svg>
+            <div style="min-width:0">
+              <div style="font-size:12.5px;color:#1D1F1B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Usage report</div>
+              <div style="font-size:11px;color:#9AA096;margin-top:3px">PDF &nbsp;·&nbsp; 4 pages</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <sc-if value="{{ railMini }}" hint-placeholder-val="{{ false }}">
+  <aside style="width:56px;flex:none;border-left:1px solid #E7E7E2;background:#FAFAF7;display:flex;flex-direction:column;align-items:center;gap:18px;padding:22px 0">
+    <button onClick="{{ toggleRail }}" title="Expand live execution" style="width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:7px;border:1px solid transparent;background:transparent;cursor:pointer" style-hover="background:#EFEFE9">
+      <svg width="13" height="13" viewBox="0 0 12 12" fill="none"><path d="M7.4 2.2l-3.2 3.8 3.2 3.8" stroke="#6E736A" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+    </button>
+    <span style="width:9px;height:9px;border-radius:50%;background:#2E8047;box-shadow:0 0 0 3px rgba(46,128,71,0.14);flex:none"></span>
+    <div style="writing-mode:vertical-rl;transform:rotate(180deg);font-size:10.5px;font-weight:500;letter-spacing:0.14em;color:#8A8F86;white-space:nowrap">LIVE EXECUTION</div>
+    <div style="writing-mode:vertical-rl;transform:rotate(180deg);font-family:Newsreader,'Times New Roman',serif;font-size:16px;color:#16180F;white-space:nowrap">Ingestion</div>
+  </aside>
+  </sc-if>
+
+  <sc-if value="{{ railFull }}" hint-placeholder-val="{{ true }}">
+  <aside style="position:relative;flex:none;width:330px;border-left:1px solid #E7E7E2;background:#FCFCFA;inlineSize:{{ railW }}">
+    <div onMouseDown="{{ startResize }}" title="Drag to resize" style="position:absolute;left:-4px;top:0;bottom:0;width:9px;cursor:col-resize;z-index:6;backgroundColor:{{ handleBg }}" style-hover="background:rgba(46,128,71,0.16)"></div>
+    <div style="height:100%;overflow-y:auto;padding:26px 24px 34px">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+      <div style="font-size:10.5px;font-weight:500;letter-spacing:0.13em;color:#8A8F86">LIVE EXECUTION</div>
+      <button onClick="{{ toggleRail }}" title="Collapse panel" style="width:26px;height:26px;margin-right:-5px;display:flex;align-items:center;justify-content:center;border-radius:6px;border:1px solid transparent;background:transparent;cursor:pointer" style-hover="background:#F0F0EA">
+        <svg width="13" height="13" viewBox="0 0 12 12" fill="none"><path d="M4.6 2.2l3.2 3.8-3.2 3.8" stroke="#8E938A" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+      </button>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px">
+      <div style="display:flex;align-items:center;gap:11px">
+        <span style="width:9px;height:9px;border-radius:50%;background:#2E8047;box-shadow:0 0 0 3px rgba(46,128,71,0.14)"></span>
+        <span style="font-size:15px;color:#1D1F1B">Running</span>
+      </div>
+      <div style="font-size:13px;color:#8A8F86;font-variant-numeric:tabular-nums">{{ clock }}</div>
+    </div>
+
+    <div style="margin-top:26px">
+      <div style="display:flex;align-items:center;gap:14px">
+        <div style="font-size:12.5px;color:#9AA096;width:18px;flex:none;font-variant-numeric:tabular-nums">01</div>
+        <div style="width:2px;height:20px;background:#2E8047;flex:none"></div>
+        <div style="font-family:Newsreader,'Times New Roman',serif;font-size:18px;color:#16180F;flex:1">Ingestion</div>
+        <div style="font-size:12.5px;font-weight:500;transition:color .3s ease-out;color:{{ s1Color }}">{{ s1Status }}</div>
+      </div>
+
+      <div style="margin:14px 0 0 33px;padding-left:20px;border-left:1px solid #E7E7E2;display:flex;flex-direction:column;gap:13px">
+        <div style="display:flex;align-items:center;gap:12px">
+          <span style="position:relative;width:13px;height:13px;flex:none;margin:0 1px">
+            <span style="position:absolute;inset:1px;border-radius:50%;border:1px solid #CFD3CA;transition:opacity .26s ease-out;opacity:{{ r0 }}"></span>
+            <span style="position:absolute;inset:1px;border-radius:50%;background:#2E8047;transition:opacity .26s ease-out,transform .26s cubic-bezier(.2,.8,.2,1);opacity:{{ d0 }};transform:{{ dt0 }}"></span>
+            <svg style="position:absolute;inset:0;transition:opacity .3s ease-out" width="13" height="13" viewBox="0 0 13 13" fill="none" opacity="{{ c0 }}"><path d="M1.8 6.8l3.2 3.1 6.2-7" stroke="#2E8047" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          </span>
+          <span style="font-size:13px;transition:color .26s ease-out;color:{{ l0 }}">File universe loaded</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <span style="position:relative;width:13px;height:13px;flex:none;margin:0 1px">
+            <span style="position:absolute;inset:1px;border-radius:50%;border:1px solid #CFD3CA;transition:opacity .26s ease-out;opacity:{{ r1 }}"></span>
+            <span style="position:absolute;inset:1px;border-radius:50%;background:#2E8047;transition:opacity .26s ease-out,transform .26s cubic-bezier(.2,.8,.2,1);opacity:{{ d1 }};transform:{{ dt1 }}"></span>
+            <svg style="position:absolute;inset:0;transition:opacity .3s ease-out" width="13" height="13" viewBox="0 0 13 13" fill="none" opacity="{{ c1 }}"><path d="M1.8 6.8l3.2 3.1 6.2-7" stroke="#2E8047" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          </span>
+          <span style="font-size:13px;transition:color .26s ease-out;color:{{ l1 }}">Vendor-related sources clustered</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <span style="position:relative;width:13px;height:13px;flex:none;margin:0 1px">
+            <span style="position:absolute;inset:1px;border-radius:50%;border:1px solid #CFD3CA;transition:opacity .26s ease-out;opacity:{{ r2 }}"></span>
+            <span style="position:absolute;inset:1px;border-radius:50%;background:#2E8047;transition:opacity .26s ease-out,transform .26s cubic-bezier(.2,.8,.2,1);opacity:{{ d2 }};transform:{{ dt2 }}"></span>
+            <svg style="position:absolute;inset:0;transition:opacity .3s ease-out" width="13" height="13" viewBox="0 0 13 13" fill="none" opacity="{{ c2 }}"><path d="M1.8 6.8l3.2 3.1 6.2-7" stroke="#2E8047" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          </span>
+          <span style="font-size:13px;transition:color .26s ease-out;color:{{ l2 }}">Selecting relevant files</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <span style="position:relative;width:13px;height:13px;flex:none;margin:0 1px">
+            <span style="position:absolute;inset:1px;border-radius:50%;border:1px solid #CFD3CA;transition:opacity .26s ease-out;opacity:{{ r3 }}"></span>
+            <span style="position:absolute;inset:1px;border-radius:50%;background:#2E8047;transition:opacity .26s ease-out,transform .26s cubic-bezier(.2,.8,.2,1);opacity:{{ d3 }};transform:{{ dt3 }}"></span>
+            <svg style="position:absolute;inset:0;transition:opacity .3s ease-out" width="13" height="13" viewBox="0 0 13 13" fill="none" opacity="{{ c3 }}"><path d="M1.8 6.8l3.2 3.1 6.2-7" stroke="#2E8047" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          </span>
+          <span style="font-size:13px;transition:color .26s ease-out;color:{{ l3 }}">Remove irrelevant sources</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <span style="position:relative;width:13px;height:13px;flex:none;margin:0 1px">
+            <span style="position:absolute;inset:1px;border-radius:50%;border:1px solid #CFD3CA;transition:opacity .26s ease-out;opacity:{{ r4 }}"></span>
+            <span style="position:absolute;inset:1px;border-radius:50%;background:#2E8047;transition:opacity .26s ease-out,transform .26s cubic-bezier(.2,.8,.2,1);opacity:{{ d4 }};transform:{{ dt4 }}"></span>
+            <svg style="position:absolute;inset:0;transition:opacity .3s ease-out" width="13" height="13" viewBox="0 0 13 13" fill="none" opacity="{{ c4 }}"><path d="M1.8 6.8l3.2 3.1 6.2-7" stroke="#2E8047" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          </span>
+          <span style="font-size:13px;transition:color .26s ease-out;color:{{ l4 }}">Prepare evidence handoff</span>
+        </div>
+      </div>
+
+      <a href="TrueUp Evidence.dc.html" style="display:flex;align-items:center;gap:14px;margin:22px -8px 0;padding:6px 8px;border-radius:7px;color:inherit;transition:background .16s ease-out" style-hover="background:#F1F1EB">
+        <div style="font-size:12.5px;color:#9AA096;width:18px;flex:none;font-variant-numeric:tabular-nums">02</div>
+        <div style="width:2px;height:20px;flex:none;transition:background .4s ease-out;background:{{ s2Bar }}"></div>
+        <div style="font-family:Newsreader,'Times New Roman',serif;font-size:18px;color:#16180F;flex:1">Evidence</div>
+        <div style="font-size:12.5px;transition:color .3s ease-out;color:{{ s2Color }}">{{ s2Status }}</div>
+      </a>
+      <div style="display:flex;align-items:center;gap:14px;margin-top:22px">
+        <div style="font-size:12.5px;color:#9AA096;width:18px;flex:none;font-variant-numeric:tabular-nums">03</div>
+        <div style="width:2px;height:20px;background:#E1E1DA;flex:none"></div>
+        <div style="font-family:Newsreader,'Times New Roman',serif;font-size:18px;color:#16180F;flex:1">Obligation</div>
+        <div style="font-size:12.5px;color:#9AA096">Waiting</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px;margin-top:22px">
+        <div style="font-size:12.5px;color:#9AA096;width:18px;flex:none;font-variant-numeric:tabular-nums">04</div>
+        <div style="width:2px;height:20px;background:#E1E1DA;flex:none"></div>
+        <div style="font-family:Newsreader,'Times New Roman',serif;font-size:18px;color:#16180F;flex:1">Estimation</div>
+        <div style="font-size:12.5px;color:#9AA096">Waiting</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px;margin-top:22px">
+        <div style="font-size:12.5px;color:#9AA096;width:18px;flex:none;font-variant-numeric:tabular-nums">05</div>
+        <div style="width:2px;height:20px;background:#E1E1DA;flex:none"></div>
+        <div style="font-family:Newsreader,'Times New Roman',serif;font-size:18px;color:#16180F;flex:1">Verification</div>
+        <div style="font-size:12.5px;color:#9AA096">Waiting</div>
+      </div>
+    </div>
+
+    <div style="height:1px;background:#EBEBE4;margin-top:32px"></div>
+    <div style="margin-top:22px;font-size:10.5px;font-weight:500;letter-spacing:0.13em;color:#8A8F86">SELECTED FILES ({{ selCount }})</div>
+    <div style="margin-top:12px;display:flex;flex-direction:column">
+      <sc-for list="{{ selFiles }}" as="f" hint-placeholder-count="3">
+        <div style="display:flex;align-items:center;gap:12px;padding:7px 8px;margin:0 -8px;border-radius:6px;cursor:pointer" style-hover="background:#F1F1EB">
+          <svg width="15" height="17" viewBox="0 0 14 16" fill="none" style="flex:none"><path d="M2.2 1.6h6.3L11.8 5v9.4H2.2z" stroke="#9AA096" stroke-width="1.1" stroke-linejoin="round"></path><path d="M8.5 1.6V5h3.3" stroke="#9AA096" stroke-width="1.1" stroke-linejoin="round"></path></svg>
+          <span style="font-size:13.5px;color:#1D1F1B">{{ f.name }}</span>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="height:1px;background:#EBEBE4;margin-top:30px"></div>
+    <div style="margin-top:22px;font-size:10.5px;font-weight:500;letter-spacing:0.13em;color:#8A8F86">NEXT HANDOFF</div>
+    <a href="TrueUp Evidence.dc.html" style="display:flex;align-items:center;gap:12px;margin:13px -8px 0;padding:6px 8px;border-radius:7px;color:inherit;transition:background .16s ease-out" style-hover="background:#F1F1EB">
+      <svg width="15" height="17" viewBox="0 0 14 16" fill="none" style="flex:none"><path d="M2.2 1.6h6.3L11.8 5v9.4H2.2z" stroke="#9AA096" stroke-width="1.1" stroke-linejoin="round"></path><path d="M8.5 1.6V5h3.3" stroke="#9AA096" stroke-width="1.1" stroke-linejoin="round"></path></svg>
+      <span style="font-size:14px;color:#1D1F1B">Ingestion</span>
+      <span style="font-size:13px;color:#A8ADA3">→</span>
+      <span style="font-size:14px;color:#1D1F1B">Evidence</span>
+    </a>
+    <div style="font-size:12.5px;line-height:1.6;color:#8A8F86;margin-top:9px;padding-left:27px;text-wrap:pretty">Prepare selected files for evidence extraction and analysis.</div>
+    <a href="TrueUp Evidence.dc.html" style="position:relative;display:block;width:100%;margin-top:16px;padding:11px 14px;border-radius:8px;border:1px solid #2E8047;background:#2E8047;font-size:13.5px;font-weight:500;color:#F4F7F2;text-align:center;cursor:pointer;overflow:hidden;transition:background .16s ease-out,opacity .4s ease-out;opacity:{{ ctaOp }}" style-hover="background:#25693A;color:#F4F7F2">
+      <span style="position:relative;z-index:2">{{ ctaLabel }}</span>
+      <span style="position:absolute;left:0;top:0;bottom:0;background:rgba(255,255,255,.22);transition:width 1.2s linear;width:{{ ctaFill }}"></span>
+    </a>
+    </div>
+  </aside>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;autoplay&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Behavior&quot;},&quot;autoAdvance&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Behavior&quot;},&quot;showExecutionPanel&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Layout&quot;},&quot;compactCards&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Layout&quot;},&quot;liveTimer&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Behavior&quot;}}">
+const ORDER = ['agreement','ap','prior','vendor','gl','invoice','po','email','slack','usage'];
+const NAMES = {
+  agreement:'Mintlify agreement', ap:'AP history', prior:'Prior close',
+  vendor:'Vendor master', gl:'General ledger', invoice:'Vendor invoice',
+  po:'PO / Order form', email:'Email thread', slack:'Slack export', usage:'Usage report'
+};
+const TABS = ['all','agreement','ap','prior','vendor','gl'];
+const SELECT_AT = { 3: 'agreement', 4: 'ap', 5: 'prior' };
+const TASK_DONE = [1, 2, 6, 7, 8];
+const STEPS = 8;
+const DELAYS = [500, 650, 600, 550, 550, 650, 700, 750];
+const STATUS = [
+  'Loading file universe...',
+  'Clustering vendor-related sources...',
+  'Selecting relevant files...',
+  'Selecting relevant files...',
+  'Selecting relevant files...',
+  'Removing irrelevant sources...',
+  'Preparing evidence handoff...',
+  'Ingestion complete · 3 files selected',
+  'Ingestion complete · handing off to Evidence'
+];
+
+class Component extends DCLogic {
+  state = { sel: [], tab: 'all', t: 3, step: 0, railOpen: true, railW: 330, dragging: false, tabsOver: false };
+  tabsRef = React.createRef();
+  timers = [];
+
+  componentDidMount() {
+    this.iv = setInterval(() => {
+      if (this.props.liveTimer !== false) this.setState(s => ({ t: s.t + 1 }));
+    }, 1000);
+    if (this.props.autoplay !== false) this.run(); else this.setState({ sel: ORDER.slice(0, 3), step: STEPS });
+    this.onResize = () => this.measure();
+    window.addEventListener('resize', this.onResize);
+    this.measure();
+  }
+  componentDidUpdate() { this.measure(); }
+  componentWillUnmount() {
+    clearInterval(this.iv);
+    this.timers.forEach(clearTimeout);
+    window.removeEventListener('resize', this.onResize);
+  }
+
+  run() {
+    this.timers.forEach(clearTimeout);
+    this.timers = [];
+    let acc = 0;
+    DELAYS.forEach((d, i) => {
+      acc += d;
+      const step = i + 1;
+      this.timers.push(setTimeout(() => {
+        const add = SELECT_AT[step];
+        this.setState(s => (add && s.sel.indexOf(add) < 0
+          ? { step: step, sel: s.sel.concat([add]) }
+          : { step: step }));
+      }, acc));
+    });
+    if (this.props.autoAdvance !== false) {
+      this.timers.push(setTimeout(() => { window.location.href = 'TrueUp Evidence.dc.html'; }, acc + 1500));
+    }
+  }
+
+  measure() {
+    const el = this.tabsRef.current;
+    if (!el) return;
+    const over = el.scrollWidth - el.clientWidth > 4;
+    if (over !== this.state.tabsOver) this.setState({ tabsOver: over });
+  }
+
+  startResize(e) {
+    e.preventDefault();
+    const startX = e.clientX, startW = this.state.railW;
+    const move = ev => {
+      const w = Math.max(288, Math.min(620, startW - (ev.clientX - startX)));
+      this.setState({ railW: w });
+    };
+    const up = () => {
+      document.removeEventListener('mousemove', move);
+      document.removeEventListener('mouseup', up);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      this.setState({ dragging: false });
+    };
+    document.addEventListener('mousemove', move);
+    document.addEventListener('mouseup', up);
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    this.setState({ dragging: true });
+  }
+
+  toggle(id) {
+    this.setState(s => ({
+      sel: s.sel.indexOf(id) >= 0 ? s.sel.filter(x => x !== id) : s.sel.concat([id])
+    }));
+  }
+
+  renderVals() {
+    const { sel, tab, t, step } = this.state;
+    const v = {};
+    const complete = step >= STEPS;
+    const taskDone = TASK_DONE.filter(x => step >= x).length;
+    for (let i = 0; i < 5; i++) {
+      const done = step >= TASK_DONE[i], active = i === taskDone && !complete;
+      v['c' + i] = done ? '1' : '0';
+      v['d' + i] = (!done && active) ? '1' : '0';
+      v['dt' + i] = active ? 'scale(1)' : 'scale(0.5)';
+      v['r' + i] = (!done && !active) ? '1' : '0';
+      v['l' + i] = (done || active) ? '#33362F' : '#9AA096';
+    }
+    v.statusText = STATUS[Math.min(step, STATUS.length - 1)];
+    v.pulseOp = complete ? '0' : '1';
+    v.s1Status = complete ? 'Complete' : 'Active';
+    v.s1Color = complete ? '#8E938A' : '#2E8047';
+    v.s2Status = complete ? 'Queued' : 'Waiting';
+    v.s2Color = complete ? '#33362F' : '#9AA096';
+    v.s2Bar = complete ? '#BFD4C3' : '#E1E1DA';
+    v.ctaOp = complete ? '1' : '0.55';
+    v.ctaLabel = complete ? 'Opening Evidence...' : 'Run evidence agent';
+    v.ctaFill = complete && this.props.autoAdvance !== false ? '100%' : '0%';
+    ORDER.forEach(id => {
+      const on = sel.indexOf(id) >= 0;
+      v['sel_' + id] = on;
+      v['bd_' + id] = on ? '#4F9A64' : '#E9E9E3';
+      v['sh_' + id] = on ? '0 0 0 1px #4F9A64' : 'none';
+      v['show_' + id] = (tab === 'all' || tab === id) ? 'block' : 'none';
+      v['go_' + id] = () => this.toggle(id);
+    });
+    TABS.forEach(k => {
+      const on = tab === k;
+      v['tbg_' + k] = on ? '#FFFFFF' : 'transparent';
+      v['tbd_' + k] = on ? '#E2E2DB' : 'transparent';
+      v['tsh_' + k] = on ? '0 1px 2px rgba(30,32,28,0.05)' : 'none';
+      v['tfg_' + k] = on ? '#1D1F1B' : '#5A5F57';
+      v['tfw_' + k] = on ? '500' : '400';
+      v['tab_' + k] = () => this.setState({ tab: k });
+    });
+    const pad = n => (n < 10 ? '0' + n : '' + n);
+    v.clock = pad(Math.floor(t / 60)) + ':' + pad(t % 60);
+    v.selCount = sel.length;
+    v.selFiles = ORDER.filter(id => sel.indexOf(id) >= 0).map(id => ({ name: NAMES[id] }));
+    v.cardH = this.props.compactCards ? '236px' : '288px';
+    const showRail = this.props.showExecutionPanel !== false;
+    v.railFull = showRail && this.state.railOpen;
+    v.railMini = showRail && !this.state.railOpen;
+    v.railW = this.state.railW + 'px';
+    v.handleBg = this.state.dragging ? 'rgba(46,128,71,0.22)' : 'transparent';
+    v.toggleRail = () => this.setState(st => ({ railOpen: !st.railOpen }));
+    v.startResize = e => this.startResize(e);
+    v.tabsRef = this.tabsRef;
+    v.tabsMask = this.state.tabsOver
+      ? 'linear-gradient(to right,#000 calc(100% - 36px),rgba(0,0,0,0))'
+      : 'none';
+    return v;
+  }
+}
+</script>
+</body>
+</html>

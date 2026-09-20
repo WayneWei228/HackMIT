@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#F7F7F4;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+a{color:#2E7D45;text-decoration:none}
+a:hover{color:#1C5730}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:#DEDED7;border-radius:8px}
+::-webkit-scrollbar-track{background:transparent}
+[data-hscroll]::-webkit-scrollbar{height:0;width:0}
+input::placeholder{color:#A0A59B}
+@keyframes pulseRing{0%{transform:scale(.72);opacity:.5}70%{transform:scale(1.5);opacity:0}100%{transform:scale(1.5);opacity:0}}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important}}
+</style>
+</helmet>
+<div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:#1D1F1B;display:flex;height:100vh;min-height:620px;background:#FCFCFA;overflow-x:auto;overflow-y:hidden">
+
+  <aside style="width:232px;flex:none;background:#F6F6F3;border-right:1px solid #E7E7E2;display:flex;flex-direction:column;padding:22px 0 18px">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:0 20px 24px">
+      <div style="font-size:13.5px;font-weight:600;letter-spacing:0.2em;color:#1D1F1B">TRUEUP</div>
+      <svg width="17" height="17" viewBox="0 0 17 17" fill="none"><circle cx="7.6" cy="7.6" r="5.1" stroke="#767B72" stroke-width="1.3"></circle><path d="M11.4 11.4L14.6 14.6" stroke="#767B72" stroke-width="1.3" stroke-linecap="round"></path></svg>
+    </div>
+
+    <nav style="display:flex;flex-direction:column;gap:1px;padding:0 12px">
+      <div style="display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:7px;font-size:14.5px;color:#33362F;cursor:pointer;transition:background .16s ease-out" style-hover="background:#EDEDE7">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M2.6 7.6L9 2.6l6.4 5v7.1a.9.9 0 0 1-.9.9H3.5a.9.9 0 0 1-.9-.9z" stroke="#5E635A" stroke-width="1.25" stroke-linejoin="round"></path></svg>
+        Home
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:7px;font-size:14.5px;color:#1D1F1B;cursor:pointer;transition:background .16s ease-out" style-hover="background:#EDEDE7">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M3.6 2.3h7L14.4 6v9.7H3.6z" stroke="#5E635A" stroke-width="1.25" stroke-linejoin="round"></path><path d="M10.6 2.3V6h3.8" stroke="#5E635A" stroke-width="1.25" stroke-linejoin="round"></path></svg>
+        <span style="flex:1">Close</span>
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 4.6L6 7.6l3-3" stroke="#8E938A" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+      </div>
+      <a href="TrueUp Close Case.dc.html" style="display:flex;align-items:center;padding:7px 10px 7px 42px;border-radius:7px;font-size:14px;color:#5A5F57;transition:background .16s ease-out" style-hover="background:#EDEDE7;color:#1D1F1B">Active cases</a>
+      <a href="TrueUp All Cases.dc.html" style="display:flex;align-items:center;padding:7px 10px 7px 42px;border-radius:7px;font-size:14px;color:#5A5F57;transition:background .16s ease-out" style-hover="background:#EDEDE7;color:#1D1F1B">All cases</a>
+      <div style="display:flex;align-items:center;padding:7px 10px 7px 42px;border-radius:7px;font-size:14px;color:#5A5F57;cursor:pointer;transition:background .16s ease-out" style-hover="background:#EDEDE7">Journals</div>
+      <div style="display:flex;align-items:center;padding:7px 10px 7px 42px;border-radius:7px;font-size:14px;color:#5A5F57;cursor:pointer;transition:background .16s ease-out" style-hover="background:#EDEDE7">Reconciliations</div>
+
+      <div style="height:18px"></div>
+      <div style="display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:7px;font-size:14.5px;color:#1D1F1B;background:#E9EFE8;cursor:pointer">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="2.5" y="3.4" width="13" height="11.2" rx="1.6" stroke="#2E8047" stroke-width="1.25"></rect><path d="M2.5 7.2h13" stroke="#2E8047" stroke-width="1.25"></path><circle cx="5.6" cy="10.8" r="1" fill="#2E8047"></circle></svg>
+        Vendors
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:7px;font-size:14.5px;color:#33362F;cursor:pointer;transition:background .16s ease-out" style-hover="background:#EDEDE7">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M3.6 2.3h7L14.4 6v9.7H3.6z" stroke="#5E635A" stroke-width="1.25" stroke-linejoin="round"></path><path d="M10.6 2.3V6h3.8" stroke="#5E635A" stroke-width="1.25" stroke-linejoin="round"></path></svg>
+        Documents
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:7px;font-size:14.5px;color:#33362F;cursor:pointer;transition:background .16s ease-out" style-hover="background:#EDEDE7">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="2.5" y="3" width="13" height="12" rx="1.6" stroke="#5E635A" stroke-width="1.25"></rect><path d="M5.2 11.4l2.4-2.9 2.2 1.9 2.8-3.3" stroke="#5E635A" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        Insights
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:7px;font-size:14.5px;color:#33362F;cursor:pointer;transition:background .16s ease-out" style-hover="background:#EDEDE7">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="2.6" stroke="#5E635A" stroke-width="1.25"></circle><circle cx="9" cy="9" r="6.1" stroke="#5E635A" stroke-width="1.25" stroke-dasharray="2.2 2.4"></circle></svg>
+        Settings
+      </div>
+    </nav>
+
+    <div style="flex:1"></div>
+
+    <div style="padding:0 12px">
+      <div style="height:1px;background:#E4E4DD;margin:0 8px 16px"></div>
+      <div style="display:flex;align-items:center;gap:10px;padding:6px 10px;border-radius:7px;cursor:pointer;transition:background .16s ease-out" style-hover="background:#EDEDE7">
+        <div style="flex:1">
+          <div style="font-size:14px;color:#1D1F1B">December 2026</div>
+          <div style="font-size:12.5px;color:#8E938A;margin-top:2px">Controller</div>
+        </div>
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4.4 2.6l3 3.4-3 3.4" stroke="#8E938A" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+      </div>
+      <div style="display:flex;align-items:center;gap:11px;padding:10px 10px 4px">
+        <div style="width:34px;height:34px;flex:none;border-radius:50%;background:#26503A;color:#F3F4F0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;letter-spacing:0.03em">TS</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:14px;color:#1D1F1B">Taylor Smith</div>
+          <div style="font-size:12.5px;color:#8E938A;margin-top:2px">Mintlify</div>
+        </div>
+        <div style="font-size:15px;color:#9AA096;letter-spacing:0.06em;cursor:pointer">•••</div>
+      </div>
+    </div>
+  </aside>
+
+  <main style="flex:1;min-width:700px;display:flex;flex-direction:column;overflow:hidden">
+    <div style="padding:26px 34px 0;flex:none">
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap">
+        <div style="min-width:0">
+          <div style="font-size:10.5px;font-weight:500;letter-spacing:0.15em;color:#8E938A">VENDOR INTELLIGENCE</div>
+          <div style="font-family:Newsreader,'Times New Roman',serif;font-size:46px;line-height:1.05;letter-spacing:-0.012em;color:#16180F;margin-top:12px">Vendors</div>
+          <div style="font-size:15px;color:#75796F;margin-top:10px;text-wrap:pretty">Vendor context, accounting behavior, and close history.</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex:none;padding-bottom:4px">
+          <div style="position:relative">
+            <svg width="16" height="16" viewBox="0 0 17 17" fill="none" style="position:absolute;left:13px;top:50%;transform:translateY(-50%);pointer-events:none"><circle cx="7.6" cy="7.6" r="5.1" stroke="#9AA096" stroke-width="1.3"></circle><path d="M11.4 11.4L14.6 14.6" stroke="#9AA096" stroke-width="1.3" stroke-linecap="round"></path></svg>
+            <input value="{{ query }}" onChange="{{ onSearch }}" placeholder="Search vendors" style="width:212px;padding:11px 13px 11px 38px;border-radius:8px;border:1px solid #E2E2DB;background:#FFFFFF;font:400 14px/1.2 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#1D1F1B;outline:none;transition:border-color .16s ease-out,box-shadow .16s ease-out" style-focus="border-color:#B8C7B5;box-shadow:0 0 0 3px rgba(46,128,71,.08)">
+          </div>
+          <div data-filter-menu="1" style="position:relative">
+            <button onClick="{{ toggleFilter }}" style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:8px;border:1px solid #E2E2DB;background:#FFFFFF;font:400 13.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#33362F;cursor:pointer;white-space:nowrap;transition:background .16s ease-out" style-hover="background:#FAFAF7">
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M2.4 4.2h11.2M4.4 8h7.2M6.4 11.8h3.2" stroke="#6E736A" stroke-width="1.2" stroke-linecap="round"></path></svg>
+              {{ filterLabel }}
+              <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style="transition:transform .24s cubic-bezier(.2,.8,.2,1);transform:{{ filterRot }}"><path d="M3 4.6L6 7.6l3-3" stroke="#8E938A" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+            </button>
+            <div style="position:absolute;top:calc(100% + 6px);right:0;z-index:20;min-width:196px;padding:6px;border-radius:9px;border:1px solid #E7E7E2;background:#FFFFFF;box-shadow:0 10px 26px rgba(30,32,28,.1);transition:opacity .2s ease-out,transform .22s cubic-bezier(.2,.8,.2,1);opacity:{{ menuOp }};transform:{{ menuTr }};pointerEvents:{{ menuPe }}">
+              <sc-for list="{{ filterOptions }}" as="opt" hint-placeholder-count="4">
+                <div onClick="{{ opt.pick }}" style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:6px;font-size:13.5px;cursor:pointer;transition:background .14s ease-out;backgroundColor:{{ opt.bg }};color:{{ opt.fg }}" style-hover="background:#F3F3EE">
+                  <span style="width:7px;height:7px;border-radius:50%;flex:none;background:{{ opt.dot }}"></span>
+                  <span style="flex:1">{{ opt.label }}</span>
+                  <span style="font-size:12.5px;color:#A0A59B;font-variant-numeric:tabular-nums">{{ opt.count }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:stretch;margin-top:26px;padding-bottom:24px">
+        <div style="flex:1;min-width:0;padding-right:24px">
+          <div style="font-family:Newsreader,'Times New Roman',serif;font-size:30px;line-height:1;color:#16180F">24</div>
+          <div style="font-size:13px;color:#8A8F86;margin-top:8px">vendors</div>
+        </div>
+        <div style="flex:1;min-width:0;padding:0 24px;border-left:1px solid #E7E7E2">
+          <div style="font-family:Newsreader,'Times New Roman',serif;font-size:30px;line-height:1;color:#16180F">18</div>
+          <div style="font-size:13px;color:#8A8F86;margin-top:8px">autonomous workflows</div>
+        </div>
+        <div style="flex:1;min-width:0;padding:0 24px;border-left:1px solid #E7E7E2">
+          <div style="font-family:Newsreader,'Times New Roman',serif;font-size:30px;line-height:1;color:#16180F">6</div>
+          <div style="font-size:13px;color:#8A8F86;margin-top:8px">requiring review</div>
+        </div>
+        <div style="flex:1;min-width:0;padding:0 0 0 24px;border-left:1px solid #E7E7E2">
+          <div style="font-family:Newsreader,'Times New Roman',serif;font-size:30px;line-height:1;color:#16180F">94%</div>
+          <div style="font-size:13px;color:#8A8F86;margin-top:8px">evidence coverage</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="flex:1;min-height:0;overflow-y:auto;padding:0 34px 30px">
+      <div style="display:grid;grid-template-columns:minmax(168px,1fr) minmax(170px,1.05fr) 168px 118px 156px 40px;align-items:center;gap:0 14px;padding:0 12px 11px;border-bottom:1px solid #E7E7E2">
+        <sc-for list="{{ columns }}" as="col" hint-placeholder-count="5">
+          <div onClick="{{ col.sort }}" style="display:flex;align-items:center;gap:7px;font-size:10.5px;font-weight:500;letter-spacing:0.12em;cursor:pointer;user-select:none;transition:color .16s ease-out;color:{{ col.fg }}" style-hover="color:#1D1F1B">
+            {{ col.label }}
+            <svg width="10" height="12" viewBox="0 0 10 12" fill="none" style="flex:none"><path d="M5 1.6L7.4 4.4H2.6z" fill="{{ col.upFill }}"></path><path d="M5 10.4L2.6 7.6h4.8z" fill="{{ col.downFill }}"></path></svg>
+          </div>
+        </sc-for>
+        <div></div>
+      </div>
+
+      <sc-for list="{{ rows }}" as="row" hint-placeholder-count="6">
+        <div onClick="{{ row.pick }}" style="display:grid;grid-template-columns:minmax(168px,1fr) minmax(170px,1.05fr) 168px 118px 156px 40px;align-items:center;gap:0 14px;padding:16px 12px;border-bottom:1px solid #F0F0EA;border-radius:8px;cursor:pointer;transition:background .18s ease-out,opacity .45s ease-out,transform .45s cubic-bezier(.2,.8,.2,1);backgroundColor:{{ row.bg }};opacity:{{ row.op }};transform:{{ row.tr }};transitionDelay:{{ row.delay }}" style-hover="background:#F7F7F2">
+          <div style="display:flex;align-items:center;gap:14px;min-width:0">
+            <span style="width:34px;height:34px;flex:none;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:600;letter-spacing:0.02em;background:{{ row.markBg }};color:{{ row.markFg }}">{{ row.initials }}</span>
+            <div style="min-width:0">
+              <div style="font-size:14.5px;color:#1D1F1B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ row.name }}</div>
+              <div style="font-size:12.5px;color:#8E938A;margin-top:3px">{{ row.id }}</div>
+            </div>
+          </div>
+          <div style="min-width:0">
+            <div style="font-size:14px;color:#33362F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ row.profile }}</div>
+            <div style="font-size:12.5px;color:#8E938A;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ row.treatment }}</div>
+          </div>
+          <div>
+            <span style="display:inline-block;padding:6px 11px;border-radius:6px;font-size:12.5px;white-space:nowrap;background:{{ row.wfBg }};color:{{ row.wfFg }}">{{ row.workflow }}</span>
+          </div>
+          <div style="font-size:14px;color:#1D1F1B;font-variant-numeric:tabular-nums;white-space:nowrap">{{ row.amount }}</div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="position:relative;width:8px;height:8px;flex:none">
+              <span style="position:absolute;inset:0;border-radius:50%;background:{{ row.dot }}"></span>
+              <span style="position:absolute;inset:-4px;border-radius:50%;border:1.2px solid rgba(46,128,71,.5);animation:pulseRing 2.6s cubic-bezier(.22,.61,.36,1) infinite;opacity:{{ row.pulse }}"></span>
+            </span>
+            <span style="font-size:14px;color:#33362F;white-space:nowrap">{{ row.state }}</span>
+          </div>
+          <div style="display:flex;justify-content:flex-end;font-size:15px;color:#A8ADA3;letter-spacing:0.06em">•••</div>
+        </div>
+      </sc-for>
+
+      <sc-if value="{{ empty }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:64px 20px">
+        <div style="font-family:Newsreader,'Times New Roman',serif;font-size:22px;color:#16180F">No vendors match</div>
+        <div style="font-size:13.5px;color:#8A8F86">Try a different search term or clear the filter.</div>
+        <button onClick="{{ clearFilters }}" style="margin-top:6px;padding:9px 14px;border-radius:8px;border:1px solid #E2E2DB;background:#FFFFFF;font:400 13.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#33362F;cursor:pointer;transition:background .16s ease-out" style-hover="background:#FAFAF7">Clear filters</button>
+      </div>
+      </sc-if>
+    </div>
+  </main>
+
+  <sc-if value="{{ railMini }}" hint-placeholder-val="{{ false }}">
+  <aside style="width:56px;flex:none;border-left:1px solid #E7E7E2;background:#FAFAF7;display:flex;flex-direction:column;align-items:center;gap:18px;padding:22px 0">
+    <button onClick="{{ toggleRail }}" title="Expand vendor detail" style="width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:7px;border:1px solid transparent;background:transparent;cursor:pointer;transition:background .16s ease-out" style-hover="background:#EFEFE9">
+      <svg width="13" height="13" viewBox="0 0 12 12" fill="none"><path d="M7.4 2.2l-3.2 3.8 3.2 3.8" stroke="#6E736A" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+    </button>
+    <span style="width:30px;height:30px;flex:none;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:600;background:{{ selMarkBg }};color:{{ selMarkFg }}">{{ selInitials }}</span>
+    <div style="writing-mode:vertical-rl;transform:rotate(180deg);font-size:10.5px;font-weight:500;letter-spacing:0.14em;color:#8A8F86;white-space:nowrap">VENDOR DETAIL</div>
+    <div style="writing-mode:vertical-rl;transform:rotate(180deg);font-family:Newsreader,'Times New Roman',serif;font-size:16px;color:#16180F;white-space:nowrap">{{ selName }}</div>
+  </aside>
+  </sc-if>
+
+  <sc-if value="{{ railFull }}" hint-placeholder-val="{{ true }}">
+  <aside style="position:relative;flex:none;width:390px;border-left:1px solid #E7E7E2;background:#FCFCFA;inlineSize:{{ railW }}">
+    <div onMouseDown="{{ startResize }}" title="Drag to resize" style="position:absolute;left:-4px;top:0;bottom:0;width:9px;cursor:col-resize;z-index:6;transition:background .18s ease-out;backgroundColor:{{ handleBg }}" style-hover="background:rgba(46,128,71,0.16)"></div>
+    <div style="height:100%;overflow-y:auto;padding:26px 24px 34px;transition:opacity .22s ease-out;opacity:{{ railOp }}">
+
+      <div style="display:flex;align-items:center;gap:14px">
+        <span style="width:44px;height:44px;flex:none;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;letter-spacing:0.02em;background:{{ selMarkBg }};color:{{ selMarkFg }}">{{ selInitials }}</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-family:Newsreader,'Times New Roman',serif;font-size:26px;line-height:1.1;color:#16180F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ selName }}</div>
+          <div style="font-size:13px;color:#8E938A;margin-top:3px">Vendor {{ selId }}</div>
+        </div>
+        <button onClick="{{ toggleRail }}" title="Collapse panel" style="width:26px;height:26px;margin-right:-4px;display:flex;align-items:center;justify-content:center;border-radius:6px;border:1px solid transparent;background:transparent;cursor:pointer;transition:background .16s ease-out" style-hover="background:#F0F0EA">
+          <svg width="13" height="13" viewBox="0 0 12 12" fill="none"><path d="M4.6 2.2l3.2 3.8-3.2 3.8" stroke="#8E938A" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        </button>
+      </div>
+
+      <div style="height:1px;background:#EBEBE4;margin-top:22px"></div>
+      <div style="font-family:Newsreader,'Times New Roman',serif;font-size:19px;color:#16180F;margin-top:20px">Accounting profile</div>
+      <div style="display:grid;grid-template-columns:auto 1fr;gap:13px 16px;margin-top:14px;align-items:center">
+        <span style="font-size:13.5px;color:#75796F">Category</span>
+        <span style="font-size:13.5px;color:#1D1F1B;text-align:right">{{ selCategory }}</span>
+        <span style="font-size:13.5px;color:#75796F">Treatment</span>
+        <span style="font-size:13.5px;color:#1D1F1B;text-align:right">{{ selTreatment }}</span>
+        <span style="font-size:13.5px;color:#75796F">Confidence</span>
+        <span style="text-align:right"><span style="display:inline-block;padding:5px 11px;border-radius:6px;font-size:12.5px;background:{{ selConfBg }};color:{{ selConfFg }}">{{ selConfidence }}</span></span>
+      </div>
+
+      <div style="height:1px;background:#EBEBE4;margin-top:24px"></div>
+      <div style="font-family:Newsreader,'Times New Roman',serif;font-size:19px;color:#16180F;margin-top:20px">Close history</div>
+      <div style="margin-top:14px">
+        <sc-for list="{{ selHistory }}" as="h" hint-placeholder-count="3">
+          <div style="position:relative;display:grid;grid-template-columns:20px 1fr auto auto;align-items:center;gap:0 12px;padding:7px 0">
+            <span style="position:relative;width:9px;height:9px">
+              <span style="position:absolute;inset:0;border-radius:50%;background:{{ h.dot }}"></span>
+              <span style="position:absolute;left:4px;top:11px;width:1px;height:18px;background:#E1E5DE;opacity:{{ h.line }}"></span>
+            </span>
+            <span style="font-size:13.5px;color:#1D1F1B">{{ h.period }}</span>
+            <span style="font-size:13.5px;color:#1D1F1B;font-variant-numeric:tabular-nums;padding-right:12px">{{ h.amount }}</span>
+            <span style="display:inline-block;padding:4px 10px;border-radius:6px;font-size:12px;background:{{ h.tagBg }};color:{{ h.tagFg }}">{{ h.tag }}</span>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="height:1px;background:#EBEBE4;margin-top:24px"></div>
+      <div style="font-family:Newsreader,'Times New Roman',serif;font-size:19px;color:#16180F;margin-top:20px">Known sources</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:13px 16px;margin-top:14px">
+        <sc-for list="{{ selSources }}" as="s" hint-placeholder-count="4">
+          <div style="display:flex;align-items:center;gap:11px;min-width:0">
+            <svg width="15" height="17" viewBox="0 0 14 16" fill="none" style="flex:none"><path d="M2.2 1.6h6.3L11.8 5v9.4H2.2z" stroke="#9AA096" stroke-width="1.1" stroke-linejoin="round"></path><path d="M8.5 1.6V5h3.3" stroke="#9AA096" stroke-width="1.1" stroke-linejoin="round"></path></svg>
+            <span style="font-size:13.5px;color:#33362F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.label }}</span>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="height:1px;background:#EBEBE4;margin-top:24px"></div>
+      <div style="font-family:Newsreader,'Times New Roman',serif;font-size:19px;color:#16180F;margin-top:20px">Agent memory</div>
+      <div style="display:flex;align-items:flex-start;gap:12px;margin-top:14px;padding:14px 15px;border-radius:8px;background:#F1F5EC">
+        <svg width="15" height="17" viewBox="0 0 14 16" fill="none" style="flex:none;margin-top:2px"><path d="M2.2 1.6h6.3L11.8 5v9.4H2.2z" stroke="#5E8A62" stroke-width="1.1" stroke-linejoin="round"></path><path d="M8.5 1.6V5h3.3" stroke="#5E8A62" stroke-width="1.1" stroke-linejoin="round"></path></svg>
+        <div style="font-size:13px;line-height:1.7;color:#3C5840;text-wrap:pretty">{{ selMemory }}</div>
+      </div>
+
+      <div style="height:1px;background:#EBEBE4;margin-top:24px"></div>
+      <div style="font-family:Newsreader,'Times New Roman',serif;font-size:19px;color:#16180F;margin-top:20px">Relationship history</div>
+      <div style="margin-top:14px">
+        <sc-for list="{{ selRelationship }}" as="r" hint-placeholder-count="4">
+          <div style="display:grid;grid-template-columns:20px 104px 1fr;align-items:center;gap:0 12px;padding:7px 0">
+            <span style="position:relative;width:9px;height:9px">
+              <span style="position:absolute;inset:0;border-radius:50%;border:1.4px solid {{ r.ring }};background:#FCFCFA"></span>
+              <span style="position:absolute;left:4px;top:11px;width:1px;height:18px;background:#E1E5DE;opacity:{{ r.line }}"></span>
+            </span>
+            <span style="font-size:13.5px;color:#1D1F1B">{{ r.when }}</span>
+            <span style="font-size:13.5px;color:#75796F;text-wrap:pretty">{{ r.what }}</span>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="height:1px;background:#EBEBE4;margin-top:24px"></div>
+      <div style="font-family:Newsreader,'Times New Roman',serif;font-size:19px;color:#16180F;margin-top:20px">Used by agents</div>
+      <div style="margin-top:14px;display:flex;flex-direction:column;gap:2px">
+        <sc-for list="{{ selAgents }}" as="ag" hint-placeholder-count="4">
+          <a href="{{ ag.href }}" style="display:grid;grid-template-columns:18px 132px 1fr;align-items:center;gap:0 12px;padding:8px;margin:0 -8px;border-radius:6px;color:inherit;transition:background .16s ease-out" style-hover="background:#F1F1EB">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7.3" fill="#2E8047"></circle><path d="M4.7 8.2l2.2 2.2 4.4-4.8" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+            <span style="font-size:13.5px;color:#1D1F1B">{{ ag.agent }}</span>
+            <span style="font-size:13.5px;color:#75796F">{{ ag.uses }}</span>
+          </a>
+        </sc-for>
+      </div>
+    </div>
+  </aside>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;animateRows&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Behavior&quot;}}">
+const MARKS = [
+  { bg:'#1D3B2A', fg:'#EAF0E6' }, { bg:'#E9EDE7', fg:'#3E4A3C' },
+  { bg:'#EDEAE3', fg:'#5A5040' }, { bg:'#E6EBF0', fg:'#3A5465' },
+  { bg:'#EDEBF2', fg:'#4A4660' }
+];
+const WF = {
+  'December accrual':      { bg:'#E9F0E5', fg:'#3C5840' },
+  'December usage accrual':{ bg:'#E7EDF2', fg:'#3A5465' },
+  'Asset recognition':     { bg:'#E7EDF2', fg:'#3A5465' },
+  'Prepaid amortization':  { bg:'#EDEBF2', fg:'#4A4660' },
+  'Campaign spend':        { bg:'#F2EDE4', fg:'#5E5140' },
+  'Infrastructure spend':  { bg:'#F2EDE4', fg:'#5E5140' }
+};
+const STATES = {
+  'Autonomous':          { dot:'#63A644', pulse:'1' },
+  'Waiting for evidence':{ dot:'#D6A43C', pulse:'0' },
+  'Verified':            { dot:'#2E8047', pulse:'0' }
+};
+const AGENT_HREFS = {
+  'Evidence agent':'TrueUp Evidence.dc.html', 'Obligation agent':'TrueUp Obligation.dc.html',
+  'Estimation agent':'TrueUp Estimation.dc.html', 'Verification agent':'TrueUp Verification.dc.html'
+};
+const V = [
+  { name:'Mintlify', id:'VND-0412', mark:0, initials:'M', profile:'Software subscription', treatment:'Recurring fixed',
+    workflow:'December accrual', amount:'$1,400', sort:1400, state:'Autonomous',
+    category:'Recurring software subscription', accTreatment:'Monthly accrual', confidence:'High',
+    history:[['December 2026','$1,400','Verified'],['November 2026','$1,200','Verified'],['October 2026','$1,200','Verified']],
+    sources:['Contract','Invoices','Pricing amendment','Usage records'],
+    memory:'Contract price updated effective December 1, 2026. Future accruals should reference the updated subscription amount.',
+    relationship:[['Jan 2026','Vendor added'],['Oct 2026','Recurring accrual established'],['Dec 2026','Contract amendment detected'],['Future closes','Use updated pricing basis']],
+    agents:[['Evidence agent','Contract source'],['Obligation agent','Pricing terms'],['Estimation agent','Historical amount'],['Verification agent','Prior close comparison']] },
+  { name:'OpenAI', id:'VND-0192', mark:1, initials:'OA', profile:'API infrastructure', treatment:'Recurring variable',
+    workflow:'December usage accrual', amount:'$18,600', sort:18600, state:'Waiting for evidence',
+    category:'Usage-based infrastructure', accTreatment:'Variable accrual', confidence:'Medium',
+    history:[['December 2026','$18,600','In review'],['November 2026','$16,900','Verified'],['October 2026','$15,400','Verified']],
+    sources:['Usage records','Invoices','Rate card','Order form'],
+    memory:'Usage varies month to month. Estimation should wait for the metered usage export before finalizing the accrual.',
+    relationship:[['Mar 2026','Vendor added'],['Jun 2026','Usage-based accrual established'],['Dec 2026','Awaiting usage export'],['Future closes','Confirm metered totals']],
+    agents:[['Evidence agent','Usage export'],['Obligation agent','Rate card'],['Estimation agent','Trailing average'],['Verification agent','Variance check']] },
+  { name:'ASUS', id:'VND-8831', mark:2, initials:'AS', profile:'Engineering hardware', treatment:'Fixed asset',
+    workflow:'Asset recognition', amount:'$32,000', sort:32000, state:'Verified',
+    category:'Capitalized hardware', accTreatment:'Asset capitalization', confidence:'High',
+    history:[['December 2026','$32,000','Verified'],['August 2026','$11,500','Verified'],['April 2026','$8,200','Verified']],
+    sources:['Purchase order','Invoices','Asset register','Delivery receipt'],
+    memory:'Hardware over $5,000 is capitalized and depreciated over 36 months. Confirm receipt date before recognition.',
+    relationship:[['Feb 2026','Vendor added'],['Apr 2026','Capitalization policy applied'],['Dec 2026','Equipment purchase recognized'],['Future closes','Track depreciation schedule']],
+    agents:[['Evidence agent','Purchase order'],['Obligation agent','Delivery terms'],['Estimation agent','Capitalized value'],['Verification agent','Asset register match']] },
+  { name:'Notability', id:'VND-5512', mark:4, initials:'NO', profile:'Team software subscription', treatment:'Prepaid expense',
+    workflow:'Prepaid amortization', amount:'$1,800/month', sort:1800, state:'Autonomous',
+    category:'Prepaid software subscription', accTreatment:'Straight-line amortization', confidence:'High',
+    history:[['December 2026','$1,800','Verified'],['November 2026','$1,800','Verified'],['October 2026','$1,800','Verified']],
+    sources:['Contract','Invoices','Amortization schedule','Renewal notice'],
+    memory:'Annual prepayment amortized straight-line across 12 months. No proration expected mid-term.',
+    relationship:[['May 2026','Vendor added'],['May 2026','Annual prepayment recorded'],['Dec 2026','Amortization on schedule'],['Future closes','Renew or release balance']],
+    agents:[['Evidence agent','Prepayment invoice'],['Obligation agent','Coverage window'],['Estimation agent','Monthly amortization'],['Verification agent','Balance rollforward']] },
+  { name:'Meta', id:'VND-2748', mark:3, initials:'ME', profile:'Advertising platform', treatment:'Accounts payable',
+    workflow:'Campaign spend', amount:'$12,800', sort:12800, state:'Autonomous',
+    category:'Marketing and advertising', accTreatment:'Expense as incurred', confidence:'High',
+    history:[['December 2026','$12,800','In review'],['November 2026','$14,200','Verified'],['October 2026','$9,600','Verified']],
+    sources:['Platform statement','Invoices','Campaign report','Spend export'],
+    memory:'Campaign spend is billed in arrears. Accrue the platform statement total when the invoice lands after cutoff.',
+    relationship:[['Jan 2026','Vendor added'],['Feb 2026','Monthly spend accrual established'],['Dec 2026','Campaign spend detected'],['Future closes','Match to platform statement']],
+    agents:[['Evidence agent','Platform statement'],['Obligation agent','Billing terms'],['Estimation agent','Period spend'],['Verification agent','Invoice reconciliation']] },
+  { name:'AWS', id:'VND-3004', mark:2, initials:'AW', profile:'Cloud infrastructure', treatment:'Accounts payable',
+    workflow:'Infrastructure spend', amount:'$25,300', sort:25300, state:'Verified',
+    category:'Cloud infrastructure', accTreatment:'Usage accrual', confidence:'High',
+    history:[['December 2026','$25,300','Verified'],['November 2026','$24,100','Verified'],['October 2026','$22,800','Verified']],
+    sources:['Billing export','Invoices','Savings plan','Usage records'],
+    memory:'Committed-use discounts apply. Use the billing export net of credits rather than the list-rate usage total.',
+    relationship:[['Jan 2026','Vendor added'],['Mar 2026','Savings plan applied'],['Dec 2026','Spend within committed range'],['Future closes','Apply net-of-credit basis']],
+    agents:[['Evidence agent','Billing export'],['Obligation agent','Committed use'],['Estimation agent','Net spend'],['Verification agent','Credit reconciliation']] }
+];
+const FILTERS = ['All states', 'Autonomous', 'Waiting for evidence', 'Verified'];
+const COLUMNS = [
+  { key:'name', label:'VENDOR' }, { key:'profile', label:'PROFILE' },
+  { key:'workflow', label:'CURRENT WORKFLOW' }, { key:'sort', label:'AMOUNT' }, { key:'state', label:'AGENT STATE' }
+];
+
+class Component extends DCLogic {
+  state = { query:'', filter:'All states', menu:false, sel:'VND-0412', sortKey:null, sortDir:'desc',
+            mounted:false, fade:false, railOpen:true, railW:390, dragging:false };
+
+  componentDidMount() {
+    this.raf = requestAnimationFrame(() => this.setState({ mounted: true }));
+    this.onDocClick = e => { if (this.state.menu && !e.target.closest('[data-filter-menu]')) this.setState({ menu:false }); };
+    document.addEventListener('click', this.onDocClick, true);
+  }
+  componentWillUnmount() {
+    cancelAnimationFrame(this.raf);
+    clearTimeout(this.fadeT);
+    document.removeEventListener('click', this.onDocClick, true);
+  }
+
+  select(id) {
+    if (this.state.sel === id) return;
+    clearTimeout(this.fadeT);
+    this.setState({ fade: true });
+    this.fadeT = setTimeout(() => this.setState({ fade: false, sel: id }), 120);
+  }
+
+  matches(v, ignoreFilter) {
+    const q = this.state.query.trim().toLowerCase();
+    if (q && (v.name + ' ' + v.profile + ' ' + v.treatment + ' ' + v.workflow).toLowerCase().indexOf(q) < 0) return false;
+    if (!ignoreFilter && this.state.filter !== 'All states' && v.state !== this.state.filter) return false;
+    return true;
+  }
+
+  startResize(e) {
+    e.preventDefault();
+    const startX = e.clientX, startW = this.state.railW;
+    const move = ev => this.setState({ railW: Math.max(320, Math.min(620, startW - (ev.clientX - startX))) });
+    const up = () => {
+      document.removeEventListener('mousemove', move);
+      document.removeEventListener('mouseup', up);
+      document.body.style.cursor = ''; document.body.style.userSelect = '';
+      this.setState({ dragging:false });
+    };
+    document.addEventListener('mousemove', move);
+    document.addEventListener('mouseup', up);
+    document.body.style.cursor = 'col-resize'; document.body.style.userSelect = 'none';
+    this.setState({ dragging:true });
+  }
+
+  renderVals() {
+    const st = this.state, v = {};
+    const anim = this.props.animateRows !== false;
+    const list = V.filter(x => this.matches(x));
+    const dir = st.sortDir === 'asc' ? 1 : -1;
+    const sorted = st.sortKey === null ? list : list.slice().sort((a, b) => {
+      const x = a[st.sortKey], y = b[st.sortKey];
+      return typeof x === 'number' ? (x - y) * dir : String(x).localeCompare(String(y)) * dir;
+    });
+
+    v.rows = sorted.map((d, i) => ({
+      name:d.name, id:d.id, initials:d.initials, profile:d.profile, treatment:d.treatment,
+      workflow:d.workflow, amount:d.amount, state:d.state,
+      markBg:MARKS[d.mark].bg, markFg:MARKS[d.mark].fg,
+      wfBg:WF[d.workflow].bg, wfFg:WF[d.workflow].fg,
+      dot:STATES[d.state].dot, pulse:STATES[d.state].pulse,
+      bg: st.sel === d.id ? '#F1F5EC' : 'transparent',
+      op: (st.mounted || !anim) ? '1' : '0',
+      tr: (st.mounted || !anim) ? 'translateY(0)' : 'translateY(7px)',
+      delay: anim ? (i * 50) + 'ms' : '0ms',
+      pick: () => this.select(d.id)
+    }));
+    v.empty = sorted.length === 0;
+
+    v.columns = COLUMNS.map(c => {
+      const on = st.sortKey === c.key;
+      return {
+        label:c.label,
+        fg: on ? '#1D1F1B' : '#8A8F86',
+        upFill: on && st.sortDir === 'asc' ? '#2E8047' : '#CFD3CA',
+        downFill: on && st.sortDir === 'desc' ? '#2E8047' : '#CFD3CA',
+        sort: () => this.setState(s => ({
+          sortKey: c.key,
+          sortDir: s.sortKey === c.key ? (s.sortDir === 'asc' ? 'desc' : 'asc') : (c.key === 'sort' ? 'desc' : 'asc')
+        }))
+      };
+    });
+
+    v.filterOptions = FILTERS.map(f => {
+      const on = st.filter === f;
+      return {
+        label:f,
+        count: f === 'All states' ? V.filter(x => this.matches(x, true)).length
+                                  : V.filter(x => this.matches(x, true) && x.state === f).length,
+        dot: f === 'All states' ? '#CFD3CA' : STATES[f].dot,
+        bg: on ? '#F1F5EC' : 'transparent',
+        fg: on ? '#1D1F1B' : '#33362F',
+        pick: () => this.setState({ filter:f, menu:false })
+      };
+    });
+    v.filterLabel = st.filter === 'All states' ? 'Filter' : st.filter;
+    v.filterRot = st.menu ? 'rotate(180deg)' : 'rotate(0deg)';
+    v.menuOp = st.menu ? '1' : '0';
+    v.menuTr = st.menu ? 'translateY(0) scale(1)' : 'translateY(-6px) scale(.98)';
+    v.menuPe = st.menu ? 'auto' : 'none';
+    v.toggleFilter = e => { e.stopPropagation(); this.setState(s => ({ menu: !s.menu })); };
+    v.query = st.query;
+    v.onSearch = e => this.setState({ query: e.target.value });
+    v.clearFilters = () => this.setState({ query:'', filter:'All states' });
+
+    const sel = V.filter(x => x.id === st.sel)[0] || V[0];
+    v.selName = sel.name; v.selId = sel.id; v.selInitials = sel.initials;
+    v.selMarkBg = MARKS[sel.mark].bg; v.selMarkFg = MARKS[sel.mark].fg;
+    v.selCategory = sel.category; v.selTreatment = sel.accTreatment;
+    v.selConfidence = sel.confidence;
+    v.selConfBg = sel.confidence === 'High' ? '#E3EFE2' : '#F2EDE4';
+    v.selConfFg = sel.confidence === 'High' ? '#2C6B3C' : '#5E5140';
+    v.selHistory = sel.history.map((h, i) => ({
+      period:h[0], amount:h[1], tag:h[2],
+      dot: h[2] === 'Verified' ? '#63A644' : '#D6A43C',
+      tagBg: h[2] === 'Verified' ? '#E3EFE2' : '#F4EEE2',
+      tagFg: h[2] === 'Verified' ? '#2C6B3C' : '#6B5A3A',
+      line: i < sel.history.length - 1 ? '1' : '0'
+    }));
+    v.selSources = sel.sources.map(s => ({ label:s }));
+    v.selMemory = sel.memory;
+    v.selRelationship = sel.relationship.map((r, i) => ({
+      when:r[0], what:r[1],
+      ring: i === sel.relationship.length - 1 ? '#BFD4C3' : '#63A644',
+      line: i < sel.relationship.length - 1 ? '1' : '0'
+    }));
+    v.selAgents = sel.agents.map(a => ({ agent:a[0], uses:a[1], href:AGENT_HREFS[a[0]] }));
+    v.railOp = st.fade ? '0' : '1';
+
+    v.railFull = st.railOpen;
+    v.railMini = !st.railOpen;
+    v.railW = st.railW + 'px';
+    v.handleBg = st.dragging ? 'rgba(46,128,71,0.22)' : 'transparent';
+    v.toggleRail = () => this.setState(s => ({ railOpen: !s.railOpen }));
+    v.startResize = e => this.startResize(e);
+    return v;
+  }
+}
+</script>
+</body>
+</html>

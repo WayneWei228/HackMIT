@@ -1,0 +1,225 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+   TrueUp design tokens.
+   Ported 1:1 from the Maximor desktop design comps. Every value here appears
+   in the source comps - do not round or "clean up" these numbers, the warm
+   paper palette depends on the small deltas between neighbouring greys.
+--------------------------------------------------------------------------- */
+@theme {
+  /* Surfaces */
+  --color-paper: #FCFCFA;
+  --color-paper-sunk: #F7F7F4;
+  --color-rail: #F6F6F3;
+  --color-rail-alt: #F6F6F1;
+  --color-panel: #FFFFFF;
+  --color-panel-hover: #FAFAF7;
+  --color-wash: #F1F1EC;
+  --color-wash-warm: #F1F1EA;
+  --color-wash-cool: #F0F0EA;
+  --color-wash-deep: #EFEFE9;
+  --color-hover: #EDEDE7;
+  --color-hover-alt: #EDEDE6;
+  --color-sunk: #EBEBE4;
+
+  /* Ink */
+  --color-ink: #1D1F1B;
+  --color-ink-deep: #16180F;
+  --color-ink-2: #33362F;
+  --color-ink-3: #4A4E46;
+  --color-muted: #5A5F57;
+  --color-muted-2: #5E635A;
+  --color-muted-3: #6E736A;
+  --color-muted-4: #75796F;
+  --color-muted-5: #767B72;
+  --color-muted-6: #7E837A;
+  --color-faint: #8A8F86;
+  --color-faint-2: #8E938A;
+  --color-faint-3: #9AA096;
+  --color-ghost: #A0A59B;
+  --color-ghost-2: #A8ADA3;
+
+  /* Hairlines */
+  --color-line: #E7E7E2;
+  --color-line-soft: #E2E2DB;
+  --color-line-warm: #E4E4DD;
+  --color-line-cool: #E1E1DA;
+  --color-line-deep: #DEDED7;
+  --color-line-dark: #D6D6CF;
+  --color-line-mute: #DDDDD6;
+  --color-divider: #E9E9E3;
+  --color-divider-2: #E9E9E2;
+  --color-divider-3: #EDEDE6;
+  --color-rule: #CFD3CA;
+  --color-rule-soft: #D6D9D2;
+
+  /* Accent - TrueUp green */
+  --color-accent: #2E8047;
+  --color-accent-link: #2E7D45;
+  --color-accent-press: #2C6B3C;
+  --color-accent-deep: #25693A;
+  --color-accent-dark: #1C5730;
+  --color-accent-forest: #26503A;
+  --color-accent-slate: #3C5840;
+  --color-accent-soft: #E9EFE8;
+  --color-accent-soft-2: #E3EFE2;
+  --color-accent-tint: #F1F5EC;
+  --color-accent-on: #F4F7F2;
+  --color-accent-on-2: #F3F4F0;
+  --color-accent-line: #BFD4C3;
+  --color-accent-line-2: #CFE0CF;
+  --color-accent-line-3: #D6E2D4;
+  --color-accent-moss: #5C7A59;
+
+  /* Type scale - px values lifted from the comps.
+     `--text-*: initial` first clears Tailwind's stock sizes *and* their paired
+     `--text-<n>--line-height` companions. Our sizes deliberately carry no
+     line-height: the comps set none, so every run of text inherits `normal`. */
+  --text-*: initial;
+  --text-nano: 8.5px;
+  --text-pico: 9.5px;
+  --text-eyebrow: 10.5px;
+  --text-tiny: 11px;
+  --text-micro: 12px;
+  --text-meta: 12.5px;
+  --text-sm: 13px;
+  --text-ui: 13.5px;
+  --text-body: 14px;
+  --text-nav: 14.5px;
+  --text-lead: 15px;
+  --text-md: 16px;
+  --text-lg: 18px;
+  --text-xl: 19px;
+  --text-2xl: 21px;
+  --text-3xl: 28px;
+  --text-4xl: 36px;
+  --text-display: 46px;
+
+  /* Tracking */
+  --tracking-display: -0.012em;
+  --tracking-tight: -0.008em;
+  --tracking-wide: 0.03em;
+  --tracking-wider: 0.06em;
+  --tracking-caps: 0.1em;
+  --tracking-caps-lg: 0.13em;
+  --tracking-caps-xl: 0.15em;
+  --tracking-brand: 0.2em;
+
+  /* Radii */
+  --radius-xs: 2px;
+  --radius-sm: 3px;
+  --radius-md: 6px;
+  --radius-lg: 7px;
+  --radius-xl: 8px;
+
+  /* Elevation */
+  --shadow-hairline: 0 1px 1.5px rgba(30, 32, 28, 0.04);
+  --shadow-tile: 0 1px 2px rgba(30, 32, 28, 0.03);
+  --shadow-tab: 0 1px 2px rgba(30, 32, 28, 0.05);
+  --shadow-pop: 0 8px 26px rgba(30, 32, 28, 0.07);
+  --shadow-menu: 0 10px 26px rgba(30, 32, 28, 0.1);
+  --shadow-ring: 0 0 0 3px rgba(46, 128, 71, 0.14);
+  --shadow-ring-soft: 0 0 0 3px rgba(46, 128, 71, 0.08);
+
+  /* Fonts */
+  --font-sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-serif: var(--font-newsreader), Newsreader, "Times New Roman", serif;
+
+  /* Motion - one easing, three durations. Keeps the whole app feeling
+     like a single surface rather than a pile of independent widgets. */
+  --ease-out-soft: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --duration-fast: 160ms;
+  --duration-base: 220ms;
+  --duration-slow: 380ms;
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html,
+  body {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    /* The comps declare no line-height, so text inherits `normal`. Tailwind's
+       preflight sets 1.5 on <html>; left alone it adds ~30% to the height of
+       every unleaded run and walks the whole layout down the page. */
+    line-height: normal;
+    background: var(--color-paper-sunk);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  a {
+    color: var(--color-accent-link);
+    text-decoration: none;
+  }
+
+  a:hover {
+    color: var(--color-accent-dark);
+  }
+
+  input::placeholder {
+    color: var(--color-ghost);
+  }
+
+  ::-webkit-scrollbar {
+    width: 9px;
+    height: 9px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-line-deep);
+    border-radius: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
+}
+
+@utility font-display {
+  font-family: var(--font-serif);
+  font-optical-sizing: auto;
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.72);
+    opacity: 0.5;
+  }
+  70%,
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+@utility animate-pulse-ring {
+  animation: pulse-ring 2.6s cubic-bezier(0.22, 0.61, 0.36, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

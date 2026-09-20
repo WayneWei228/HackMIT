@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#F7F7F4;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+a{color:#2E7D45;text-decoration:none}
+a:hover{color:#1C5730}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:#DEDED7;border-radius:8px}
+::-webkit-scrollbar-track{background:transparent}
+[data-hscroll]::-webkit-scrollbar{height:0;width:0}
+@keyframes pulseRing{0%{transform:scale(.72);opacity:.5}70%{transform:scale(1.5);opacity:0}100%{transform:scale(1.5);opacity:0}}
+@keyframes sheen{0%{transform:translateX(-120%)}55%{transform:translateX(330%)}100%{transform:translateX(330%)}}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important}}
+</style>
+</helmet>
+<div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:#1D1F1B;display:flex;height:100vh;min-height:620px;background:#FCFCFA;overflow-x:auto;overflow-y:hidden">
+
+  <aside style="width:232px;flex:none;background:#F6F6F3;border-right:1px solid #E7E7E2;display:flex;flex-direction:column;padding:22px 0 18px">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:0 20px 24px">
+      <div style="font-size:13.5px;font-weight:600;letter-spacing:0.2em;color:#1D1F1B">TRUEUP</div>
+      <svg width="17" height="17" viewBox="0 0 17 17" fill="none"><circle cx="7.6" cy="7.6" r="5.1" stroke="#767B72" stroke-width="1.3"></circle><path d="M11.4 11.4L14.6 14.6" stroke="#767B72" stroke-width="1.3" stroke-linecap="round"></path></svg>
+    </div>
+
+    <nav style="display:flex;flex-direction:column;gap:1px;padding:0 12px">
+      <div style="display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:7px;font-size:14.5px;color:#33362F;cursor:pointer;transition:background .16s ease-out" style-hover="background:#EDEDE7">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M2.6 7.6L9 2.6l6.4 5v7.1a.9.9 0 0 1-.9.9H3.5a.9.9 0 0 1-.9-.9z" stroke="#5E635A" stroke-width="1.25" stroke-linejoin="round"></path></svg>
+        Home
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:7px;font-size:14.5px;color:#1D1F1B;cursor:pointer;transition:background .16s ease-out" style-hover="background:#EDEDE7">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M3.6 2.3h7L14.4 6v9.7H3.6z" stroke="#5E635A" stroke-width="1.25" stroke-linejoin="round"></path><path d="M10.6 2.3V6h3.8" stroke="#5E635A" stroke-width="1.25" stroke-linejoin="round"></path></svg>
+        <span style="flex:1">Close</span>
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 4.6L6 7.6l3-3" stroke="#8E938A" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+      </div>
+      <div style="display:flex;align-items:center;padding:7px 10px 7px 42px;border-radius:7px;font-size:14px;color:#1D1F1B;background:#E9EFE8;cursor:pointer">Active cases</div>
+      <a href="TrueUp All Cases.dc.html" style="display:flex;align-items:center;padding:7px 10px 7px 42px;border-radius:7px;font-size:14px;color:#5A5F57;transition:background .16s ease-out" style-hover="background:#EDEDE7;color:#1D1F1B">All cases</a>
+      <div style="display:flex;align-items:center;padding:7px 10px 7px 42px;border-radius:7px;font-size:14px;color:#5A5F57;cursor:pointer;transition:background .16s ease-out" style-hover="background:#EDEDE7">Journals</div>
+      <div style="display:flex;align-items:center;padding:7px 10px 7px 42px;border-radius:7px;font-size:14px;color:#5A5F57;cursor:pointer;transition:background .16s ease-out" style-hover="background:#EDEDE7">Reconciliations</div>
+
+      <div style="height:18px"></div>
+      <a href="TrueUp Vendors.dc.html" style="display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:7px;font-size:14.5px;color:#33362F;transition:background .16s ease-out" style-hover="background:#EDEDE7;color:#1D1F1B">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="2.5" y="3.4" width="13" height="11.2" rx="1.6" stroke="#5E635A" stroke-width="1.25"></rect><path d="M2.5 7.2h13" stroke="#5E635A" stroke-width="1.25"></path><circle cx="5.6" cy="10.8" r="1" fill="#5E635A"></circle></svg>
+        Vendors
+      </a>
+      <div style="display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:7px;font-size:14.5px;color:#33362F;cursor:pointer;transition:background .16s ease-out" style-hover="background:#EDEDE7">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M3.6 2.3h7L14.4 6v9.7H3.6z" stroke="#5E635A" stroke-width="1.25" stroke-linejoin="round"></path><path d="M10.6 2.3V6h3.8" stroke="#5E635A" stroke-width="1.25" stroke-linejoin="round"></path></svg>
+        Documents
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:7px;font-size:14.5px;color:#33362F;cursor:pointer;transition:background .16s ease-out" style-hover="background:#EDEDE7">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="2.5" y="3" width="13" height="12" rx="1.6" stroke="#5E635A" stroke-width="1.25"></rect><path d="M5.2 11.4l2.4-2.9 2.2 1.9 2.8-3.3" stroke="#5E635A" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        Insights
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:7px;font-size:14.5px;color:#33362F;cursor:pointer;transition:background .16s ease-out" style-hover="background:#EDEDE7">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="2.6" stroke="#5E635A" stroke-width="1.25"></circle><circle cx="9" cy="9" r="6.1" stroke="#5E635A" stroke-width="1.25" stroke-dasharray="2.2 2.4"></circle></svg>
+        Settings
+      </div>
+    </nav>
+
+    <div style="flex:1"></div>
+
+    <div style="padding:0 12px">
+      <div style="height:1px;background:#E4E4DD;margin:0 8px 16px"></div>
+      <div style="display:flex;align-items:center;gap:10px;padding:6px 10px;border-radius:7px;cursor:pointer;transition:background .16s ease-out" style-hover="background:#EDEDE7">
+        <div style="flex:1">
+          <div style="font-size:14px;color:#1D1F1B">December 2026</div>
+          <div style="font-size:12.5px;color:#8E938A;margin-top:2px">Controller</div>
+        </div>
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4.4 2.6l3 3.4-3 3.4" stroke="#8E938A" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+      </div>
+      <div style="display:flex;align-items:center;gap:11px;padding:10px 10px 4px">
+        <div style="width:34px;height:34px;flex:none;border-radius:50%;background:#26503A;color:#F3F4F0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;letter-spacing:0.03em">TS</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:14px;color:#1D1F1B">Taylor Smith</div>
+          <div style="font-size:12.5px;color:#8E938A;margin-top:2px">Mintlify</div>
+        </div>
+        <div style="font-size:15px;color:#9AA096;letter-spacing:0.06em;cursor:pointer">•••</div>
+      </div>
+    </div>
+  </aside>
+
+  <main style="flex:1;min-width:760px;display:flex;flex-direction:column;overflow:hidden">
+    <div style="padding:26px 34px 0;flex:none">
+      <div style="display:flex;align-items:center;gap:8px;font-size:10.5px;font-weight:500;letter-spacing:0.15em;color:#8E938A">
+        <a href="TrueUp Close Case.dc.html" style="color:#8E938A;transition:color .16s ease-out" style-hover="color:#1D1F1B">CLOSE</a>
+        <span>/</span>
+        <a href="TrueUp Close Case.dc.html" style="color:#8E938A;transition:color .16s ease-out" style-hover="color:#1D1F1B">ACTIVE CASE</a>
+        <span>/</span>
+        <span style="color:#1D1F1B">EVIDENCE</span>
+      </div>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:24px;margin-top:14px">
+        <div style="min-width:0">
+          <div style="font-family:Newsreader,'Times New Roman',serif;font-size:46px;line-height:1.02;letter-spacing:-0.012em;color:#16180F">Mintlify</div>
+          <div style="font-family:Newsreader,'Times New Roman',serif;font-size:36px;line-height:1.1;letter-spacing:-0.008em;color:#16180F;margin-top:2px">December accrual</div>
+          <div style="display:flex;align-items:center;gap:15px;margin-top:15px;font-size:15px;color:#75796F">
+            <span>Recurring fixed</span>
+            <span style="color:#D6D6CF">|</span>
+            <span>Vendor VND-0412</span>
+            <span style="color:#D6D6CF">|</span>
+            <span>GL 6042 - Subscriptions</span>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex:none;padding-top:6px">
+          <button style="display:flex;align-items:center;gap:9px;padding:9px 14px;border-radius:8px;border:1px solid #E2E2DB;background:#FFFFFF;font:400 13.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#33362F;cursor:pointer;white-space:nowrap;box-shadow:0 1px 1.5px rgba(30,32,28,0.04);transition:background .16s ease-out" style-hover="background:#FAFAF7">
+            <svg width="14" height="16" viewBox="0 0 14 16" fill="none"><path d="M2.2 1.6h6.3L11.8 5v9.4H2.2z" stroke="#6E736A" stroke-width="1.1" stroke-linejoin="round"></path><path d="M8.5 1.6V5h3.3" stroke="#6E736A" stroke-width="1.1" stroke-linejoin="round"></path><path d="M4.4 8.2h5.2M4.4 10.6h3.6" stroke="#6E736A" stroke-width="1.1" stroke-linecap="round"></path></svg>
+            View case notes
+          </button>
+          <button style="width:38px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:8px;border:1px solid transparent;background:transparent;color:#6E736A;font-size:15px;letter-spacing:0.06em;cursor:pointer;transition:background .16s ease-out" style-hover="background:#F1F1EC">•••</button>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin-top:26px;padding-bottom:22px">
+        <div style="padding-right:24px">
+          <div style="font-size:10.5px;font-weight:500;letter-spacing:0.13em;color:#8A8F86">PREVIOUS ACCRUAL</div>
+          <div style="font-family:Newsreader,'Times New Roman',serif;font-size:28px;color:#16180F;margin-top:9px;line-height:1">$1,200</div>
+        </div>
+        <div style="padding:0 24px;border-left:1px solid #E7E7E2">
+          <div style="font-size:10.5px;font-weight:500;letter-spacing:0.13em;color:#8A8F86">SUPPORTED</div>
+          <div style="position:relative;height:28px;margin-top:9px">
+            <span style="position:absolute;left:0;top:0;font-family:Newsreader,'Times New Roman',serif;font-size:28px;color:#A8ADA3;line-height:1;transition:opacity .25s ease-out;opacity:{{ supDash }}">—</span>
+            <span style="position:absolute;left:0;top:0;font-family:Newsreader,'Times New Roman',serif;font-size:28px;color:#16180F;line-height:1;white-space:nowrap;transition:opacity .4s ease-out,transform .4s cubic-bezier(.2,.8,.2,1);opacity:{{ supOp }};transform:{{ supTr }}">$1,400</span>
+          </div>
+        </div>
+        <div style="padding:0 24px;border-left:1px solid #E7E7E2">
+          <div style="font-size:10.5px;font-weight:500;letter-spacing:0.13em;color:#8A8F86">DIFFERENCE</div>
+          <div style="position:relative;height:28px;margin-top:9px">
+            <span style="position:absolute;left:0;top:0;font-family:Newsreader,'Times New Roman',serif;font-size:28px;color:#A8ADA3;line-height:1;transition:opacity .25s ease-out;opacity:{{ difDash }}">—</span>
+            <span style="position:absolute;left:0;top:0;font-family:Newsreader,'Times New Roman',serif;font-size:28px;color:#2E8047;line-height:1;white-space:nowrap;transition:opacity .4s ease-out,transform .4s cubic-bezier(.2,.8,.2,1);opacity:{{ difOp }};transform:{{ difTr }}">+$200</span>
+          </div>
+        </div>
+        <div style="padding:0 24px;border-left:1px solid #E7E7E2">
+          <div style="font-size:10.5px;font-weight:500;letter-spacing:0.13em;color:#8A8F86">STATUS</div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:9px">
+            <span style="position:relative;width:9px;height:9px;flex:none">
+              <span style="position:absolute;inset:0;border-radius:50%;background:#2E8047;box-shadow:0 0 0 3px rgba(46,128,71,0.14)"></span>
+              <span style="position:absolute;inset:-4px;border-radius:50%;border:1.3px solid rgba(46,128,71,.55);animation:pulseRing 2.6s cubic-bezier(.22,.61,.36,1) infinite;transition:opacity .3s ease-out;opacity:{{ pulseOp }}"></span>
+            </span>
+            <span style="font-family:Newsreader,'Times New Roman',serif;font-size:24px;color:#16180F;line-height:1">Running</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:10px;padding-bottom:12px;color:#5A5F57">
+        <div ref="{{ tabsRef }}" data-hscroll="1" style="flex:1;min-width:0;display:flex;align-items:center;gap:3px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;padding-bottom:1px;maskImage:{{ tabsMask }};WebkitMaskImage:{{ tabsMask }}">
+          <button onClick="{{ pick_agreement }}" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;border:1px solid transparent;background:transparent;font:400 13px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;cursor:pointer;white-space:nowrap;transition:background .16s ease-out;backgroundColor:{{ tbg_agreement }};borderColor:{{ tbd_agreement }};boxShadow:{{ tsh_agreement }};color:{{ tfg_agreement }};fontWeight:{{ tfw_agreement }}" style-hover="background:#F1F1EC">
+            <svg width="14" height="15" viewBox="0 0 14 15" fill="none"><path d="M2.3 1.5h6L11.7 5v8.5H2.3z" stroke="{{ tic_agreement }}" stroke-width="1.1" stroke-linejoin="round"></path><path d="M8.3 1.5V5h3.4" stroke="{{ tic_agreement }}" stroke-width="1.1" stroke-linejoin="round"></path></svg>
+            Mintlify agreement
+            <span style="color:#A0A59B;font-size:12px">PDF · 14 pages</span>
+          </button>
+          <button onClick="{{ pick_ap }}" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;border:1px solid transparent;background:transparent;font:400 13px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;cursor:pointer;white-space:nowrap;transition:background .16s ease-out;backgroundColor:{{ tbg_ap }};borderColor:{{ tbd_ap }};boxShadow:{{ tsh_ap }};color:{{ tfg_ap }};fontWeight:{{ tfw_ap }}" style-hover="background:#F1F1EC">
+            <svg width="14" height="15" viewBox="0 0 14 15" fill="none"><rect x="1.8" y="1.6" width="10.4" height="11.8" rx="1.3" stroke="{{ tic_ap }}" stroke-width="1.1"></rect><path d="M1.8 5.4h10.4M5.6 5.4v8" stroke="{{ tic_ap }}" stroke-width="1.1"></path></svg>
+            AP history
+            <span style="color:#A0A59B;font-size:12px">XLSX · 432 rows</span>
+          </button>
+          <button onClick="{{ pick_prior }}" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;border:1px solid transparent;background:transparent;font:400 13px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;cursor:pointer;white-space:nowrap;transition:background .16s ease-out;backgroundColor:{{ tbg_prior }};borderColor:{{ tbd_prior }};boxShadow:{{ tsh_prior }};color:{{ tfg_prior }};fontWeight:{{ tfw_prior }}" style-hover="background:#F1F1EC">
+            <svg width="14" height="15" viewBox="0 0 14 15" fill="none"><path d="M2.3 1.5h6L11.7 5v8.5H2.3z" stroke="{{ tic_prior }}" stroke-width="1.1" stroke-linejoin="round"></path><path d="M4.6 8h4.8M4.6 10.4h3" stroke="{{ tic_prior }}" stroke-width="1.1" stroke-linecap="round"></path></svg>
+            Prior close
+            <span style="color:#A0A59B;font-size:12px">PDF · 28 pages</span>
+          </button>
+        </div>
+        <div style="display:flex;align-items:center;gap:2px;flex:none">
+          <button onClick="{{ toggleSearch }}" style="width:34px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:8px;border:1px solid transparent;background:transparent;cursor:pointer;transition:background .16s ease-out" style-hover="background:#F1F1EC">
+            <svg width="16" height="16" viewBox="0 0 17 17" fill="none"><circle cx="7.6" cy="7.6" r="5.1" stroke="#767B72" stroke-width="1.3"></circle><path d="M11.4 11.4L14.6 14.6" stroke="#767B72" stroke-width="1.3" stroke-linecap="round"></path></svg>
+          </button>
+          <button onClick="{{ jumpToMatch }}" style="display:flex;align-items:center;gap:7px;padding:8px 10px;border-radius:8px;border:1px solid transparent;background:transparent;font:400 13px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#5A5F57;cursor:pointer;white-space:nowrap;transition:background .16s ease-out" style-hover="background:#F1F1EC">
+            Jump to match
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M4.4 2.6l3 3.4-3 3.4" stroke="#8E938A" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div style="height:1px;background:#E7E7E2;flex:none"></div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:20px;padding:13px 34px;flex:none">
+      <div style="display:flex;align-items:center;gap:11px;min-width:0">
+        <span style="position:relative;width:9px;height:9px;flex:none">
+          <span style="position:absolute;inset:0;border-radius:50%;background:#2E8047"></span>
+          <span style="position:absolute;inset:-4px;border-radius:50%;border:1.3px solid rgba(46,128,71,.55);animation:pulseRing 2.6s cubic-bezier(.22,.61,.36,1) infinite;transition:opacity .3s ease-out;opacity:{{ pulseOp }}"></span>
+        </span>
+        <span style="font-size:13.5px;font-weight:500;color:#1D1F1B;white-space:nowrap">Evidence agent</span>
+        <span style="font-size:13.5px;color:#9AA096;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:opacity .25s ease-out;opacity:{{ statusOp }}">{{ statusText }}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px;flex:none;font-size:13px">
+        <span style="color:#8E938A;white-space:nowrap">3 sources</span>
+        <span style="color:#DDDDD6">|</span>
+        <span style="color:#1D1F1B;font-weight:500;white-space:nowrap;font-variant-numeric:tabular-nums">{{ reviewed }}</span>
+        <div style="position:relative;width:104px;height:5px;border-radius:3px;background:#E9E9E2;overflow:hidden">
+          <div style="height:100%;border-radius:3px;background:#2E8047;transition:width .9s cubic-bezier(.22,.61,.36,1);width:{{ progW }}"></div>
+          <div style="position:absolute;top:0;left:0;height:100%;width:36%;background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.6),rgba(255,255,255,0));animation:sheen 2.2s ease-in-out infinite;transition:opacity .3s ease-out;opacity:{{ pulseOp }}"></div>
+        </div>
+        <button onClick="{{ replay }}" title="Replay sequence" style="display:flex;align-items:center;gap:7px;padding:6px 9px;border-radius:7px;border:1px solid transparent;background:transparent;font:400 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#8E938A;cursor:pointer;white-space:nowrap;transition:background .16s ease-out,color .16s ease-out" style-hover="background:#F1F1EC;color:#1D1F1B">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M10 6a4 4 0 1 1-1.3-2.9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"></path><path d="M10.2 1.3v2.6H7.6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          Replay
+        </button>
+      </div>
+    </div>
+
+    <div style="flex:1;min-height:0;padding:0 34px 26px;display:flex">
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column;background:#FFFFFF;border:1px solid #E9E9E3;border-radius:8px;overflow:hidden;box-shadow:0 1px 2px rgba(30,32,28,0.03)">
+
+        <div style="display:flex;align-items:center;gap:3px;padding:9px 12px;border-bottom:1px solid #EEEEE8;flex:none">
+          <button onClick="{{ toggleThumbs }}" title="Page thumbnails" style="width:32px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:7px;border:1px solid transparent;background:transparent;cursor:pointer;transition:background .16s ease-out;backgroundColor:{{ thumbsBg }}" style-hover="background:#F1F1EC">
+            <svg width="17" height="17" viewBox="0 0 18 18" fill="none"><rect x="2.4" y="3.2" width="13.2" height="11.6" rx="2" stroke="#5E635A" stroke-width="1.3"></rect><path d="M7.4 3.2v11.6" stroke="#5E635A" stroke-width="1.3"></path></svg>
+          </button>
+          <div style="width:1px;height:18px;background:#E7E7E2;margin:0 9px"></div>
+          <button onClick="{{ prevPage }}" title="Previous page" style="width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:7px;border:1px solid transparent;background:transparent;cursor:pointer;transition:background .16s ease-out,opacity .2s ease-out;opacity:{{ prevOp }}" style-hover="background:#F1F1EC">
+            <svg width="13" height="13" viewBox="0 0 12 12" fill="none"><path d="M7.4 2.2l-3.2 3.8 3.2 3.8" stroke="#5E635A" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          </button>
+          <div style="font-size:13.5px;color:#33362F;min-width:58px;text-align:center;font-variant-numeric:tabular-nums">{{ pageLabel }}</div>
+          <button onClick="{{ nextPage }}" title="Next page" style="width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:7px;border:1px solid transparent;background:transparent;cursor:pointer;transition:background .16s ease-out,opacity .2s ease-out;opacity:{{ nextOp }}" style-hover="background:#F1F1EC">
+            <svg width="13" height="13" viewBox="0 0 12 12" fill="none"><path d="M4.6 2.2l3.2 3.8-3.2 3.8" stroke="#5E635A" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          </button>
+          <button onClick="{{ cycleZoom }}" title="Zoom" style="display:flex;align-items:center;gap:8px;margin-left:10px;padding:7px 10px;border-radius:7px;border:1px solid transparent;background:transparent;font:400 13.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#33362F;cursor:pointer;transition:background .16s ease-out" style-hover="background:#F1F1EC">
+            <span style="font-variant-numeric:tabular-nums">{{ zoomLabel }}</span>
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M3 4.6L6 7.6l3-3" stroke="#8E938A" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          </button>
+          <div style="flex:1"></div>
+          <div style="overflow:hidden;transition:width .3s cubic-bezier(.2,.8,.2,1),opacity .2s ease-out;width:{{ searchW }};opacity:{{ searchOp }}">
+            <input placeholder="Search document" style="width:186px;padding:7px 11px;border-radius:7px;border:1px solid #E4E4DD;background:#FAFAF7;font:400 13px/1.2 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#1D1F1B;outline:none">
+          </div>
+          <button title="Download" style="width:32px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:7px;border:1px solid transparent;background:transparent;cursor:pointer;transition:background .16s ease-out" style-hover="background:#F1F1EC">
+            <svg width="16" height="16" viewBox="0 0 17 17" fill="none"><path d="M8.5 2.6v8.2" stroke="#5E635A" stroke-width="1.3" stroke-linecap="round"></path><path d="M5.2 7.8l3.3 3.2 3.3-3.2" stroke="#5E635A" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"></path><path d="M3.2 13.6h10.6" stroke="#5E635A" stroke-width="1.3" stroke-linecap="round"></path></svg>
+          </button>
+          <button onClick="{{ toggleRail }}" title="Focus mode" style="width:32px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:7px;border:1px solid transparent;background:transparent;cursor:pointer;transition:background .16s ease-out" style-hover="background:#F1F1EC">
+            <svg width="16" height="16" viewBox="0 0 17 17" fill="none"><path d="M10.2 2.8h4v4M6.8 14.2h-4v-4" stroke="#5E635A" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"></path><path d="M14.2 2.8L9.6 7.4M2.8 14.2l4.6-4.6" stroke="#5E635A" stroke-width="1.3" stroke-linecap="round"></path></svg>
+          </button>
+        </div>
+
+        <div style="flex:1;min-height:0;display:flex;background:#F5F5F1">
+          <div style="flex:none;overflow-y:auto;border-right:1px solid #EAEAE3;background:#FBFBF8;transition:width .32s cubic-bezier(.2,.8,.2,1),opacity .24s ease-out;width:{{ thumbsW }};opacity:{{ thumbsOp }}">
+            <div style="padding:14px 12px;display:flex;flex-direction:column;gap:10px;width:114px">
+              <div onClick="{{ prevPage }}" style="height:116px;border-radius:4px;background:#FFFFFF;border:1px solid #E6E6DF;padding:10px 9px;cursor:pointer;transition:border-color .18s ease-out" style-hover="border-color:#C9CFC4">
+                <div style="height:4px;background:#EFEFE9;border-radius:2px"></div>
+                <div style="height:4px;background:#EFEFE9;border-radius:2px;margin-top:6px;width:80%"></div>
+                <div style="height:4px;background:#EFEFE9;border-radius:2px;margin-top:6px"></div>
+                <div style="height:4px;background:#EFEFE9;border-radius:2px;margin-top:6px;width:64%"></div>
+                <div style="font-size:9px;color:#A8ADA3;margin-top:12px;text-align:center">{{ thumbPrev }}</div>
+              </div>
+              <div style="height:116px;border-radius:4px;background:#FFFFFF;border:1.5px solid #2E8047;padding:10px 9px;cursor:pointer">
+                <div style="height:4px;background:#E7E7E0;border-radius:2px"></div>
+                <div style="height:4px;background:#E7E7E0;border-radius:2px;margin-top:6px;width:80%"></div>
+                <div style="height:10px;border-radius:2px;margin-top:8px;transition:background .5s ease-out;background:{{ thumbHl }}"></div>
+                <div style="height:4px;background:#E7E7E0;border-radius:2px;margin-top:8px;width:70%"></div>
+                <div style="font-size:9px;color:#2E8047;margin-top:8px;text-align:center">{{ page }}</div>
+              </div>
+              <div onClick="{{ nextPage }}" style="height:116px;border-radius:4px;background:#FFFFFF;border:1px solid #E6E6DF;padding:10px 9px;cursor:pointer;transition:border-color .18s ease-out" style-hover="border-color:#C9CFC4">
+                <div style="height:4px;background:#EFEFE9;border-radius:2px"></div>
+                <div style="height:4px;background:#EFEFE9;border-radius:2px;margin-top:6px;width:72%"></div>
+                <div style="height:4px;background:#EFEFE9;border-radius:2px;margin-top:6px"></div>
+                <div style="font-size:9px;color:#A8ADA3;margin-top:20px;text-align:center">{{ thumbNext }}</div>
+              </div>
+            </div>
+          </div>
+
+          <div ref="{{ scrollRef }}" style="flex:1;min-width:0;overflow:auto;padding:24px 0 36px">
+            <div style="transition:opacity .22s ease-out,transform .3s cubic-bezier(.2,.8,.2,1);opacity:{{ pageOp }};transform:{{ pageScale }};transform-origin:top center">
+
+              <sc-if value="{{ isAgreement }}" hint-placeholder-val="{{ true }}">
+              <div style="width:min(700px,92%);margin:0 auto;background:#FFFFFF;border:1px solid #EBEBE4;border-radius:3px;box-shadow:0 8px 26px rgba(30,32,28,.07);padding:46px 52px 58px">
+                <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:24px">
+                  <div style="display:flex;align-items:center;gap:11px">
+                    <span style="width:25px;height:25px;border-radius:50%;background:#1C4432;flex:none"></span>
+                    <span style="font-size:23px;letter-spacing:-0.02em;color:#16180F">mintlify</span>
+                  </div>
+                  <div style="text-align:right">
+                    <div style="font-family:Newsreader,'Times New Roman',serif;font-size:16px;color:#16180F">Master Subscription Agreement</div>
+                    <div style="font-size:9.5px;letter-spacing:0.12em;color:#9AA096;margin-top:6px">EXECUTED OCT 14, 2026</div>
+                  </div>
+                </div>
+                <div style="height:1px;background:#E4E4DC;margin:28px 0 30px"></div>
+
+                <sc-if value="{{ isPage5 }}" hint-placeholder-val="{{ false }}">
+                <div>
+                  <div style="display:flex;gap:24px;align-items:baseline">
+                    <span style="font-family:Newsreader,'Times New Roman',serif;font-size:20px;color:#16180F">3.</span>
+                    <span style="font-family:Newsreader,'Times New Roman',serif;font-size:20px;font-weight:500;color:#16180F">Services</span>
+                  </div>
+                  <div style="display:grid;grid-template-columns:42px 1fr;gap:20px 8px;margin-top:24px;font-family:Newsreader,'Times New Roman',serif;font-size:15px;line-height:1.75;color:#33362F">
+                    <div style="color:#6E736A">3.1</div><div>Provider shall make the Standard Workspace plan available to Customer on a subscription basis for the duration of the Term.</div>
+                    <div style="color:#6E736A">3.2</div><div>Customer may add Authorized Users at any time; additional seats are billed at the then-current list rate and pro-rated to the next invoice date.</div>
+                    <div style="color:#6E736A">3.3</div><div>Provider will use commercially reasonable efforts to maintain 99.9% monthly availability, excluding scheduled maintenance.</div>
+                  </div>
+                </div>
+                </sc-if>
+
+                <sc-if value="{{ isPage6 }}" hint-placeholder-val="{{ true }}">
+                <div>
+                  <div style="display:flex;gap:24px;align-items:baseline">
+                    <span style="font-family:Newsreader,'Times New Roman',serif;font-size:20px;color:#16180F">4.</span>
+                    <span style="font-family:Newsreader,'Times New Roman',serif;font-size:20px;font-weight:500;color:#16180F">Fees and Payment</span>
+                  </div>
+                  <div style="display:grid;grid-template-columns:42px 1fr;gap:22px 8px;margin-top:24px;font-family:Newsreader,'Times New Roman',serif;font-size:15px;line-height:1.75;color:#33362F">
+                    <div style="color:#6E736A">4.1</div>
+                    <div>Customer shall pay the subscription fees set out in the applicable Order Form. Fees are billed monthly in arrears and are due within thirty (30) days of the invoice date.</div>
+                  </div>
+                  <div style="display:flex;align-items:stretch;margin:18px -12px 0">
+                    <div style="flex:1;min-width:0;display:grid;grid-template-columns:42px 1fr;gap:8px;padding:12px;border-radius:4px;background-image:linear-gradient(#EEF5E4,#EEF5E4);background-repeat:no-repeat;background-position:left center;transition:background-size .75s cubic-bezier(.22,.61,.36,1);background-size:{{ hlSize }}">
+                      <div style="font-family:Newsreader,'Times New Roman',serif;font-size:15px;color:#6E736A">4.2</div>
+                      <div style="font-family:Newsreader,'Times New Roman',serif;font-size:15px;line-height:1.75;color:#33362F">Commencing December 1, 2026, the monthly subscription fee for the Standard Workspace plan shall increase from <strong style="font-weight:600;color:#16180F">$1,200 to $1,400</strong> per month for the remainder of the Term.</div>
+                    </div>
+                    <div style="flex:none;display:flex;align-items:center;gap:11px;padding-left:14px;transition:opacity .34s ease-out,transform .34s cubic-bezier(.2,.8,.2,1);opacity:{{ matchOp }};transform:{{ matchTr }}">
+                      <div style="width:2px;align-self:stretch;background:#4F9A64;border-radius:1px"></div>
+                      <div>
+                        <div style="font-size:9.5px;font-weight:600;letter-spacing:0.1em;color:#4F9A64">MATCH FOUND</div>
+                        <div style="font-family:Newsreader,'Times New Roman',serif;font-size:16px;color:#2E8047;margin-top:4px">§4.2</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div style="display:grid;grid-template-columns:42px 1fr;gap:22px 8px;margin-top:22px;font-family:Newsreader,'Times New Roman',serif;font-size:15px;line-height:1.75;color:#33362F">
+                    <div style="color:#6E736A">4.3</div>
+                    <div>Fees are exclusive of taxes. Customer is responsible for all applicable sales, use and withholding taxes arising from the Services.</div>
+                    <div style="color:#6E736A">4.4</div>
+                    <div>Either party may terminate for convenience on sixty (60) days written notice prior to the end of the then-current Term.</div>
+                  </div>
+                </div>
+                </sc-if>
+
+                <sc-if value="{{ isPage7 }}" hint-placeholder-val="{{ false }}">
+                <div>
+                  <div style="display:flex;gap:24px;align-items:baseline">
+                    <span style="font-family:Newsreader,'Times New Roman',serif;font-size:20px;color:#16180F">5.</span>
+                    <span style="font-family:Newsreader,'Times New Roman',serif;font-size:20px;font-weight:500;color:#16180F">Term and Termination</span>
+                  </div>
+                  <div style="display:grid;grid-template-columns:42px 1fr;gap:20px 8px;margin-top:24px;font-family:Newsreader,'Times New Roman',serif;font-size:15px;line-height:1.75;color:#33362F">
+                    <div style="color:#6E736A">5.1</div><div>The initial Term begins on the Order Form effective date and continues for twelve (12) months unless terminated in accordance with this Section.</div>
+                    <div style="color:#6E736A">5.2</div><div>The Term renews automatically for successive twelve (12) month periods at the then-current rate set out in Section 4.2.</div>
+                    <div style="color:#6E736A">5.3</div><div>Fees accrued prior to the effective date of termination remain payable in full.</div>
+                  </div>
+                </div>
+                </sc-if>
+              </div>
+              </sc-if>
+
+              <sc-if value="{{ isAp }}" hint-placeholder-val="{{ false }}">
+              <div style="width:min(700px,92%);margin:0 auto;background:#FFFFFF;border:1px solid #EBEBE4;border-radius:3px;box-shadow:0 8px 26px rgba(30,32,28,.07);padding:34px 36px 44px">
+                <div style="display:flex;align-items:baseline;justify-content:space-between;gap:20px">
+                  <div style="font-family:Newsreader,'Times New Roman',serif;font-size:19px;color:#16180F">Accounts Payable — Vendor History</div>
+                  <div style="font-size:10px;letter-spacing:0.12em;color:#9AA096">VND-0412</div>
+                </div>
+                <div style="display:grid;grid-template-columns:94px 1fr 86px 82px;margin-top:24px;font-size:10px;letter-spacing:0.09em;color:#A0A59B;padding-bottom:9px;border-bottom:1px solid #E7E7E0">
+                  <div>DATE</div><div>DESCRIPTION</div><div style="text-align:right">AMOUNT</div><div style="text-align:right">STATUS</div>
+                </div>
+                <div style="display:grid;grid-template-columns:94px 1fr 86px 82px;font-size:13px;color:#33362F">
+                  <div style="padding:11px 0;border-bottom:1px solid #F1F1EA">12/01/2026</div><div style="padding:11px 0;border-bottom:1px solid #F1F1EA">Mintlify subscription</div><div style="padding:11px 0;border-bottom:1px solid #F1F1EA;text-align:right">$1,200</div><div style="padding:11px 0;border-bottom:1px solid #F1F1EA;text-align:right;color:#8E938A">Paid</div>
+                  <div style="padding:11px 0;border-bottom:1px solid #F1F1EA">11/01/2026</div><div style="padding:11px 0;border-bottom:1px solid #F1F1EA">Mintlify subscription</div><div style="padding:11px 0;border-bottom:1px solid #F1F1EA;text-align:right">$1,200</div><div style="padding:11px 0;border-bottom:1px solid #F1F1EA;text-align:right;color:#8E938A">Paid</div>
+                  <div style="padding:11px 0;border-bottom:1px solid #F1F1EA">10/01/2026</div><div style="padding:11px 0;border-bottom:1px solid #F1F1EA">Mintlify subscription</div><div style="padding:11px 0;border-bottom:1px solid #F1F1EA;text-align:right">$1,200</div><div style="padding:11px 0;border-bottom:1px solid #F1F1EA;text-align:right;color:#8E938A">Paid</div>
+                  <div style="padding:11px 0;border-bottom:1px solid #F1F1EA">09/01/2026</div><div style="padding:11px 0;border-bottom:1px solid #F1F1EA">Mintlify subscription</div><div style="padding:11px 0;border-bottom:1px solid #F1F1EA;text-align:right">$1,200</div><div style="padding:11px 0;border-bottom:1px solid #F1F1EA;text-align:right;color:#8E938A">Paid</div>
+                  <div style="padding:11px 0;border-bottom:1px solid #F1F1EA">08/01/2026</div><div style="padding:11px 0;border-bottom:1px solid #F1F1EA">Mintlify subscription</div><div style="padding:11px 0;border-bottom:1px solid #F1F1EA;text-align:right">$1,200</div><div style="padding:11px 0;border-bottom:1px solid #F1F1EA;text-align:right;color:#8E938A">Paid</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;margin-top:20px;font-size:12.5px;color:#8E938A">
+                  <span style="width:6px;height:6px;border-radius:50%;background:#2E8047;flex:none"></span>
+                  12 consecutive months at $1,200 — no rate change recorded in AP
+                </div>
+              </div>
+              </sc-if>
+
+              <sc-if value="{{ isPrior }}" hint-placeholder-val="{{ false }}">
+              <div style="width:min(700px,92%);margin:0 auto;background:#FFFFFF;border:1px solid #EBEBE4;border-radius:3px;box-shadow:0 8px 26px rgba(30,32,28,.07);padding:46px 52px 58px">
+                <div style="font-size:9.5px;letter-spacing:0.12em;color:#9AA096">CLOSE MEMO · NOVEMBER 2026</div>
+                <div style="font-family:Newsreader,'Times New Roman',serif;font-size:25px;color:#16180F;margin-top:10px">Mintlify subscription accrual</div>
+                <div style="height:1px;background:#E4E4DC;margin:24px 0 26px"></div>
+                <div style="display:grid;grid-template-columns:92px 1fr;gap:12px 10px;font-size:13.5px;color:#33362F">
+                  <div style="color:#9AA096">To</div><div>Controller</div>
+                  <div style="color:#9AA096">From</div><div>Finance Operations</div>
+                  <div style="color:#9AA096">Date</div><div>Dec 3, 2026</div>
+                </div>
+                <div style="font-family:Newsreader,'Times New Roman',serif;font-size:15px;line-height:1.85;color:#33362F;margin-top:24px;text-wrap:pretty">Mintlify was accrued at $1,200 for November 2026 on the basis of the prior Order Form. The vendor notified Finance of a rate change effective December 1, 2026; the amended agreement was countersigned on October 14, 2026 and supersedes the prior schedule.</div>
+                <div style="font-family:Newsreader,'Times New Roman',serif;font-size:15px;line-height:1.85;color:#33362F;margin-top:16px;text-wrap:pretty">No adjustment was required in the November close. December should reflect the revised monthly rate for the remainder of the Term.</div>
+              </div>
+              </sc-if>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <sc-if value="{{ railMini }}" hint-placeholder-val="{{ false }}">
+  <aside style="width:56px;flex:none;border-left:1px solid #E7E7E2;background:#FAFAF7;display:flex;flex-direction:column;align-items:center;gap:18px;padding:22px 0">
+    <button onClick="{{ toggleRail }}" title="Expand live execution" style="width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:7px;border:1px solid transparent;background:transparent;cursor:pointer;transition:background .16s ease-out" style-hover="background:#EFEFE9">
+      <svg width="13" height="13" viewBox="0 0 12 12" fill="none"><path d="M7.4 2.2l-3.2 3.8 3.2 3.8" stroke="#6E736A" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+    </button>
+    <span style="width:9px;height:9px;border-radius:50%;background:#2E8047;box-shadow:0 0 0 3px rgba(46,128,71,0.14);flex:none"></span>
+    <div style="writing-mode:vertical-rl;transform:rotate(180deg);font-size:10.5px;font-weight:500;letter-spacing:0.14em;color:#8A8F86;white-space:nowrap">LIVE EXECUTION</div>
+    <div style="writing-mode:vertical-rl;transform:rotate(180deg);font-family:Newsreader,'Times New Roman',serif;font-size:16px;color:#16180F;white-space:nowrap">Evidence</div>
+  </aside>
+  </sc-if>
+
+  <sc-if value="{{ railFull }}" hint-placeholder-val="{{ true }}">
+  <aside style="position:relative;flex:none;width:330px;border-left:1px solid #E7E7E2;background:#FCFCFA;inlineSize:{{ railW }}">
+    <div onMouseDown="{{ startResize }}" title="Drag to resize" style="position:absolute;left:-4px;top:0;bottom:0;width:9px;cursor:col-resize;z-index:6;transition:background .18s ease-out;backgroundColor:{{ handleBg }}" style-hover="background:rgba(46,128,71,0.16)"></div>
+    <div style="height:100%;overflow-y:auto;padding:26px 24px 34px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+        <div style="font-size:10.5px;font-weight:500;letter-spacing:0.13em;color:#8A8F86">LIVE EXECUTION</div>
+        <button onClick="{{ toggleRail }}" title="Collapse panel" style="width:26px;height:26px;margin-right:-5px;display:flex;align-items:center;justify-content:center;border-radius:6px;border:1px solid transparent;background:transparent;cursor:pointer;transition:background .16s ease-out" style-hover="background:#F0F0EA">
+          <svg width="13" height="13" viewBox="0 0 12 12" fill="none"><path d="M4.6 2.2l3.2 3.8-3.2 3.8" stroke="#8E938A" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        </button>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px">
+        <div style="display:flex;align-items:center;gap:11px">
+          <span style="position:relative;width:9px;height:9px;flex:none">
+            <span style="position:absolute;inset:0;border-radius:50%;background:#2E8047;box-shadow:0 0 0 3px rgba(46,128,71,0.14)"></span>
+            <span style="position:absolute;inset:-4px;border-radius:50%;border:1.3px solid rgba(46,128,71,.55);animation:pulseRing 2.6s cubic-bezier(.22,.61,.36,1) infinite;transition:opacity .3s ease-out;opacity:{{ pulseOp }}"></span>
+          </span>
+          <span style="font-size:15px;color:#1D1F1B">Running</span>
+        </div>
+        <div style="font-size:13px;color:#8A8F86;font-variant-numeric:tabular-nums">{{ clock }}</div>
+      </div>
+
+      <div style="margin-top:26px">
+        <a href="TrueUp Close Case.dc.html" style="display:flex;align-items:center;gap:14px;padding:6px 8px;margin:0 -8px;border-radius:7px;color:inherit;transition:background .16s ease-out" style-hover="background:#F1F1EB">
+          <div style="font-size:12.5px;color:#9AA096;width:18px;flex:none;font-variant-numeric:tabular-nums">01</div>
+          <div style="width:2px;height:20px;background:#BFD4C3;flex:none"></div>
+          <div style="font-family:Newsreader,'Times New Roman',serif;font-size:18px;color:#16180F;flex:1">Ingestion</div>
+          <div style="font-size:12.5px;color:#8E938A">Complete</div>
+        </a>
+
+        <div style="display:flex;align-items:center;gap:14px;margin-top:20px">
+          <div style="font-size:12.5px;color:#9AA096;width:18px;flex:none;font-variant-numeric:tabular-nums">02</div>
+          <div style="width:2px;height:20px;background:#2E8047;flex:none"></div>
+          <div style="font-family:Newsreader,'Times New Roman',serif;font-size:18px;color:#16180F;flex:1">Evidence</div>
+          <div style="font-size:12.5px;font-weight:500;transition:color .3s ease-out;color:{{ s2Color }}">{{ s2Status }}</div>
+        </div>
+
+        <div style="margin:14px 0 0 33px;padding-left:20px;border-left:1px solid #E7E7E2;display:flex;flex-direction:column;gap:13px">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span style="position:relative;width:13px;height:13px;flex:none;margin:0 1px">
+              <span style="position:absolute;inset:1px;border-radius:50%;border:1px solid #CFD3CA;transition:opacity .26s ease-out;opacity:{{ r0 }}"></span>
+              <span style="position:absolute;inset:1px;border-radius:50%;background:#2E8047;transition:opacity .26s ease-out,transform .26s cubic-bezier(.2,.8,.2,1);opacity:{{ d0 }};transform:{{ dt0 }}"></span>
+              <svg style="position:absolute;inset:0;transition:opacity .3s ease-out" width="13" height="13" viewBox="0 0 13 13" fill="none" opacity="{{ c0 }}"><path d="M1.8 6.8l3.2 3.1 6.2-7" stroke="#2E8047" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+            </span>
+            <span style="font-size:13px;transition:color .26s ease-out;color:{{ l0 }}">Contract selected</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px">
+            <span style="position:relative;width:13px;height:13px;flex:none;margin:0 1px">
+              <span style="position:absolute;inset:1px;border-radius:50%;border:1px solid #CFD3CA;transition:opacity .26s ease-out;opacity:{{ r1 }}"></span>
+              <span style="position:absolute;inset:1px;border-radius:50%;background:#2E8047;transition:opacity .26s ease-out,transform .26s cubic-bezier(.2,.8,.2,1);opacity:{{ d1 }};transform:{{ dt1 }}"></span>
+              <svg style="position:absolute;inset:0;transition:opacity .3s ease-out" width="13" height="13" viewBox="0 0 13 13" fill="none" opacity="{{ c1 }}"><path d="M1.8 6.8l3.2 3.1 6.2-7" stroke="#2E8047" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+            </span>
+            <span style="font-size:13px;transition:color .26s ease-out;color:{{ l1 }}">Vendor matched</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px">
+            <span style="position:relative;width:13px;height:13px;flex:none;margin:0 1px">
+              <span style="position:absolute;inset:1px;border-radius:50%;border:1px solid #CFD3CA;transition:opacity .26s ease-out;opacity:{{ r2 }}"></span>
+              <span style="position:absolute;inset:1px;border-radius:50%;background:#2E8047;transition:opacity .26s ease-out,transform .26s cubic-bezier(.2,.8,.2,1);opacity:{{ d2 }};transform:{{ dt2 }}"></span>
+              <svg style="position:absolute;inset:0;transition:opacity .3s ease-out" width="13" height="13" viewBox="0 0 13 13" fill="none" opacity="{{ c2 }}"><path d="M1.8 6.8l3.2 3.1 6.2-7" stroke="#2E8047" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+            </span>
+            <span style="font-size:13px;transition:color .26s ease-out;color:{{ l2 }}">Reading pricing terms</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px">
+            <span style="position:relative;width:13px;height:13px;flex:none;margin:0 1px">
+              <span style="position:absolute;inset:1px;border-radius:50%;border:1px solid #CFD3CA;transition:opacity .26s ease-out;opacity:{{ r3 }}"></span>
+              <span style="position:absolute;inset:1px;border-radius:50%;background:#2E8047;transition:opacity .26s ease-out,transform .26s cubic-bezier(.2,.8,.2,1);opacity:{{ d3 }};transform:{{ dt3 }}"></span>
+              <svg style="position:absolute;inset:0;transition:opacity .3s ease-out" width="13" height="13" viewBox="0 0 13 13" fill="none" opacity="{{ c3 }}"><path d="M1.8 6.8l3.2 3.1 6.2-7" stroke="#2E8047" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+            </span>
+            <span style="font-size:13px;transition:color .26s ease-out;color:{{ l3 }}">Extract effective rate</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px">
+            <span style="position:relative;width:13px;height:13px;flex:none;margin:0 1px">
+              <span style="position:absolute;inset:1px;border-radius:50%;border:1px solid #CFD3CA;transition:opacity .26s ease-out;opacity:{{ r4 }}"></span>
+              <span style="position:absolute;inset:1px;border-radius:50%;background:#2E8047;transition:opacity .26s ease-out,transform .26s cubic-bezier(.2,.8,.2,1);opacity:{{ d4 }};transform:{{ dt4 }}"></span>
+              <svg style="position:absolute;inset:0;transition:opacity .3s ease-out" width="13" height="13" viewBox="0 0 13 13" fill="none" opacity="{{ c4 }}"><path d="M1.8 6.8l3.2 3.1 6.2-7" stroke="#2E8047" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+            </span>
+            <span style="font-size:13px;transition:color .26s ease-out;color:{{ l4 }}">Build fact set</span>
+          </div>
+        </div>
+
+        <a href="TrueUp Obligation.dc.html" style="display:flex;align-items:center;gap:14px;margin:22px -8px 0;padding:6px 8px;border-radius:7px;color:inherit;transition:background .16s ease-out" style-hover="background:#F1F1EB">
+          <div style="font-size:12.5px;color:#9AA096;width:18px;flex:none;font-variant-numeric:tabular-nums">03</div>
+          <div style="width:2px;height:20px;flex:none;transition:background .4s ease-out;background:{{ s3Bar }}"></div>
+          <div style="font-family:Newsreader,'Times New Roman',serif;font-size:18px;color:#16180F;flex:1">Obligation</div>
+          <div style="font-size:12.5px;transition:color .3s ease-out;color:{{ s3Color }}">{{ s3Status }}</div>
+        </a>
+        <div style="display:flex;align-items:center;gap:14px;margin-top:22px">
+          <div style="font-size:12.5px;color:#9AA096;width:18px;flex:none;font-variant-numeric:tabular-nums">04</div>
+          <div style="width:2px;height:20px;background:#E1E1DA;flex:none"></div>
+          <div style="font-family:Newsreader,'Times New Roman',serif;font-size:18px;color:#16180F;flex:1">Estimation</div>
+          <div style="font-size:12.5px;color:#9AA096">Waiting</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;margin-top:22px">
+          <div style="font-size:12.5px;color:#9AA096;width:18px;flex:none;font-variant-numeric:tabular-nums">05</div>
+          <div style="width:2px;height:20px;background:#E1E1DA;flex:none"></div>
+          <div style="font-family:Newsreader,'Times New Roman',serif;font-size:18px;color:#16180F;flex:1">Verification</div>
+          <div style="font-size:12.5px;color:#9AA096">Waiting</div>
+        </div>
+      </div>
+
+      <div style="height:1px;background:#EBEBE4;margin-top:32px"></div>
+      <div style="margin-top:22px;font-size:10.5px;font-weight:500;letter-spacing:0.13em;color:#8A8F86">EXTRACTED FACTS</div>
+      <div style="margin-top:12px;display:flex;flex-direction:column;gap:1px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:8px;margin:0 -8px;border-radius:6px;transition:background .45s ease-out;backgroundColor:{{ f0bg }}">
+          <span style="font-size:13.5px;color:#33362F">Effective rate</span>
+          <span style="position:relative;display:flex;align-items:center;justify-content:flex-end;min-width:104px;height:18px">
+            <span style="position:absolute;right:0;color:#C4C8BE;font-size:14px;transition:opacity .22s ease-out;opacity:{{ f0dash }}">—</span>
+            <span style="position:absolute;right:0;font-size:13.5px;color:#1D1F1B;white-space:nowrap;transition:opacity .34s ease-out,transform .34s cubic-bezier(.2,.8,.2,1);opacity:{{ f0op }};transform:{{ f0tr }}">$1,400 / mo</span>
+          </span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:8px;margin:0 -8px;border-radius:6px;transition:background .45s ease-out;backgroundColor:{{ f1bg }}">
+          <span style="font-size:13.5px;color:#33362F">Effective date</span>
+          <span style="position:relative;display:flex;align-items:center;justify-content:flex-end;min-width:104px;height:18px">
+            <span style="position:absolute;right:0;color:#C4C8BE;font-size:14px;transition:opacity .22s ease-out;opacity:{{ f1dash }}">—</span>
+            <span style="position:absolute;right:0;font-size:13.5px;color:#1D1F1B;white-space:nowrap;transition:opacity .34s ease-out,transform .34s cubic-bezier(.2,.8,.2,1);opacity:{{ f1op }};transform:{{ f1tr }}">Dec 1, 2026</span>
+          </span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:8px;margin:0 -8px;border-radius:6px;transition:background .45s ease-out;backgroundColor:{{ f2bg }}">
+          <span style="font-size:13.5px;color:#33362F">Citation</span>
+          <span style="position:relative;display:flex;align-items:center;justify-content:flex-end;min-width:104px;height:18px">
+            <span style="position:absolute;right:0;color:#C4C8BE;font-size:14px;transition:opacity .22s ease-out;opacity:{{ f2dash }}">—</span>
+            <span style="position:absolute;right:0;font-size:13.5px;color:#1D1F1B;white-space:nowrap;transition:opacity .34s ease-out,transform .34s cubic-bezier(.2,.8,.2,1);opacity:{{ f2op }};transform:{{ f2tr }}">§4.2 · p. 6</span>
+          </span>
+        </div>
+      </div>
+
+      <div style="height:1px;background:#EBEBE4;margin-top:30px"></div>
+      <div style="margin-top:22px;font-size:10.5px;font-weight:500;letter-spacing:0.13em;color:#8A8F86">NEXT HANDOFF</div>
+      <div style="display:flex;align-items:center;gap:12px;margin-top:13px">
+        <svg width="15" height="17" viewBox="0 0 14 16" fill="none" style="flex:none"><path d="M2.2 1.6h6.3L11.8 5v9.4H2.2z" stroke="#9AA096" stroke-width="1.1" stroke-linejoin="round"></path><path d="M8.5 1.6V5h3.3" stroke="#9AA096" stroke-width="1.1" stroke-linejoin="round"></path></svg>
+        <span style="font-size:14px;color:#1D1F1B">Evidence</span>
+        <span style="font-size:13px;color:#A8ADA3">→</span>
+        <span style="font-size:14px;color:#1D1F1B">Obligation</span>
+      </div>
+      <div style="font-size:12.5px;line-height:1.6;color:#8A8F86;margin-top:9px;padding-left:27px;text-wrap:pretty">Prepare structured evidence for the obligation agent.</div>
+      <a href="TrueUp Obligation.dc.html" style="position:relative;display:block;width:100%;margin-top:16px;padding:11px 14px;border-radius:8px;border:1px solid #2E8047;background:#2E8047;font-size:13.5px;font-weight:500;color:#F4F7F2;text-align:center;cursor:pointer;overflow:hidden;transition:opacity .45s ease-out,transform .45s cubic-bezier(.2,.8,.2,1),background .16s ease-out;opacity:{{ ctaOp }};transform:{{ ctaTr }};pointerEvents:{{ ctaPe }}" style-hover="background:#25693A;color:#F4F7F2">
+        <span style="position:relative;z-index:2">{{ ctaLabel }}</span>
+        <span style="position:absolute;left:0;top:0;bottom:0;background:rgba(255,255,255,.22);transition:width 1.2s linear;width:{{ ctaFill }}"></span>
+      </a>
+    </div>
+  </aside>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;autoAdvance&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Behavior&quot;},&quot;autoplay&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Behavior&quot;},&quot;showExecutionPanel&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Layout&quot;},&quot;liveTimer&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Behavior&quot;}}">
+const DOCS = ['agreement','ap','prior'];
+const ZOOMS = ['100%','125%','75%'];
+const SCALES = { '100%': 'scale(1)', '125%': 'scale(1.25)', '75%': 'scale(0.75)' };
+// step -> [completed checklist items, active index]
+const SEQ = [[0,-1],[1,-1],[2,-1],[2,2],[2,2],[3,3],[3,3],[4,4],[5,-1]];
+const DELAYS = [500,700,700,800,900,700,700,900];
+const STATUS = [
+  'Extracting supporting evidence...',
+  'Extracting supporting evidence...',
+  'Matching vendor record...',
+  'Reading pricing terms...',
+  'Reading pricing terms...',
+  'Extracting effective rate...',
+  'Extracting effective date...',
+  'Building fact set...',
+  'Evidence complete · 3 facts extracted'
+];
+
+class Component extends DCLogic {
+  state = {
+    step: 0, doc: 'agreement', page: 6, zoom: 0, thumbs: true, search: false,
+    t: 42, railOpen: true, railW: 330, dragging: false, tabsOver: false, fade: false
+  };
+  tabsRef = React.createRef();
+  timers = [];
+
+  componentDidMount() {
+    this.iv = setInterval(() => {
+      if (this.props.liveTimer !== false) this.setState(s => ({ t: s.t + 1 }));
+    }, 1000);
+    this.onResize = () => this.measure();
+    window.addEventListener('resize', this.onResize);
+    this.measure();
+    if (this.props.autoplay !== false) this.run();
+  }
+  componentDidUpdate() { this.measure(); }
+  componentWillUnmount() {
+    clearInterval(this.iv);
+    clearTimeout(this.swapT);
+    this.timers.forEach(clearTimeout);
+    window.removeEventListener('resize', this.onResize);
+  }
+
+  run() {
+    this.timers.forEach(clearTimeout);
+    this.timers = [];
+    let acc = 0;
+    DELAYS.forEach((d, i) => {
+      acc += d;
+      this.timers.push(setTimeout(() => this.setState({ step: i + 1 }), acc));
+    });
+    if (this.props.autoAdvance !== false) {
+      this.timers.push(setTimeout(() => { window.location.href = 'TrueUp Obligation.dc.html'; }, acc + 1600));
+    }
+  }
+
+  measure() {
+    const el = this.tabsRef.current;
+    if (!el) return;
+    const over = el.scrollWidth - el.clientWidth > 4;
+    if (over !== this.state.tabsOver) this.setState({ tabsOver: over });
+  }
+
+  maxPageFor(doc) { return doc === 'agreement' ? 14 : (doc === 'ap' ? 9 : 28); }
+
+  swap(fn) {
+    clearTimeout(this.swapT);
+    this.setState({ fade: true });
+    this.swapT = setTimeout(() => {
+      this.setState(s => {
+        const patch = typeof fn === 'function' ? fn(s) : fn;
+        return Object.assign({ fade: false }, patch);
+      });
+    }, 130);
+  }
+
+  startResize(e) {
+    e.preventDefault();
+    const startX = e.clientX, startW = this.state.railW;
+    const move = ev => {
+      const w = Math.max(288, Math.min(620, startW - (ev.clientX - startX)));
+      this.setState({ railW: w });
+    };
+    const up = () => {
+      document.removeEventListener('mousemove', move);
+      document.removeEventListener('mouseup', up);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      this.setState({ dragging: false });
+    };
+    document.addEventListener('mousemove', move);
+    document.addEventListener('mouseup', up);
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    this.setState({ dragging: true });
+  }
+
+  renderVals() {
+    const st = this.state;
+    const step = st.step;
+    const [done, active] = SEQ[step];
+    const v = {};
+
+    DOCS.forEach(k => {
+      const on = st.doc === k;
+      v['tbg_' + k] = on ? '#FFFFFF' : 'transparent';
+      v['tbd_' + k] = on ? '#E2E2DB' : 'transparent';
+      v['tsh_' + k] = on ? '0 1px 2px rgba(30,32,28,0.05)' : 'none';
+      v['tfg_' + k] = on ? '#1D1F1B' : '#5A5F57';
+      v['tfw_' + k] = on ? '500' : '400';
+      v['tic_' + k] = on ? '#2E8047' : '#8E938A';
+      v['pick_' + k] = () => this.swap(s => (s.doc === k ? null : { doc: k, page: k === 'agreement' ? 6 : 1 }));
+    });
+    v.isAgreement = st.doc === 'agreement';
+    v.isAp = st.doc === 'ap';
+    v.isPrior = st.doc === 'prior';
+
+    for (let i = 0; i < 5; i++) {
+      const isDone = i < done, isActive = i === active;
+      v['r' + i] = (!isDone && !isActive) ? '1' : '0';
+      v['d' + i] = isActive ? '1' : '0';
+      v['dt' + i] = isActive ? 'scale(1)' : 'scale(0.5)';
+      v['c' + i] = isDone ? '1' : '0';
+      v['l' + i] = (isDone || isActive) ? '#33362F' : '#9AA096';
+    }
+
+    const complete = step >= 8;
+    v.statusText = STATUS[step];
+    v.statusOp = '1';
+    v.pulseOp = complete ? '0' : '1';
+    v.reviewed = step >= 7 ? '3 / 3 reviewed' : '2 / 3 reviewed';
+    v.progW = step >= 7 ? '100%' : (step >= 4 ? '66%' : '42%');
+
+    v.hlSize = step >= 4 ? '100% 100%' : '0% 100%';
+    v.thumbHl = step >= 4 ? '#E4EFD7' : '#E7E7E0';
+    v.matchOp = step >= 4 ? '1' : '0';
+    v.matchTr = step >= 4 ? 'translateX(0)' : 'translateX(-8px)';
+
+    [5, 6, 7].forEach((at, i) => {
+      const on = step >= at;
+      v['f' + i + 'op'] = on ? '1' : '0';
+      v['f' + i + 'tr'] = on ? 'translateY(0)' : 'translateY(5px)';
+      v['f' + i + 'dash'] = on ? '0' : '1';
+      v['f' + i + 'bg'] = step === at ? '#F1F6EC' : 'transparent';
+    });
+
+    v.supDash = step >= 7 ? '0' : '1';
+    v.supOp = step >= 7 ? '1' : '0';
+    v.supTr = step >= 7 ? 'translateY(0)' : 'translateY(6px)';
+    v.difDash = step >= 7 ? '0' : '1';
+    v.difOp = step >= 7 ? '1' : '0';
+    v.difTr = step >= 7 ? 'translateY(0)' : 'translateY(6px)';
+
+    v.s2Status = complete ? 'Complete' : 'Active';
+    v.s2Color = complete ? '#8E938A' : '#2E8047';
+    v.s3Status = complete ? 'Queued' : 'Waiting';
+    v.s3Color = complete ? '#33362F' : '#9AA096';
+    v.s3Bar = complete ? '#BFD4C3' : '#E1E1DA';
+    v.ctaOp = complete ? '1' : '0';
+    v.ctaTr = complete ? 'translateY(0)' : 'translateY(8px)';
+    v.ctaPe = complete ? 'auto' : 'none';
+    v.ctaLabel = complete && this.props.autoAdvance !== false ? 'Opening Obligation...' : 'Hand off to Obligation';
+    v.ctaFill = complete && this.props.autoAdvance !== false ? '100%' : '0%';
+    v.replay = () => { this.setState({ step: 0 }); setTimeout(() => this.run(), 60); };
+
+    const maxPage = this.maxPageFor(st.doc);
+    v.page = st.page;
+    v.pageLabel = st.page + ' / ' + maxPage;
+    v.thumbPrev = Math.max(1, st.page - 1);
+    v.thumbNext = Math.min(maxPage, st.page + 1);
+    v.isPage5 = st.doc === 'agreement' && st.page === 5;
+    v.isPage6 = st.doc === 'agreement' && st.page === 6;
+    v.isPage7 = st.doc === 'agreement' && st.page === 7;
+    v.prevOp = st.page > 1 ? '1' : '0.35';
+    v.nextOp = st.page < maxPage ? '1' : '0.35';
+    v.prevPage = () => this.swap(s => (s.page > 1 ? { page: s.page - 1 } : null));
+    v.nextPage = () => this.swap(s => (s.page < this.maxPageFor(s.doc) ? { page: s.page + 1 } : null));
+    v.jumpToMatch = () => this.swap(s => (s.doc === 'agreement' && s.page === 6 ? null : { doc: 'agreement', page: 6 }));
+
+    v.pageOp = st.fade ? '0' : '1';
+    v.pageScale = SCALES[ZOOMS[st.zoom]];
+    v.zoomLabel = ZOOMS[st.zoom];
+    v.cycleZoom = () => this.setState(x => ({ zoom: (x.zoom + 1) % ZOOMS.length }));
+
+    v.thumbsW = st.thumbs ? '114px' : '0px';
+    v.thumbsOp = st.thumbs ? '1' : '0';
+    v.thumbsBg = st.thumbs ? '#F1F1EC' : 'transparent';
+    v.toggleThumbs = () => this.setState(x => ({ thumbs: !x.thumbs }));
+    v.searchW = st.search ? '196px' : '0px';
+    v.searchOp = st.search ? '1' : '0';
+    v.toggleSearch = () => this.setState(x => ({ search: !x.search }));
+
+    const pad = n => (n < 10 ? '0' + n : '' + n);
+    v.clock = pad(Math.floor(st.t / 60)) + ':' + pad(st.t % 60);
+    const showRail = this.props.showExecutionPanel !== false;
+    v.railFull = showRail && st.railOpen;
+    v.railMini = showRail && !st.railOpen;
+    v.railW = st.railW + 'px';
+    v.handleBg = st.dragging ? 'rgba(46,128,71,0.22)' : 'transparent';
+    v.toggleRail = () => this.setState(x => ({ railOpen: !x.railOpen }));
+    v.startResize = e => this.startResize(e);
+    v.tabsRef = this.tabsRef;
+    v.tabsMask = st.tabsOver ? 'linear-gradient(to right,#000 calc(100% - 36px),rgba(0,0,0,0))' : 'none';
+    return v;
+  }
+}
+</script>
+</body>
+</html>

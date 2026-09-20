@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#F7F7F4;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+a{color:#2E7D45;text-decoration:none}
+a:hover{color:#1C5730}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:#DEDED7;border-radius:8px}
+::-webkit-scrollbar-track{background:transparent}
+[data-hscroll]::-webkit-scrollbar{height:0;width:0}
+input::placeholder{color:#A0A59B}
+@keyframes pulseRing{0%{transform:scale(.72);opacity:.5}70%{transform:scale(1.5);opacity:0}100%{transform:scale(1.5);opacity:0}}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important}}
+</style>
+</helmet>
+<div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:#1D1F1B;display:flex;height:100vh;min-height:620px;background:#FCFCFA;overflow-x:auto;overflow-y:hidden">
+
+  <aside style="width:232px;flex:none;background:#F6F6F3;border-right:1px solid #E7E7E2;display:flex;flex-direction:column;padding:22px 0 18px">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:0 20px 24px">
+      <div style="font-size:13.5px;font-weight:600;letter-spacing:0.2em;color:#1D1F1B">TRUEUP</div>
+      <svg width="17" height="17" viewBox="0 0 17 17" fill="none"><circle cx="7.6" cy="7.6" r="5.1" stroke="#767B72" stroke-width="1.3"></circle><path d="M11.4 11.4L14.6 14.6" stroke="#767B72" stroke-width="1.3" stroke-linecap="round"></path></svg>
+    </div>
+
+    <nav style="display:flex;flex-direction:column;gap:1px;padding:0 12px">
+      <div style="display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:7px;font-size:14.5px;color:#33362F;cursor:pointer;transition:background .16s ease-out" style-hover="background:#EDEDE7">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M2.6 7.6L9 2.6l6.4 5v7.1a.9.9 0 0 1-.9.9H3.5a.9.9 0 0 1-.9-.9z" stroke="#5E635A" stroke-width="1.25" stroke-linejoin="round"></path></svg>
+        Home
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:7px;font-size:14.5px;color:#1D1F1B;cursor:pointer;transition:background .16s ease-out" style-hover="background:#EDEDE7">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M3.6 2.3h7L14.4 6v9.7H3.6z" stroke="#5E635A" stroke-width="1.25" stroke-linejoin="round"></path><path d="M10.6 2.3V6h3.8" stroke="#5E635A" stroke-width="1.25" stroke-linejoin="round"></path></svg>
+        <span style="flex:1">Close</span>
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 4.6L6 7.6l3-3" stroke="#8E938A" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+      </div>
+      <a href="TrueUp Close Case.dc.html" style="display:flex;align-items:center;padding:7px 10px 7px 42px;border-radius:7px;font-size:14px;color:#5A5F57;transition:background .16s ease-out" style-hover="background:#EDEDE7;color:#1D1F1B">Active cases</a>
+      <div style="display:flex;align-items:center;gap:11px;padding:7px 10px 7px 23px;border-radius:7px;font-size:14px;color:#1D1F1B;background:#E9EFE8;cursor:pointer">
+        <span style="width:6px;height:6px;border-radius:50%;background:#2E8047;flex:none"></span>
+        All cases
+      </div>
+      <div style="display:flex;align-items:center;padding:7px 10px 7px 42px;border-radius:7px;font-size:14px;color:#5A5F57;cursor:pointer;transition:background .16s ease-out" style-hover="background:#EDEDE7">Journals</div>
+      <div style="display:flex;align-items:center;padding:7px 10px 7px 42px;border-radius:7px;font-size:14px;color:#5A5F57;cursor:pointer;transition:background .16s ease-out" style-hover="background:#EDEDE7">Reconciliations</div>
+
+      <div style="height:18px"></div>
+      <a href="TrueUp Vendors.dc.html" style="display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:7px;font-size:14.5px;color:#33362F;transition:background .16s ease-out" style-hover="background:#EDEDE7;color:#1D1F1B">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="2.5" y="3.4" width="13" height="11.2" rx="1.6" stroke="#5E635A" stroke-width="1.25"></rect><path d="M2.5 7.2h13" stroke="#5E635A" stroke-width="1.25"></path><circle cx="5.6" cy="10.8" r="1" fill="#5E635A"></circle></svg>
+        Vendors
+      </a>
+      <div style="display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:7px;font-size:14.5px;color:#33362F;cursor:pointer;transition:background .16s ease-out" style-hover="background:#EDEDE7">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M3.6 2.3h7L14.4 6v9.7H3.6z" stroke="#5E635A" stroke-width="1.25" stroke-linejoin="round"></path><path d="M10.6 2.3V6h3.8" stroke="#5E635A" stroke-width="1.25" stroke-linejoin="round"></path></svg>
+        Documents
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:7px;font-size:14.5px;color:#33362F;cursor:pointer;transition:background .16s ease-out" style-hover="background:#EDEDE7">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="2.5" y="3" width="13" height="12" rx="1.6" stroke="#5E635A" stroke-width="1.25"></rect><path d="M5.2 11.4l2.4-2.9 2.2 1.9 2.8-3.3" stroke="#5E635A" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        Insights
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:7px;font-size:14.5px;color:#33362F;cursor:pointer;transition:background .16s ease-out" style-hover="background:#EDEDE7">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="2.6" stroke="#5E635A" stroke-width="1.25"></circle><circle cx="9" cy="9" r="6.1" stroke="#5E635A" stroke-width="1.25" stroke-dasharray="2.2 2.4"></circle></svg>
+        Settings
+      </div>
+    </nav>
+
+    <div style="flex:1"></div>
+
+    <div style="padding:0 12px">
+      <div style="height:1px;background:#E4E4DD;margin:0 8px 16px"></div>
+      <div style="display:flex;align-items:center;gap:10px;padding:6px 10px;border-radius:7px;cursor:pointer;transition:background .16s ease-out" style-hover="background:#EDEDE7">
+        <div style="flex:1">
+          <div style="font-size:14px;color:#1D1F1B">December 2026</div>
+          <div style="font-size:12.5px;color:#8E938A;margin-top:2px">Controller</div>
+        </div>
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4.4 2.6l3 3.4-3 3.4" stroke="#8E938A" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+      </div>
+      <div style="display:flex;align-items:center;gap:11px;padding:10px 10px 4px">
+        <div style="width:34px;height:34px;flex:none;border-radius:50%;background:#26503A;color:#F3F4F0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;letter-spacing:0.03em">TS</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:14px;color:#1D1F1B">Taylor Smith</div>
+          <div style="font-size:12.5px;color:#8E938A;margin-top:2px">Mintlify</div>
+        </div>
+        <div style="font-size:15px;color:#9AA096;letter-spacing:0.06em;cursor:pointer">•••</div>
+      </div>
+    </div>
+  </aside>
+
+  <main style="flex:1;min-width:900px;display:flex;flex-direction:column;overflow:hidden">
+    <div style="padding:26px 34px 0;flex:none">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:24px">
+        <div style="min-width:0">
+          <div style="display:flex;align-items:center;gap:8px;font-size:10.5px;font-weight:500;letter-spacing:0.15em;color:#8E938A">
+            <a href="TrueUp Close Case.dc.html" style="color:#8E938A;transition:color .16s ease-out" style-hover="color:#1D1F1B">CLOSE</a>
+            <span>/</span>
+            <span style="color:#1D1F1B">CASE MANAGEMENT</span>
+          </div>
+          <div style="font-family:Newsreader,'Times New Roman',serif;font-size:46px;line-height:1.05;letter-spacing:-0.012em;color:#16180F;margin-top:12px">All cases</div>
+          <div style="font-size:15px;color:#75796F;margin-top:10px;text-wrap:pretty">Monitor vendor-related close workflows across the December close.</div>
+        </div>
+        <button style="display:flex;align-items:center;gap:10px;padding:11px 16px;border-radius:8px;border:1px solid #2E8047;background:#FFFFFF;font:500 13.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#2E8047;cursor:pointer;white-space:nowrap;flex:none;transition:background .16s ease-out,color .16s ease-out" style-hover="background:#2E8047;color:#F4F7F2">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1.6v9.8M1.6 6.5h9.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path></svg>
+          Create case
+        </button>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:28px;margin-top:26px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:440px">
+          <div style="position:relative;flex:1;max-width:420px;min-width:220px">
+            <svg width="16" height="16" viewBox="0 0 17 17" fill="none" style="position:absolute;left:13px;top:50%;transform:translateY(-50%);pointer-events:none"><circle cx="7.6" cy="7.6" r="5.1" stroke="#9AA096" stroke-width="1.3"></circle><path d="M11.4 11.4L14.6 14.6" stroke="#9AA096" stroke-width="1.3" stroke-linecap="round"></path></svg>
+            <input value="{{ query }}" onChange="{{ onSearch }}" placeholder="Search vendors or close items..." style="width:100%;padding:11px 13px 11px 38px;border-radius:8px;border:1px solid #E2E2DB;background:#FFFFFF;font:400 14px/1.2 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#1D1F1B;outline:none;transition:border-color .16s ease-out,box-shadow .16s ease-out" style-focus="border-color:#B8C7B5;box-shadow:0 0 0 3px rgba(46,128,71,.08)">
+          </div>
+          <button style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:8px;border:1px solid #E2E2DB;background:#FFFFFF;font:400 13.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#33362F;cursor:pointer;white-space:nowrap;transition:background .16s ease-out" style-hover="background:#FAFAF7">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="1.8" y="2.8" width="12.4" height="11.4" rx="1.6" stroke="#6E736A" stroke-width="1.15"></rect><path d="M1.8 6.2h12.4M5.2 1.6v2.4M10.8 1.6v2.4" stroke="#6E736A" stroke-width="1.15" stroke-linecap="round"></path></svg>
+            December 2026
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M3 4.6L6 7.6l3-3" stroke="#8E938A" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          </button>
+          <div data-status-menu="1" style="position:relative">
+            <button onClick="{{ toggleStatusMenu }}" style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:8px;border:1px solid #E2E2DB;background:#FFFFFF;font:400 13.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#33362F;cursor:pointer;white-space:nowrap;transition:background .16s ease-out" style-hover="background:#FAFAF7">
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M2.4 4.2h11.2M4.4 8h7.2M6.4 11.8h3.2" stroke="#6E736A" stroke-width="1.2" stroke-linecap="round"></path></svg>
+              {{ statusLabel }}
+              <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style="transition:transform .24s cubic-bezier(.2,.8,.2,1);transform:{{ statusRot }}"><path d="M3 4.6L6 7.6l3-3" stroke="#8E938A" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+            </button>
+            <div style="position:absolute;top:calc(100% + 6px);left:0;z-index:20;min-width:176px;padding:6px;border-radius:9px;border:1px solid #E7E7E2;background:#FFFFFF;box-shadow:0 10px 26px rgba(30,32,28,.1);transition:opacity .2s ease-out,transform .22s cubic-bezier(.2,.8,.2,1);opacity:{{ menuOp }};transform:{{ menuTr }};pointerEvents:{{ menuPe }}">
+              <sc-for list="{{ statusOptions }}" as="opt" hint-placeholder-count="6">
+                <div onClick="{{ opt.pick }}" style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:6px;font-size:13.5px;cursor:pointer;transition:background .14s ease-out;backgroundColor:{{ opt.bg }};color:{{ opt.fg }}" style-hover="background:#F3F3EE">
+                  <span style="width:7px;height:7px;border-radius:50%;flex:none;background:{{ opt.dot }}"></span>
+                  <span style="flex:1">{{ opt.label }}</span>
+                  <span style="font-size:12.5px;color:#A0A59B;font-variant-numeric:tabular-nums">{{ opt.count }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:stretch;flex:none">
+          <div style="padding:0 22px 0 0">
+            <div style="font-family:Newsreader,'Times New Roman',serif;font-size:27px;line-height:1;color:#16180F">{{ kTotal }}</div>
+            <div style="font-size:12.5px;color:#8A8F86;margin-top:7px">Total cases</div>
+          </div>
+          <div style="padding:0 22px;border-left:1px solid #E7E7E2">
+            <div style="font-family:Newsreader,'Times New Roman',serif;font-size:27px;line-height:1;color:#16180F">{{ kActive }}</div>
+            <div style="font-size:12.5px;color:#8A8F86;margin-top:7px">Active</div>
+          </div>
+          <div style="padding:0 22px;border-left:1px solid #E7E7E2">
+            <div style="font-family:Newsreader,'Times New Roman',serif;font-size:27px;line-height:1;color:#16180F">{{ kReady }}</div>
+            <div style="font-size:12.5px;color:#8A8F86;margin-top:7px">Close-ready</div>
+          </div>
+          <div style="padding:0 0 0 22px;border-left:1px solid #E7E7E2">
+            <div style="font-family:Newsreader,'Times New Roman',serif;font-size:27px;line-height:1;color:#16180F">{{ kDone }}</div>
+            <div style="font-size:12.5px;color:#8A8F86;margin-top:7px">Complete</div>
+          </div>
+        </div>
+      </div>
+
+      <div ref="{{ tabsRef }}" data-hscroll="1" style="display:flex;align-items:center;gap:2px;margin-top:22px;overflow-x:auto;scrollbar-width:none">
+        <sc-for list="{{ tabs }}" as="tab" hint-placeholder-count="5">
+          <button onClick="{{ tab.pick }}" style="display:flex;align-items:center;gap:9px;padding:9px 14px;border-radius:8px;border:1px solid transparent;font:400 13.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;cursor:pointer;white-space:nowrap;flex:none;transition:background .16s ease-out,color .16s ease-out;backgroundColor:{{ tab.bg }};borderColor:{{ tab.bd }};color:{{ tab.fg }};fontWeight:{{ tab.fw }}" style-hover="background:#F1F1EC">
+            {{ tab.label }}
+            <span style="font-size:12.5px;font-variant-numeric:tabular-nums;transition:color .16s ease-out;color:{{ tab.cfg }}">{{ tab.count }}</span>
+          </button>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="flex:1;min-height:0;overflow-y:auto;padding:16px 34px 30px">
+      <div style="display:grid;grid-template-columns:230px minmax(150px,1fr) 150px 118px 132px 130px 118px 44px;align-items:center;gap:0 14px;padding:0 10px 11px;border-bottom:1px solid #E7E7E2">
+        <sc-for list="{{ columns }}" as="col" hint-placeholder-count="7">
+          <div onClick="{{ col.sort }}" style="display:flex;align-items:center;gap:7px;font-size:10.5px;font-weight:500;letter-spacing:0.12em;cursor:pointer;user-select:none;transition:color .16s ease-out;color:{{ col.fg }};justifyContent:{{ col.justify }}" style-hover="color:#1D1F1B">
+            {{ col.label }}
+            <svg width="10" height="12" viewBox="0 0 10 12" fill="none" style="flex:none"><path d="M5 1.6L7.4 4.4H2.6z" fill="{{ col.upFill }}"></path><path d="M5 10.4L2.6 7.6h4.8z" fill="{{ col.downFill }}"></path></svg>
+          </div>
+        </sc-for>
+        <div></div>
+      </div>
+
+      <sc-for list="{{ rows }}" as="row" hint-placeholder-count="8">
+        <a href="{{ row.href }}" style="display:grid;grid-template-columns:230px minmax(150px,1fr) 150px 118px 132px 130px 118px 44px;align-items:center;gap:0 14px;padding:15px 10px;border-bottom:1px solid #F0F0EA;border-radius:8px;color:inherit;transition:background .16s ease-out,opacity .45s ease-out,transform .45s cubic-bezier(.2,.8,.2,1);opacity:{{ row.op }};transform:{{ row.tr }};transitionDelay:{{ row.delay }}" style-hover="background:#F7F7F2">
+          <div style="display:flex;align-items:center;gap:14px;min-width:0">
+            <span style="width:32px;height:32px;flex:none;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:600;letter-spacing:0.02em;background:{{ row.markBg }};color:{{ row.markFg }}">{{ row.initials }}</span>
+            <span style="font-size:14.5px;color:#1D1F1B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ row.vendor }}</span>
+          </div>
+          <div style="font-size:14px;color:#33362F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ row.item }}</div>
+          <div>
+            <span style="display:inline-block;padding:5px 10px;border-radius:6px;font-size:12.5px;white-space:nowrap;background:{{ row.catBg }};color:{{ row.catFg }}">{{ row.category }}</span>
+          </div>
+          <div style="font-size:14px;color:#1D1F1B;font-variant-numeric:tabular-nums">{{ row.amount }}</div>
+          <div style="font-size:14px;color:#33362F">{{ row.stage }}</div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="position:relative;width:8px;height:8px;flex:none">
+              <span style="position:absolute;inset:0;border-radius:50%;background:{{ row.dot }}"></span>
+              <span style="position:absolute;inset:-4px;border-radius:50%;border:1.2px solid rgba(46,128,71,.5);animation:pulseRing 2.6s cubic-bezier(.22,.61,.36,1) infinite;opacity:{{ row.pulse }}"></span>
+            </span>
+            <span style="font-size:14px;color:#33362F;white-space:nowrap">{{ row.status }}</span>
+          </div>
+          <div style="font-size:13px;color:#8A8F86;line-height:1.45">
+            <div>{{ row.date }}</div>
+            <div>{{ row.time }}</div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;font-size:15px;color:#A8ADA3;letter-spacing:0.06em">•••</div>
+        </a>
+      </sc-for>
+
+      <sc-if value="{{ empty }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:64px 20px">
+        <div style="font-family:Newsreader,'Times New Roman',serif;font-size:22px;color:#16180F">No cases match</div>
+        <div style="font-size:13.5px;color:#8A8F86">Try a different search term or clear the filters.</div>
+        <button onClick="{{ clearFilters }}" style="margin-top:6px;padding:9px 14px;border-radius:8px;border:1px solid #E2E2DB;background:#FFFFFF;font:400 13.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#33362F;cursor:pointer;transition:background .16s ease-out" style-hover="background:#FAFAF7">Clear filters</button>
+      </div>
+      </sc-if>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;animateRows&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Behavior&quot;}}">
+const CATS = {
+  'Accruals':        { bg: '#E9F0E5', fg: '#3C5840' },
+  'Prepaids':        { bg: '#EDEBF2', fg: '#4A4660' },
+  'Fixed Assets':    { bg: '#E7EDF2', fg: '#3A5465' },
+  'Accounts Payable':{ bg: '#F2EDE4', fg: '#5E5140' }
+};
+const STATUSES = {
+  'Running':     { dot: '#63A644', pulse: '1' },
+  'In progress': { dot: '#9AA096', pulse: '0' },
+  'Queued':      { dot: '#C0C5BB', pulse: '0' },
+  'Close-ready': { dot: '#2E8047', pulse: '0' },
+  'Complete':    { dot: '#1F5132', pulse: '0' }
+};
+const MARKS = [
+  { bg: '#1D3B2A', fg: '#EAF0E6' }, { bg: '#E9EDE7', fg: '#3E4A3C' },
+  { bg: '#EDEAE3', fg: '#5A5040' }, { bg: '#E6EBF0', fg: '#3A5465' },
+  { bg: '#EDEBF2', fg: '#4A4660' }, { bg: '#E9F0E5', fg: '#3C5840' }
+];
+const DATA = [
+  { vendor:'Mintlify',  initials:'M',  mark:0, item:'December accrual',      category:'Accruals',         amount:1400,  stage:'Verification', status:'Running',     date:'Dec 1, 2026',  time:'10:24 AM', ts:20261201.1024, href:'TrueUp Verification.dc.html' },
+  { vendor:'OpenAI',    initials:'OA', mark:1, item:'API usage accrual',     category:'Accruals',         amount:18600, stage:'Evidence',     status:'Running',     date:'Dec 1, 2026',  time:'9:18 AM',  ts:20261201.0918, href:'TrueUp Evidence.dc.html' },
+  { vendor:'ASUS',      initials:'AS', mark:2, item:'Equipment purchase',    category:'Fixed Assets',     amount:40000, stage:'Obligation',   status:'In progress', date:'Dec 1, 2026',  time:'8:45 AM',  ts:20261201.0845, href:'TrueUp Obligation.dc.html' },
+  { vendor:'Meta',      initials:'ME', mark:3, item:'Campaign spend',        category:'Accounts Payable', amount:12800, stage:'Estimation',   status:'Running',     date:'Nov 30, 2026', time:'4:32 PM',  ts:20261130.1632, href:'TrueUp Estimation.dc.html' },
+  { vendor:'Notability',initials:'NO', mark:4, item:'Prepaid subscription',  category:'Prepaids',         amount:2400,  stage:'Ingestion',    status:'Queued',      date:'Nov 30, 2026', time:'2:17 PM',  ts:20261130.1417, href:'TrueUp Close Case.dc.html' },
+  { vendor:'Slack',     initials:'SL', mark:5, item:'Workspace subscription',category:'Prepaids',         amount:7200,  stage:'Verification', status:'Close-ready', date:'Nov 30, 2026', time:'11:06 AM', ts:20261130.1106, href:'TrueUp Verification.dc.html' },
+  { vendor:'AWS',       initials:'AW', mark:2, item:'Infrastructure spend',  category:'Accounts Payable', amount:25300, stage:'Evidence',     status:'Complete',    date:'Nov 29, 2026', time:'6:14 PM',  ts:20261129.1814, href:'TrueUp Evidence.dc.html' },
+  { vendor:'Deel',      initials:'DE', mark:1, item:'Contractor services',   category:'Accounts Payable', amount:9100,  stage:'Estimation',   status:'Complete',    date:'Nov 29, 2026', time:'3:22 PM',  ts:20261129.1522, href:'TrueUp Estimation.dc.html' }
+];
+const TABS = ['All', 'Accruals', 'Prepaids', 'Fixed Assets', 'Accounts Payable'];
+const STATUS_OPTS = ['All statuses', 'Running', 'In progress', 'Queued', 'Close-ready', 'Complete'];
+const COLUMNS = [
+  { key:'vendor',   label:'VENDOR' },
+  { key:'item',     label:'CLOSE ITEM' },
+  { key:'category', label:'CATEGORY' },
+  { key:'amount',   label:'AMOUNT' },
+  { key:'stage',    label:'AGENT STAGE' },
+  { key:'status',   label:'STATUS' },
+  { key:'ts',       label:'UPDATED' }
+];
+
+class Component extends DCLogic {
+  state = { query: '', tab: 'All', status: 'All statuses', menu: false, sortKey: 'ts', sortDir: 'desc', mounted: false };
+  tabsRef = React.createRef();
+
+  componentDidMount() {
+    this.raf = requestAnimationFrame(() => this.setState({ mounted: true }));
+    this.onDocClick = e => {
+      if (this.state.menu && !e.target.closest('[data-status-menu]')) this.setState({ menu: false });
+    };
+    document.addEventListener('click', this.onDocClick, true);
+  }
+  componentWillUnmount() {
+    cancelAnimationFrame(this.raf);
+    document.removeEventListener('click', this.onDocClick, true);
+  }
+
+  matches(d, ignoreStatus) {
+    const st = this.state;
+    const q = st.query.trim().toLowerCase();
+    if (q && (d.vendor + ' ' + d.item + ' ' + d.category + ' ' + d.stage).toLowerCase().indexOf(q) < 0) return false;
+    if (st.tab !== 'All' && d.category !== st.tab) return false;
+    if (!ignoreStatus && st.status !== 'All statuses' && d.status !== st.status) return false;
+    return true;
+  }
+
+  renderVals() {
+    const st = this.state, v = {};
+    const list = DATA.filter(d => this.matches(d));
+    const dir = st.sortDir === 'asc' ? 1 : -1;
+    const sorted = list.slice().sort((a, b) => {
+      const x = a[st.sortKey], y = b[st.sortKey];
+      if (typeof x === 'number') return (x - y) * dir;
+      return String(x).localeCompare(String(y)) * dir;
+    });
+
+    v.rows = sorted.map((d, i) => Object.assign({}, d, {
+      amount: '$' + d.amount.toLocaleString('en-US'),
+      markBg: MARKS[d.mark].bg,
+      markFg: MARKS[d.mark].fg,
+      catBg: CATS[d.category].bg,
+      catFg: CATS[d.category].fg,
+      dot: STATUSES[d.status].dot,
+      pulse: STATUSES[d.status].pulse,
+      op: (st.mounted || this.props.animateRows === false) ? '1' : '0',
+      tr: (st.mounted || this.props.animateRows === false) ? 'translateY(0)' : 'translateY(7px)',
+      delay: this.props.animateRows === false ? '0ms' : (i * 45) + 'ms'
+    }));
+    v.empty = sorted.length === 0;
+
+    v.columns = COLUMNS.map(c => {
+      const on = st.sortKey === c.key;
+      return {
+        label: c.label,
+        fg: on ? '#1D1F1B' : '#8A8F86',
+        justify: 'flex-start',
+        upFill: on && st.sortDir === 'asc' ? '#2E8047' : '#CFD3CA',
+        downFill: on && st.sortDir === 'desc' ? '#2E8047' : '#CFD3CA',
+        sort: () => this.setState(s => ({
+          sortKey: c.key,
+          sortDir: s.sortKey === c.key ? (s.sortDir === 'asc' ? 'desc' : 'asc') : (c.key === 'ts' || c.key === 'amount' ? 'desc' : 'asc')
+        }))
+      };
+    });
+
+    v.tabs = TABS.map(t => {
+      const on = st.tab === t;
+      const count = DATA.filter(d => (t === 'All' || d.category === t)).length;
+      return {
+        label: t, count: count,
+        bg: on ? '#E9EFE8' : 'transparent',
+        bd: on ? '#D6E2D4' : 'transparent',
+        fg: on ? '#1D1F1B' : '#5A5F57',
+        fw: on ? '500' : '400',
+        cfg: on ? '#5C7A59' : '#A0A59B',
+        pick: () => this.setState({ tab: t })
+      };
+    });
+
+    v.statusOptions = STATUS_OPTS.map(s => {
+      const on = st.status === s;
+      return {
+        label: s,
+        count: s === 'All statuses'
+          ? DATA.filter(d => this.matches(d, true)).length
+          : DATA.filter(d => this.matches(d, true) && d.status === s).length,
+        dot: s === 'All statuses' ? '#CFD3CA' : STATUSES[s].dot,
+        bg: on ? '#F1F5EC' : 'transparent',
+        fg: on ? '#1D1F1B' : '#33362F',
+        pick: () => this.setState({ status: s, menu: false })
+      };
+    });
+
+    v.statusLabel = st.status === 'All statuses' ? 'Status' : st.status;
+    v.statusRot = st.menu ? 'rotate(180deg)' : 'rotate(0deg)';
+    v.menuOp = st.menu ? '1' : '0';
+    v.menuTr = st.menu ? 'translateY(0) scale(1)' : 'translateY(-6px) scale(.98)';
+    v.menuPe = st.menu ? 'auto' : 'none';
+    v.toggleStatusMenu = e => { e.stopPropagation(); this.setState(s => ({ menu: !s.menu })); };
+
+    v.query = st.query;
+    v.onSearch = e => this.setState({ query: e.target.value });
+    v.clearFilters = () => this.setState({ query: '', tab: 'All', status: 'All statuses' });
+    v.tabsRef = this.tabsRef;
+
+    v.kTotal = list.length;
+    v.kActive = list.filter(d => d.status === 'Running' || d.status === 'In progress' || d.status === 'Queued').length;
+    v.kReady = list.filter(d => d.status === 'Close-ready').length;
+    v.kDone = list.filter(d => d.status === 'Complete').length;
+    return v;
+  }
+}
+</script>
+</body>
+</html>
