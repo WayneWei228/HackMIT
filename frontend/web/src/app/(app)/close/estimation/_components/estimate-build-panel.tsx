@@ -1,86 +1,46 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCaseId } from "@/lib/case-context";
+import { useCaseUi } from "@/lib/case-store";
 
-import {
-  BUILD_BLURB,
-  BUILD_STEPS,
-  type BuildStepKind,
-  FINAL_STEP,
-  autoOpenStep,
-  buildStepStates,
-} from "../_data";
-import { useEstimationScreen } from "./screen-context";
+import type { BuildStepView } from "../_view";
 import { AdjustmentChecks } from "./adjustment-checks";
 import { BuildStep } from "./build-step";
 import { CalcTable } from "./calc-table";
+import { useEstimationScreen } from "./screen-context";
 
 /**
- * Middle column: the agent's reasoning as five steps. Until somebody clicks a
- * step the panel follows the run, opening whichever step is currently active.
+ * Middle column: the estimate build as the estimator recorded it. The rungs are
+ * the workpaper's own trace, so a vendor whose method has different checks shows
+ * different steps. Which one is open is kept when the reader leaves and returns.
  */
-export function EstimateBuildPanel({
-  step,
-  runId,
-}: {
-  step: number;
-  runId: number;
-}) {
-  /** `null` means "follow the run"; `-1` means the reader closed them all. */
-  const [opened, setOpened] = useState<number | null>(null);
-  const [lastRun, setLastRun] = useState(runId);
-
-  // A replay restarts the run, so the panel goes back to following it.
-  if (lastRun !== runId) {
-    setLastRun(runId);
-    setOpened(null);
-  }
-
-  const { coverageText, rateText, finalText } = useEstimationScreen();
-  const texts: Partial<Record<BuildStepKind, string>> = {
-    coverage: coverageText,
-    rate: rateText,
-    final: finalText,
-  };
-  const states = buildStepStates(step);
-  const open = opened === null ? autoOpenStep(step) : opened;
-
-  const toggle = useCallback(
-    (i: number) => setOpened((current) => (current === i ? -1 : i)),
-    [],
-  );
+export function EstimateBuildPanel() {
+  const { steps, openStep, obligationId } = useEstimationScreen();
+  const caseId = useCaseId() ?? obligationId;
+  /** `undefined` until the reader chooses; then the key they chose, or "" for none. */
+  const [chosen, setChosen] = useCaseUi<string | undefined>(caseId, "estimation.open", undefined);
+  const open = chosen === undefined ? openStep : chosen === "" ? null : chosen;
 
   return (
     <section className="min-h-full rounded-xl border border-divider bg-panel px-[22px] pt-5 pb-[22px] shadow-[var(--shadow-tile)]">
-      <div className="font-display text-2xl leading-[normal] text-ink-deep">
-        Estimate build
-      </div>
-      <div className="mt-1.5 text-sm leading-[1.6] text-pretty text-faint">
-        {BUILD_BLURB}
-      </div>
+      <div className="font-display text-2xl leading-[normal] text-ink-deep">Estimate build</div>
 
       <div className="mt-5">
-        {BUILD_STEPS.map((definition, i) => (
+        {steps.length === 0 && (
+          <p className="text-sm text-faint-2">The workpaper recorded no build steps.</p>
+        )}
+        {steps.map((step, i) => (
           <BuildStep
-            key={definition.kind}
-            n={definition.n}
-            title={definition.title}
-            state={states[i]}
-            open={open === i}
-            last={i === BUILD_STEPS.length - 1}
-            tallBody={definition.tallBody}
-            waiting={
-              definition.waitingUntil === undefined
-                ? undefined
-                : step < definition.waitingUntil
-            }
-            onToggle={() => toggle(i)}
+            key={step.key}
+            n={String(i + 1)}
+            title={step.title}
+            status={step.status}
+            open={open === step.key}
+            last={i === steps.length - 1}
+            tallBody={step.kind !== "text"}
+            onToggle={() => setChosen(open === step.key ? "" : step.key)}
           >
-            <StepBody
-              kind={definition.kind}
-              text={texts[definition.kind]}
-              step={step}
-            />
+            <StepBody step={step} />
           </BuildStep>
         ))}
       </div>
@@ -88,20 +48,16 @@ export function EstimateBuildPanel({
   );
 }
 
-function StepBody({
-  kind,
-  text,
-  step,
-}: {
-  kind: BuildStepKind;
-  text?: string;
-  step: number;
-}) {
-  if (kind === "calc") return <CalcTable step={step} />;
-  if (kind === "adjustments") return <AdjustmentChecks step={step} />;
+function StepBody({ step }: { step: BuildStepView }) {
   return (
-    <div className="pt-[7px] pr-[26px] pl-[27px] text-sm leading-[1.65] text-pretty text-muted-4">
-      {kind === "final" && step < FINAL_STEP ? "Assembling the recommendation..." : text}
-    </div>
+    <>
+      {step.kind === "text" && step.body && (
+        <div className="pt-[7px] pr-[26px] pl-[27px] text-sm leading-[1.65] text-pretty break-words text-muted-4">
+          {step.body}
+        </div>
+      )}
+      {step.kind === "calc" && <CalcTable />}
+      {step.kind === "adjustments" && <AdjustmentChecks note={step.body} />}
+    </>
   );
 }

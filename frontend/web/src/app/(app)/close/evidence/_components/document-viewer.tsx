@@ -4,7 +4,6 @@ import { AnimatePresence, motion } from "motion/react";
 
 import { crossFade, easeOutSoft } from "@/lib/motion";
 
-import { MATCH_STEP } from "../_data";
 import type { DocTab } from "../_view";
 import { DocumentSheet } from "./document-sheet";
 import { ThumbnailRail } from "./thumbnail-rail";
@@ -18,17 +17,14 @@ import { ViewerToolbar } from "./viewer-toolbar";
 export function DocumentViewer({
   tabs,
   excerpts,
-  step,
   viewer,
   onToggleRail,
 }: {
   tabs: readonly DocTab[];
   excerpts: Record<string, string[]>;
-  step: number;
   viewer: ViewerState;
   onToggleRail: () => void;
 }) {
-  const highlighted = step >= MATCH_STEP;
   const tab = tabs.find((candidate) => candidate.id === viewer.doc);
 
   return (
@@ -52,7 +48,7 @@ export function DocumentViewer({
           open={viewer.thumbs}
           page={viewer.page}
           maxPage={viewer.maxPage}
-          highlighted={highlighted && (excerpts[viewer.doc ?? ""]?.length ?? 0) > 0}
+          highlighted={(excerpts[viewer.doc ?? ""]?.length ?? 0) > 0}
           onPrev={viewer.prevPage}
           onNext={viewer.nextPage}
         />
@@ -77,7 +73,7 @@ export function DocumentViewer({
                     tab={tab}
                     page={viewer.page}
                     excerpts={excerpts[tab.id] ?? []}
-                    highlighted={highlighted}
+                    highlighted
                   />
                 ) : (
                   <div className="pt-24 text-center text-ui text-faint-2">

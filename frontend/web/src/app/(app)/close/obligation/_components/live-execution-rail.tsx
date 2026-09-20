@@ -7,26 +7,22 @@ import { motion } from "motion/react";
 import { CaretLeftIcon, CaretRightIcon } from "@/components/ui/icons";
 import { SectionLabel } from "@/components/ui/primitives";
 import { cn } from "@/lib/cn";
-import { easeOutSoft, railIn } from "@/lib/motion";
-import {
-  type RailStage,
-  handoff,
-  railStages,
-  railTasks,
-  taskStates,
-} from "../_data";
+import { railIn } from "@/lib/motion";
+import { InlineHandoff } from "@/components/close/case-trail-panel";
+import { RailStages } from "@/components/close/rail-stages";
+import type { Header } from "@/lib/api-types";
+import { useNextStageOpen } from "@/lib/stage-status";
+import { handoff } from "../_data";
 import { useCaseHref } from "@/lib/case-context";
-import { PulseDot, SourceDocIcon, TaskMarker } from "./glyphs";
+import { PulseDot, SourceDocIcon } from "./glyphs";
 
 export type RailProps = {
-  step: number;
-  complete: boolean;
+  header: Header;
   clock: string;
   open: boolean;
   mini: boolean;
   width: number;
   dragging: boolean;
-  autoAdvance: boolean;
   onToggle: () => void;
   onResizeStart: (event: MouseEvent) => void;
 };
@@ -74,18 +70,9 @@ function MiniRail({ onToggle }: { onToggle: () => void }) {
   );
 }
 
-function FullRail({
-  step,
-  complete,
-  clock,
-  width,
-  dragging,
-  autoAdvance,
-  onToggle,
-  onResizeStart,
-}: RailProps) {
-  const tasks = taskStates(step);
+function FullRail({ header, clock, width, dragging, onToggle, onResizeStart }: RailProps) {
   const caseHref = useCaseHref();
+  const nextOpen = useNextStageOpen(header, "obligation");
 
   return (
     <motion.aside
@@ -108,9 +95,7 @@ function FullRail({
 
       <div className="h-full overflow-y-auto px-6 pt-[26px] pb-[34px]">
         <div className="flex items-center justify-between gap-2.5">
-          <SectionLabel className="text-[10.5px] text-faint">
-            LIVE EXECUTION
-          </SectionLabel>
+          <SectionLabel className="text-[10.5px] text-faint">LIVE EXECUTION</SectionLabel>
           <button
             type="button"
             onClick={onToggle}
@@ -124,42 +109,17 @@ function FullRail({
 
         <div className="mt-3.5 flex items-center justify-between">
           <div className="flex items-center gap-[11px]">
-            <PulseDot halo pulsing={!complete} />
-            <span className="text-lead text-ink">Running</span>
+            <PulseDot halo pulsing={false} />
+            <span className="text-lead text-ink">Complete</span>
           </div>
           <div className="text-sm leading-[normal] text-faint tabular-nums">{clock}</div>
         </div>
 
-        <div className="mt-[26px]">
-          {railStages.map((stage, i) => (
-            <div key={stage.number}>
-              <StageRow stage={stage} complete={complete} first={i === 0} />
-              {stage.state === "current" && (
-                <div className="mt-3.5 ml-[33px] flex flex-col gap-[13px] border-l border-line pl-5">
-                  {railTasks.map((task, index) => (
-                    <div key={task.label} className="flex items-center gap-3">
-                      <TaskMarker state={tasks[index]} />
-                      <span
-                        className={cn(
-                          "text-sm transition-colors duration-[260ms] ease-[var(--ease-out-soft)]",
-                          task.multiline ? "leading-[1.45]" : "leading-[normal]",
-                          tasks[index] === "rest" ? "text-faint-3" : "text-ink-2",
-                        )}
-                      >
-                        {task.label}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+        <RailStages header={header} current="obligation" />
 
         <div className="mt-8 h-px bg-sunk" />
-        <SectionLabel className="mt-[22px] text-[10.5px] text-faint">
-          NEXT HANDOFF
-        </SectionLabel>
+        <SectionLabel className="mt-[22px] text-[10.5px] text-faint">NEXT HANDOFF</SectionLabel>
+        {nextOpen && (
         <div className="mt-[13px] flex items-start gap-3">
           <SourceDocIcon className="mt-0.5 flex-none text-faint-3" />
           <div className="min-w-0 flex-1">
@@ -170,126 +130,23 @@ function FullRail({
               </span>
               <span>{handoff.to}</span>
             </div>
-            <p className="mt-[7px] text-meta leading-[1.6] text-pretty text-faint">
-              {handoff.description}
-            </p>
           </div>
         </div>
+        )}
 
-        <motion.div
-          initial={false}
-          animate={{ opacity: complete ? 1 : 0, y: complete ? 0 : 8 }}
-          transition={{ duration: 0.45, ease: easeOutSoft }}
-          className={cn("mt-4", !complete && "pointer-events-none")}
-        >
+        <InlineHandoff screen="obligation" />
+
+        {nextOpen && (
+        <div className="mt-4">
           <Link
             href={caseHref(handoff.href)}
             className="relative block w-full overflow-hidden rounded-xl border border-accent bg-accent px-3.5 py-[11px] text-center text-ui font-medium text-accent-on transition-colors duration-[160ms] ease-[var(--ease-out-soft)] hover:bg-accent-deep hover:text-accent-on"
           >
-            <span className="relative z-[2]">
-              {complete && autoAdvance ? handoff.advancingLabel : handoff.idleLabel}
-            </span>
-            <motion.span
-              aria-hidden="true"
-              initial={false}
-              animate={{ width: complete && autoAdvance ? "100%" : "0%" }}
-              transition={{ duration: 1.2, ease: "linear" }}
-              className="absolute top-0 bottom-0 left-0 bg-[rgba(255,255,255,0.22)]"
-            />
+            <span className="relative z-[2]">{handoff.idleLabel}</span>
           </Link>
-        </motion.div>
+        </div>
+        )}
       </div>
     </motion.aside>
   );
-}
-
-function StageRow({
-  stage,
-  complete,
-  first,
-}: {
-  stage: RailStage;
-  complete: boolean;
-  first: boolean;
-}) {
-  const caseHref = useCaseHref();
-  const label = stageStatusLabel(stage, complete);
-  const body = (
-    <>
-      <div className="w-[18px] flex-none text-meta text-faint-3 tabular-nums">
-        {stage.number}
-      </div>
-      <div
-        className={cn(
-          "h-5 w-0.5 flex-none transition-colors duration-[400ms] ease-[var(--ease-out-soft)]",
-          stageBar(stage, complete),
-        )}
-      />
-      <div className="font-display flex-1 text-lg leading-[normal] text-ink-deep">
-        {stage.name}
-      </div>
-      <div
-        className={`text-meta transition-colors duration-[300ms] ease-[var(--ease-out-soft)] ${
-          stage.state === "current" ? "font-medium" : ""
-        } ${stageStatusColor(stage, complete)}`}
-      >
-        {label}
-      </div>
-    </>
-  );
-
-  const spacing = first ? "" : stage.state === "complete" || stage.state === "current" ? "mt-5" : "mt-[22px]";
-
-  return stage.href ? (
-    <Link
-      href={caseHref(stage.href)}
-      className={cn(
-        "-mx-2 flex items-center gap-3.5 rounded-lg px-2 py-1.5 text-ink transition-colors duration-[160ms] ease-[var(--ease-out-soft)] hover:bg-[#F1F1EB]",
-        spacing,
-      )}
-    >
-      {body}
-    </Link>
-  ) : (
-    <div className={cn("flex items-center gap-3.5", spacing)}>{body}</div>
-  );
-}
-
-function stageStatusLabel(stage: RailStage, complete: boolean): string {
-  switch (stage.state) {
-    case "complete":
-      return "Complete";
-    case "current":
-      return complete ? "Complete" : "Active";
-    case "next":
-      return complete ? "Queued" : "Waiting";
-    default:
-      return "Waiting";
-  }
-}
-
-function stageStatusColor(stage: RailStage, complete: boolean): string {
-  switch (stage.state) {
-    case "complete":
-      return "text-faint-2";
-    case "current":
-      return complete ? "text-faint-2" : "text-accent";
-    case "next":
-      return complete ? "text-ink-2" : "text-faint-3";
-    default:
-      return "text-faint-3";
-  }
-}
-
-function stageBar(stage: RailStage, complete: boolean): string {
-  switch (stage.state) {
-    case "complete":
-      return "bg-accent-line";
-    case "current":
-      return "bg-accent";
-    case "next":
-      return complete ? "bg-accent-line" : "bg-line-cool";
-    default:
-      return "bg-line-cool";
-  }
 }

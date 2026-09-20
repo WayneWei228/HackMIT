@@ -30,6 +30,12 @@ export type CaseRecord = {
   status: CaseStatus;
   /** A Pending case the close can still start. */
   canStart: boolean;
+  /** Stages the backend reports as completed; null when the backend does not say. */
+  stagesCompleted: readonly FrontStage[] | null;
+  /** The agent working the case, or the one that runs next. */
+  currentAgent: string | null;
+  /** A stage call for this case is in flight right now. */
+  running: boolean;
   date: string;
   time: string;
   /** Sortable stamp: milliseconds since the epoch. */

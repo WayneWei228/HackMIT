@@ -1,30 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "motion/react";
 
+import { InlineHandoff } from "@/components/close/case-trail-panel";
 import { PageIcon } from "@/components/ui/icons";
-import { cn } from "@/lib/cn";
+import type { Header } from "@/lib/api-types";
+import { useNextStageOpen } from "@/lib/stage-status";
 import { SectionLabel } from "@/components/ui/primitives";
-import { easeOutSoft } from "@/lib/motion";
 import { useCaseHref } from "@/lib/case-context";
 import { routes } from "@/lib/routes";
 
 import { RAIL } from "../_data";
 
-/**
- * The handoff to the obligation agent. The button stays inert until the run
- * finishes; with `autoAdvance` on it also fills as the navigation timer runs.
- */
-export function NextHandoff({
-  complete,
-  autoAdvance,
-}: {
-  complete: boolean;
-  autoAdvance: boolean;
-}) {
+/** The handoff to the obligation agent: the JSON it received and the link that opens its screen. */
+export function NextHandoff({ header }: { header: Header }) {
   const caseHref = useCaseHref();
-  const filling = complete && autoAdvance;
+  const nextOpen = useNextStageOpen(header, "evidence");
 
   return (
     <>
@@ -33,6 +24,7 @@ export function NextHandoff({
         {RAIL.handoffLabel}
       </SectionLabel>
 
+      {nextOpen && (
       <div className="mt-[13px] flex items-center gap-3">
         <PageIcon size={15} className="flex-none text-faint-3" />
         <span className="text-body text-ink">{RAIL.handoffFrom}</span>
@@ -41,37 +33,20 @@ export function NextHandoff({
         </span>
         <span className="text-body text-ink">{RAIL.handoffTo}</span>
       </div>
+      )}
 
-      <p className="mt-[9px] pl-[27px] text-meta leading-[1.6] text-pretty text-faint">
-        {RAIL.handoffNote}
-      </p>
+      <InlineHandoff screen="evidence" />
 
-      <motion.div
-        initial={false}
-        animate={{ opacity: complete ? 1 : 0, y: complete ? 0 : 8 }}
-        transition={{ duration: 0.45, ease: easeOutSoft }}
-        className="mt-4"
-      >
+      {nextOpen && (
+      <div className="mt-4">
         <Link
           href={caseHref(routes.obligation)}
-          tabIndex={complete ? 0 : -1}
-          className={cn(
-            "relative block w-full overflow-hidden rounded-xl border border-accent bg-accent px-[14px] py-[11px] text-center text-accent-on transition-colors duration-[160ms] ease-[var(--ease-out-soft)] hover:bg-accent-deep hover:text-accent-on",
-            !complete && "pointer-events-none",
-          )}
+          className="relative block w-full overflow-hidden rounded-xl border border-accent bg-accent px-[14px] py-[11px] text-center text-accent-on transition-colors duration-[160ms] ease-[var(--ease-out-soft)] hover:bg-accent-deep hover:text-accent-on"
         >
-          <span className="relative z-[2] text-ui font-medium">
-            {filling ? RAIL.ctaAuto : RAIL.ctaIdle}
-          </span>
-          <motion.span
-            aria-hidden="true"
-            className="absolute top-0 bottom-0 left-0 bg-[rgba(255,255,255,0.22)]"
-            initial={false}
-            animate={{ width: filling ? "100%" : "0%" }}
-            transition={{ duration: 1.2, ease: "linear" }}
-          />
+          <span className="relative z-[2] text-ui font-medium">{RAIL.ctaIdle}</span>
         </Link>
-      </motion.div>
+      </div>
+      )}
     </>
   );
 }

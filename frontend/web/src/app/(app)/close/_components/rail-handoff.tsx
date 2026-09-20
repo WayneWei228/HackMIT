@@ -3,14 +3,15 @@
 import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
 
+import { InlineHandoff } from "@/components/close/case-trail-panel";
+import type { Header } from "@/lib/api-types";
+import { useNextStageOpen } from "@/lib/stage-status";
 import { caseHref } from "@/lib/case-nav";
 import { riseIn, transitions } from "@/lib/motion";
 import { routes } from "@/lib/routes";
 
 import {
-  CTA_ADVANCING_LABEL,
   CTA_IDLE_LABEL,
-  HANDOFF_BLURB,
   HANDOFF_FROM,
   HANDOFF_TO,
 } from "../_data";
@@ -27,16 +28,13 @@ import { RailLabel } from "./rail-label";
 export function RailHandoff({
   files,
   obligationId,
-  complete,
-  autoAdvance,
+  header,
 }: {
   files: { id: string; name: string }[];
   obligationId: string;
-  complete: boolean;
-  autoAdvance: boolean;
+  header: Header;
 }) {
-  const advancing = complete && autoAdvance;
-
+  const nextOpen = useNextStageOpen(header, "ingestion");
   return (
     <>
       <div className="mt-8 h-px bg-sunk" />
@@ -72,42 +70,32 @@ export function RailHandoff({
       <div className="mt-[22px]">
         <RailLabel>NEXT HANDOFF</RailLabel>
       </div>
-      <Link
-        href={caseHref(routes.evidence, obligationId)}
-        className="-mx-2 mt-[13px] flex items-center gap-3 rounded-lg px-2 py-1.5 text-ink transition-colors duration-[160ms] ease-[var(--ease-out-soft)] hover:bg-[#F1F1EB] hover:text-ink"
-      >
-        <SourcePageIcon width={15} height={17} className="flex-none text-faint-3" />
-        <span className="text-body text-ink">{HANDOFF_FROM}</span>
-        <span aria-hidden="true" className="text-sm text-ghost-2">
-          →
-        </span>
-        <span className="text-body text-ink">{HANDOFF_TO}</span>
-      </Link>
-      <div className="mt-[9px] pl-[27px] text-meta leading-[1.6] text-pretty text-faint">
-        {HANDOFF_BLURB}
-      </div>
-
-      <motion.div
-        animate={{ opacity: complete ? 1 : 0.55 }}
-        transition={transitions.slow}
-        className="mt-4"
-      >
+      {nextOpen && (
         <Link
           href={caseHref(routes.evidence, obligationId)}
-          className="relative block w-full overflow-hidden rounded-xl border border-accent bg-accent px-3.5 py-[11px] text-center text-ui font-medium text-accent-on transition-colors duration-[160ms] ease-[var(--ease-out-soft)] hover:bg-accent-deep hover:text-accent-on"
+          className="-mx-2 mt-[13px] flex items-center gap-3 rounded-lg px-2 py-1.5 text-ink transition-colors duration-[160ms] ease-[var(--ease-out-soft)] hover:bg-[#F1F1EB] hover:text-ink"
         >
-          <span className="relative z-[2]">
-            {advancing ? CTA_ADVANCING_LABEL : CTA_IDLE_LABEL}
+          <SourcePageIcon width={15} height={17} className="flex-none text-faint-3" />
+          <span className="text-body text-ink">{HANDOFF_FROM}</span>
+          <span aria-hidden="true" className="text-sm text-ghost-2">
+            →
           </span>
-          <motion.span
-            aria-hidden="true"
-            initial={false}
-            animate={{ width: advancing ? "100%" : "0%" }}
-            transition={{ duration: 1.2, ease: "linear" }}
-            className="absolute top-0 bottom-0 left-0 bg-[rgba(255,255,255,0.22)]"
-          />
+          <span className="text-body text-ink">{HANDOFF_TO}</span>
         </Link>
-      </motion.div>
+      )}
+
+      <InlineHandoff screen="ingestion" />
+
+      {nextOpen && (
+        <div className="mt-4">
+          <Link
+            href={caseHref(routes.evidence, obligationId)}
+            className="relative block w-full overflow-hidden rounded-xl border border-accent bg-accent px-3.5 py-[11px] text-center text-ui font-medium text-accent-on transition-colors duration-[160ms] ease-[var(--ease-out-soft)] hover:bg-accent-deep hover:text-accent-on"
+          >
+            <span className="relative z-[2]">{CTA_IDLE_LABEL}</span>
+          </Link>
+        </div>
+      )}
     </>
   );
 }

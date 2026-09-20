@@ -1,4 +1,5 @@
 import { AppShell } from "@/components/shell/app-shell";
+import { AppProviders } from "@/components/shell/providers";
 import type { SidebarIdentity } from "@/components/shell/sidebar";
 import { getClose } from "@/lib/api";
 
@@ -28,5 +29,9 @@ export default async function AppLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <AppShell identity={await identity()}>{children}</AppShell>;
+  return (
+    <AppProviders>
+      <AppShell identity={await identity()}>{children}</AppShell>
+    </AppProviders>
+  );
 }

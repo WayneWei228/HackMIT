@@ -1,6 +1,9 @@
 import type {
   ActionResult,
+  AdvanceResult,
   AuditReport,
+  CaseHandoffs,
+  CaseLog,
   CloseView,
   Decision,
   LearningView,
@@ -67,6 +70,25 @@ export async function getAudit(id: string): Promise<AuditReport | null> {
   }
 }
 
+/**
+ * The case's reasoning log and handoffs, or null when the backend has not
+ * shipped these endpoints (an older build answers 404) so screens fall back to
+ * their own narration instead of failing.
+ */
+async function optional<T>(path: string): Promise<T | null> {
+  try {
+    return await request<T>(path);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) return null;
+    throw error;
+  }
+}
+
+export const getCaseLog = (id: string) =>
+  optional<CaseLog>(`/api/obligations/${encodeURIComponent(id)}/log`);
+export const getCaseHandoffs = (id: string) =>
+  optional<CaseHandoffs>(`/api/obligations/${encodeURIComponent(id)}/handoffs`);
+
 export const getLearning = () => request<LearningView>("/api/learning");
 export const getVendors = () => request<VendorsView>("/api/vendors");
 
@@ -82,6 +104,9 @@ function post<T>(path: string, body?: unknown): Promise<T> {
 export const runClose = () => post<ActionResult>("/api/close/run");
 export const startObligation = (id: string) =>
   post<StartResult>(`/api/obligations/${encodeURIComponent(id)}/start`);
+/** Run exactly one stage of the case and return what it produced. */
+export const advanceObligation = (id: string) =>
+  post<AdvanceResult>(`/api/obligations/${encodeURIComponent(id)}/advance`);
 export const advanceToJanuary = () =>
   post<ActionResult>("/api/close/advance-to-january");
 export const resetDemo = () => post<ActionResult>("/api/reset");
@@ -96,3 +121,11 @@ export const decideRule = (
   action: "approve" | "reject" | "revoke",
   body: { notes: string; decided_by?: string },
 ) => post<ActionResult>(`/api/learning/${encodeURIComponent(id)}/${action}`, body);
+
+/** Remove files from the agent's selection (an empty list restores them all). */
+export const putIngestionSelection = (id: string, excludedFileIds: readonly string[]) =>
+  request<ObligationDetail>(`/api/obligations/${encodeURIComponent(id)}/ingestion-selection`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ excluded_file_ids: excludedFileIds }),
+  });

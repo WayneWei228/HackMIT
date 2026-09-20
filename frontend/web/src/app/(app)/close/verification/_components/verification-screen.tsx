@@ -1,5 +1,9 @@
 "use client";
 
+import { TrailPanel } from "@/components/close/case-trail-panel";
+import { EscalationBanner } from "@/components/close/escalation-banner";
+import { ReceivedStrip, StageChecks } from "@/components/close/stage-checks";
+
 import { AgentStatusBar } from "./agent-status-bar";
 import { AssertionsPanel } from "./assertions-panel";
 import { CaseHeader } from "./case-header";
@@ -13,16 +17,15 @@ import { useVerificationRun } from "./use-verification-run";
 /**
  * Verification agent - the last step of the close chain.
  *
- * Six control checks and six assertions resolve on the comp's scripted
- * timeline; when the last one lands the case flips to close-ready and the
- * approve / handoff affordances settle in. All data is synthetic and every
- * upstream system is simulated.
+ * The screen renders only once the backend has run the Verification agents:
+ * every control, assertion and the final status is what they recorded, with the
+ * Policy stage's own decision. All data is synthetic and every upstream system is
+ * simulated.
  */
 export function VerificationScreen() {
-  const { data } = useVerificationScreen();
+  const { data, received, stageChecks, escalation, header } = useVerificationScreen();
   const run = useVerificationRun({ data });
   const { view } = run;
-  const pulse = !view.complete;
 
   return (
     <>
@@ -31,20 +34,23 @@ export function VerificationScreen() {
 
         <div className="h-px flex-none bg-line" />
 
-        <AgentStatusBar
-          statusText={view.statusText}
-          passedLabel={view.passedLabel}
-          progress={view.progress}
-          pulse={pulse}
-          onReplay={run.replay}
-        />
+        <AgentStatusBar passedLabel={view.passedLabel} progress={view.progress} />
+        <TrailPanel />
+
+        {escalation && (
+          <div className="flex-none pt-3">
+            <EscalationBanner escalation={escalation} />
+          </div>
+        )}
 
         <div className="min-h-0 flex-1 overflow-y-auto px-[34px] pb-[26px]">
+          {received && (
+            <div className="mb-3.5">
+              <ReceivedStrip received={received} />
+            </div>
+          )}
           <div className="grid min-h-full grid-cols-[minmax(0,0.84fr)_minmax(0,1.34fr)_minmax(0,0.88fr)] items-start gap-[14px]">
-            <AssertionsPanel
-              assertions={view.assertions}
-              extras={view.extras}
-            />
+            <AssertionsPanel assertions={view.assertions} extras={view.extras} />
             <ControlChecksPanel
               controls={view.controls}
               scans={view.scans}
@@ -53,12 +59,19 @@ export function VerificationScreen() {
               onToggle={run.toggleControl}
             />
             <FinalStatusPanel
-              complete={view.complete}
               finalStatus={view.finalStatus}
               noteTitle={view.noteTitle}
               noteBody={view.noteBody}
             />
           </div>
+          {stageChecks && (
+            <section className="mt-3.5 rounded-xl border border-divider bg-panel px-[22px] pt-5 pb-[22px] shadow-tile">
+              <h2 className="font-display text-2xl text-ink-deep">Checks the agents ran</h2>
+              <div className="mt-4">
+                <StageChecks checks={stageChecks} scope="verification" />
+              </div>
+            </section>
+          )}
           <CaseActivityPanel />
         </div>
       </main>
@@ -69,12 +82,9 @@ export function VerificationScreen() {
           dragging={run.dragging}
           onStartResize={run.startResize}
           onCollapse={run.toggleRail}
-          railStatus={view.railStatus}
-          stageStatus={view.stageStatus}
-          complete={view.complete}
+          header={header}
           clock={run.clock}
-          tasks={view.tasks}
-          pulse={pulse}
+          outcome={view.finalStatus}
         />
       ) : (
         <MiniRail onExpand={run.toggleRail} />

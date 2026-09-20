@@ -1,30 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "motion/react";
 
 import { ChevronRightIcon } from "@/components/ui/icons";
-import { transitions } from "@/lib/motion";
 import { useCaseHref } from "@/lib/case-context";
 import { routes } from "@/lib/routes";
 import { SourceDocIcon } from "./glyphs";
 import { Panel, PanelHeading } from "./panel";
 import { useObligationScreen } from "./screen-context";
 
-/** Facts settle in one at a time as the agent reads them. */
-function factMotion(visible: boolean) {
-  return {
-    animate: { opacity: visible ? 1 : 0, y: visible ? 0 : 6 },
-    transition: transitions.slow,
-  };
-}
-
 /**
  * Left column: every fact the obligation is derived from, each one carrying
  * the document it came out of.
  */
-export function FactsPanel({ step }: { step: number }) {
-  const { facts, attributes, attributesAppearAt, sourceDocumentsLabel } = useObligationScreen();
+export function FactsPanel() {
+  const { facts, attributes, sourceDocumentsLabel } = useObligationScreen();
   const caseHref = useCaseHref();
   return (
     <Panel className="flex flex-col px-5 pt-5 pb-4">
@@ -37,12 +27,7 @@ export function FactsPanel({ step }: { step: number }) {
       )}
 
       {facts.map((fact, index) => (
-        <motion.div
-          key={`${index}-${fact.label}`}
-          initial={false}
-          {...factMotion(step >= fact.appearsAt)}
-          className="border-b border-wash-deep py-4"
-        >
+        <div key={`${index}-${fact.label}`} className="border-b border-wash-deep py-4">
           <div className="text-ui text-ink-2">{fact.label}</div>
           <div className="mt-[9px] flex items-start gap-[11px]">
             <SourceDocIcon className="mt-[3px] flex-none text-faint-3" />
@@ -59,14 +44,10 @@ export function FactsPanel({ step }: { step: number }) {
               </Link>
             </div>
           </div>
-        </motion.div>
+        </div>
       ))}
 
-      <motion.div
-        initial={false}
-        {...factMotion(step >= attributesAppearAt)}
-        className="pt-4"
-      >
+      <div className="pt-4">
         {attributes.map((attribute, i) => (
           <div key={attribute.label} className={i > 0 ? "mt-[17px]" : undefined}>
             <div className="text-ui text-ink-2">{attribute.label}</div>
@@ -75,7 +56,7 @@ export function FactsPanel({ step }: { step: number }) {
             </div>
           </div>
         ))}
-      </motion.div>
+      </div>
 
       <div className="min-h-[18px] flex-1" />
 

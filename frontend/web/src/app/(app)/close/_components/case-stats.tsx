@@ -1,5 +1,7 @@
 "use client";
 
+import { useShownHeader } from "@/lib/stage-status";
+
 import { motion } from "motion/react";
 
 import { cn } from "@/lib/cn";
@@ -22,7 +24,8 @@ function StatLabel({ children }: { children: React.ReactNode }) {
  * has supported so far, the difference, and the case's status. Figures stay
  * dashes until an agent has produced them.
  */
-export function CaseStats({ header }: { header: Header }) {
+export function CaseStats({ header: backendHeader }: { header: Header }) {
+  const header = useShownHeader(backendHeader);
   const stats = [
     { label: "PREVIOUS ACCRUAL", value: formatMoney(header.previous_accrual), muted: header.previous_accrual === null },
     { label: "SUPPORTED", value: formatMoney(header.supported), muted: header.supported === null },

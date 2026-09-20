@@ -1,5 +1,6 @@
 "use client";
 
+import { TrailPanel } from "@/components/close/case-trail-panel";
 import { CaseProvider } from "@/lib/case-context";
 
 import type { EvidenceScreenView } from "../_view";
@@ -21,22 +22,20 @@ import { useRailResize } from "./use-rail-resize";
  * the accrual, and builds the fact set the obligation agent works from. All
  * data is synthetic and every upstream system is simulated.
  *
- * Auto-advance is off in this port: the run finishes and waits on the visible
- * handoff button rather than navigating on its own. Flip this to `true` for the
- * comp's unattended behaviour.
+ * The screen renders only once the backend has run the Evidence agent, and the
+ * run finishes and waits on the visible handoff button.
  */
-const AUTO_ADVANCE = false;
 
 export function EvidenceScreen({ view }: { view: EvidenceScreenView }) {
   return (
-    <CaseProvider obligationId={view.obligationId}>
+    <CaseProvider obligationId={view.obligationId} version={view.trailVersion}>
       <EvidenceBody view={view} />
     </CaseProvider>
   );
 }
 
 function EvidenceBody({ view }: { view: EvidenceScreenView }) {
-  const run = useEvidenceRun({ factCount: view.facts.length, autoAdvance: AUTO_ADVANCE });
+  const run = useEvidenceRun();
   const viewer = useDocumentViewer(view);
   const rail = useRailResize();
 
@@ -45,7 +44,7 @@ function EvidenceBody({ view }: { view: EvidenceScreenView }) {
       <main className="flex min-w-[760px] flex-1 flex-col overflow-hidden">
         <div className="flex-none px-[34px] pt-[26px]">
           <CaseHeader header={view.header} />
-          <CaseStats header={view.header} step={run.step} />
+          <CaseStats header={view.header} />
           <DocumentTabs
             tabs={view.tabs}
             doc={viewer.doc}
@@ -57,19 +56,13 @@ function EvidenceBody({ view }: { view: EvidenceScreenView }) {
 
         <div className="h-px flex-none bg-line" />
 
-        <AgentBar
-          step={run.step}
-          status={run.status}
-          complete={run.complete}
-          sourceCount={view.tabs.length}
-          onReplay={run.replay}
-        />
+        <AgentBar sourceCount={view.tabs.length} factCount={view.facts.length} />
+        <TrailPanel />
 
         <div className="flex min-h-0 flex-1 px-[34px] pb-[26px]">
           <DocumentViewer
             tabs={view.tabs}
             excerpts={view.excerpts}
-            step={run.step}
             viewer={viewer}
             onToggleRail={rail.toggle}
           />
@@ -82,7 +75,7 @@ function EvidenceBody({ view }: { view: EvidenceScreenView }) {
           facts={view.facts}
           width={rail.width}
           dragging={rail.dragging}
-          autoAdvance={AUTO_ADVANCE}
+          header={view.header}
           onResizeStart={rail.startResize}
           onCollapse={rail.toggle}
         />

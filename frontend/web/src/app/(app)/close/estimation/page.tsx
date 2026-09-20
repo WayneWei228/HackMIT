@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { NoCases } from "@/components/close/no-cases";
 import { NotStarted } from "@/components/close/not-started";
+import { stageDone } from "@/lib/trail";
 import { loadCase, type SearchParams } from "@/lib/load-case";
 
 import { EstimationScreen } from "./_components/estimation-screen";
@@ -21,8 +22,8 @@ export default async function EstimationPage({
 }) {
   const { close, detail } = await loadCase(searchParams);
   if (!detail) return <NoCases close={close} />;
-  if (!detail.header.started) {
-    return <NotStarted close={close} header={detail.header} screen="Estimation" />;
+  if (!stageDone(detail.header, "estimation")) {
+    return <NotStarted close={close} header={detail.header} stage="estimation" />;
   }
   return (
     <EstimationScreenProvider view={buildEstimationView(detail)}>

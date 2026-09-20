@@ -9,6 +9,7 @@ import { MoreIcon } from "@/components/ui/icons";
 import { formatMoney } from "@/lib/money";
 import { easeOutSoft } from "@/lib/motion";
 import { StartCaseButton } from "@/components/close/start-case-button";
+import { agentLabel } from "@/lib/trail";
 
 import { CASE_GRID } from "./case-grid";
 import { CaseStatusDot } from "./case-status-dot";
@@ -37,6 +38,10 @@ export function CaseRow({
 }) {
   const mark = MARKS[row.mark];
   const category = CATEGORY_STYLES[row.category];
+  const completed = row.stagesCompleted ?? [];
+  const started = completed.length > 0;
+  /* Continue only while an agent is still due to run; a case at rest waits on someone else. */
+  const hasNextAgent = row.currentAgent !== null;
 
   /* Frozen at mount so a later re-render cannot restart or cut short a rise
      that is already playing. */
@@ -86,7 +91,13 @@ export function CaseRow({
         {formatMoney(row.amount)}
       </div>
 
-      <div className="text-body text-ink-2">{row.stage}</div>
+      <div className="min-w-0 text-body text-ink-2">
+        {row.running && row.currentAgent ? (
+          <span className="block truncate">{agentLabel(row.currentAgent)}</span>
+        ) : (
+          row.stage
+        )}
+      </div>
 
       <div className="flex items-center gap-2.5">
         <CaseStatusDot status={row.status} />
@@ -101,8 +112,14 @@ export function CaseRow({
       </div>
 
       <div className="flex justify-end">
-        {row.canStart ? (
-          <StartCaseButton obligationId={row.obligationId} compact />
+        {row.canStart || row.running || (started && hasNextAgent) ? (
+          <StartCaseButton
+            obligationId={row.obligationId}
+            completed={row.stagesCompleted ?? []}
+            agent={row.currentAgent}
+            label={started ? "Continue" : "Start"}
+            compact
+          />
         ) : (
           <MoreIcon className="text-[15px] text-ghost-2" />
         )}

@@ -1,175 +1,34 @@
 "use client";
 
-import { useMemo } from "react";
-import { motion } from "motion/react";
+import { ReceivedStrip, StageChecks } from "@/components/close/stage-checks";
 
-import { ChevronDownIcon } from "@/components/ui/icons";
-import { cn } from "@/lib/cn";
-import { easeOutSoft, transitions } from "@/lib/motion";
-import {
-  type AnalysisCheck,
-  type MarkerState,
-  checkStates,
-  subCheckStates,
-} from "../_data";
-import { CheckMarker, SubCheckMarker } from "./glyphs";
 import { Panel, PanelHeading } from "./panel";
-import { buildChecks } from "../_view";
 import { useObligationScreen } from "./screen-context";
 
 /**
- * Middle column: the four accounting checks, ticking over as the agent
- * works. The active one opens itself until the user takes over.
+ * Middle column: what this stage received and the checks its agents ran. Both
+ * come from the backend; when it has sent none the panel says so rather than
+ * listing checks of its own.
  */
-export function AnalysisPanel({
-  step,
-  openIndex,
-  onToggle,
-}: {
-  step: number;
-  openIndex: number;
-  onToggle: (index: number) => void;
-}) {
-  const { narrative, intro } = useObligationScreen();
-  const checks = useMemo(() => buildChecks(narrative), [narrative]);
-  const states = checkStates(step);
-  const subStates = subCheckStates(step);
+export function AnalysisPanel() {
+  const { received, checks } = useObligationScreen();
 
   return (
     <Panel className="px-[22px] pt-5 pb-[22px]">
       <PanelHeading>Obligation analysis</PanelHeading>
-      <p className="mt-1.5 text-sm leading-[1.6] text-pretty text-faint">
-        {intro}
-      </p>
+      <div className="mt-3">
+        <ReceivedStrip received={received} />
+      </div>
 
       <div className="mt-5">
-        {checks.map((check, i) => (
-          <CheckRow
-            key={check.label}
-            check={check}
-            index={i}
-            step={step}
-            state={states[i]}
-            subStates={subStates}
-            open={openIndex === i}
-            last={i === checks.length - 1}
-            onToggle={onToggle}
-          />
-        ))}
+        {checks ? (
+          <StageChecks checks={checks} scope="obligation" />
+        ) : (
+          <p className="text-sm leading-[1.6] text-faint-2 text-pretty">
+            The backend did not return this stage&apos;s checks, so none are shown.
+          </p>
+        )}
       </div>
     </Panel>
-  );
-}
-
-function CheckRow({
-  check,
-  index,
-  step,
-  state,
-  subStates,
-  open,
-  last,
-  onToggle,
-}: {
-  check: AnalysisCheck;
-  index: number;
-  step: number;
-  state: MarkerState;
-  subStates: MarkerState[];
-  open: boolean;
-  last: boolean;
-  onToggle: (index: number) => void;
-}) {
-  return (
-    <div className={cn("relative pl-10", last ? "pb-0" : "pb-[22px]")}>
-      {!last && (
-        <div
-          className={cn(
-            "absolute top-[22px] bottom-0 left-2 w-px transition-colors duration-500 ease-[var(--ease-out-soft)]",
-            state === "done" ? "bg-accent-line" : "bg-line",
-          )}
-        />
-      )}
-      <CheckMarker state={state} />
-
-      <button
-        type="button"
-        onClick={() => onToggle(index)}
-        aria-expanded={open}
-        className="flex w-full cursor-pointer items-center gap-3.5 text-left"
-      >
-        <span className="text-sm leading-[normal] text-faint-3 tabular-nums">
-          {index + 1}
-        </span>
-        <span
-          className={`flex-1 text-nav transition-colors duration-[280ms] ease-[var(--ease-out-soft)] ${
-            state === "rest" ? "text-faint-3" : "text-ink"
-          }`}
-        >
-          {check.label}
-        </span>
-        <motion.span
-          animate={{ rotate: open ? 180 : 0 }}
-          transition={transitions.base}
-          className="flex flex-none text-faint-3"
-        >
-          <ChevronDownIcon size={13} />
-        </motion.span>
-      </button>
-
-      <motion.div
-        initial={false}
-        animate={{
-          gridTemplateRows: open ? "1fr" : "0fr",
-          opacity: open ? 1 : 0,
-        }}
-        transition={{
-          gridTemplateRows: { duration: check.bodyDuration, ease: easeOutSoft },
-          opacity: { duration: 0.26, ease: easeOutSoft },
-        }}
-        className="grid overflow-hidden"
-      >
-        <div className="min-h-0">
-          <div
-            className={cn(
-              "pt-[7px] pl-[27px]",
-              check.subChecks ? "pr-1" : "pr-[26px]",
-            )}
-          >
-            <p className="text-sm leading-[1.65] text-pretty text-muted-4">
-              {check.body(step)}
-            </p>
-            {check.subChecks && (
-              <div className="mt-3 flex flex-col gap-[11px] rounded-lg bg-rail-alt px-3.5 py-3">
-                {check.subChecks.map((label, i) => (
-                  <div key={label} className="flex items-center gap-[11px]">
-                    <SubCheckMarker state={subStates[i]} />
-                    <span
-                      className={cn(
-                        "text-sm leading-[normal] transition-colors duration-[260ms] ease-[var(--ease-out-soft)]",
-                        subStates[i] === "rest" ? "text-faint-3" : "text-ink-2",
-                      )}
-                    >
-                      {label}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </motion.div>
-
-      {check.pending && (
-        <motion.div
-          initial={false}
-          animate={{ opacity: step >= check.pending.until ? 0 : 1 }}
-          transition={{ duration: 0.26, ease: easeOutSoft }}
-          className="pt-[7px] pr-[26px] pl-[27px] text-sm leading-[normal] text-faint-3"
-        >
-          {check.pending.label}
-        </motion.div>
-      )}
-    </div>
   );
 }

@@ -7,6 +7,7 @@ import { CaretLeftIcon, CaretRightIcon } from "@/components/ui/icons";
 import { railIn } from "@/lib/motion";
 
 import type { CloseRun } from "./use-close-run";
+import type { Header } from "@/lib/api-types";
 import { ExecutionStages } from "./execution-stages";
 import { RailHandoff } from "./rail-handoff";
 import { RailLabel } from "./rail-label";
@@ -23,15 +24,15 @@ import { useRailResize, type RailResize } from "./use-rail-resize";
 export function ExecutionRail({
   run,
   obligationId,
+  header,
   open,
   onToggle,
-  autoAdvance,
 }: {
   run: CloseRun;
   obligationId: string;
+  header: Header;
   open: boolean;
   onToggle: () => void;
-  autoAdvance: boolean;
 }) {
   // Held here rather than in FullRail so a dragged width survives a collapse.
   const resize = useRailResize();
@@ -40,8 +41,8 @@ export function ExecutionRail({
     <FullRail
       run={run}
       obligationId={obligationId}
+      header={header}
       onToggle={onToggle}
-      autoAdvance={autoAdvance}
       resize={resize}
     />
   ) : (
@@ -80,14 +81,14 @@ function MiniRail({ onToggle }: { onToggle: () => void }) {
 function FullRail({
   run,
   obligationId,
+  header,
   onToggle,
-  autoAdvance,
   resize,
 }: {
   run: CloseRun;
   obligationId: string;
+  header: Header;
   onToggle: () => void;
-  autoAdvance: boolean;
   resize: RailResize;
 }) {
   const { width, dragging, startResize } = resize;
@@ -126,23 +127,14 @@ function FullRail({
         <div className="mt-3.5 flex items-center justify-between">
           <div className="flex items-center gap-[11px]">
             <span className="h-[9px] w-[9px] rounded-full bg-accent shadow-[var(--shadow-ring)]" />
-            <span className="text-lead text-ink">Running</span>
+            <span className="text-lead text-ink">Complete</span>
           </div>
           <div className="text-sm text-faint tabular-nums">{run.clock}</div>
         </div>
 
-        <ExecutionStages
-          complete={run.complete}
-          taskStates={run.taskStates}
-          obligationId={obligationId}
-        />
+        <ExecutionStages header={header} obligationId={obligationId} />
 
-        <RailHandoff
-          files={run.selectedFiles}
-          obligationId={obligationId}
-          complete={run.complete}
-          autoAdvance={autoAdvance}
-        />
+        <RailHandoff files={run.selectedFiles} obligationId={obligationId} header={header} />
       </div>
     </motion.aside>
   );

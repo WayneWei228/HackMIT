@@ -1,28 +1,21 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useReducedMotion } from "motion/react";
 
+import { useCaseId } from "@/lib/case-context";
+import { formatDuration, useStageClock } from "@/lib/case-runner";
 import {
-  DELAYS,
-  FINAL_STEP,
   RAIL_DEFAULT_WIDTH,
   RAIL_MAX_WIDTH,
   RAIL_MIN_WIDTH,
-  START_SECONDS,
   deriveView,
-  formatClock,
   type VerificationData,
   type VerificationView,
 } from "../_data";
 
 type Options = {
-  /** The recorded checks the run replays. */
+  /** What the Verification agents recorded for this case. */
   data: VerificationData;
-  /** Play the scripted step sequence on mount. */
-  autoplay?: boolean;
-  /** Tick the elapsed-time readout in the rail. */
-  liveTimer?: boolean;
 };
 
 export type VerificationRun = {
@@ -30,7 +23,6 @@ export type VerificationRun = {
   clock: string;
   openControl: number;
   toggleControl: (index: number) => void;
-  replay: () => void;
   railOpen: boolean;
   toggleRail: () => void;
   railWidth: number;
@@ -45,16 +37,9 @@ export type VerificationRun = {
  * With reduced motion on, the timeline never runs and the finished state is
  * rendered straight away.
  */
-export function useVerificationRun({
-  data,
-  autoplay = true,
-  liveTimer = true,
-}: Options): VerificationRun {
-  const reduced = useReducedMotion();
-
-  const [step, setStep] = useState(0);
-  const [runToken, setRunToken] = useState(0);
-  const [seconds, setSeconds] = useState(START_SECONDS);
+export function useVerificationRun({ data }: Options): VerificationRun {
+  const obligationId = useCaseId();
+  const clock = formatDuration(useStageClock(obligationId, "verification", true));
 
   // The accordion follows the running check until the reader takes it over.
   const [accordion, setAccordion] = useState<{
@@ -71,33 +56,7 @@ export function useVerificationRun({
     railWidthRef.current = railWidth;
   }, [railWidth]);
 
-  useEffect(() => {
-    if (!liveTimer) return;
-    const interval = setInterval(() => setSeconds((s) => s + 1), 1000);
-    return () => clearInterval(interval);
-  }, [liveTimer]);
-
-  useEffect(() => {
-    if (!autoplay || reduced) return;
-    const timers: ReturnType<typeof setTimeout>[] = [];
-    let acc = 0;
-    DELAYS.forEach((delay, i) => {
-      acc += delay;
-      timers.push(setTimeout(() => setStep(i + 1), acc));
-    });
-    return () => timers.forEach(clearTimeout);
-  }, [autoplay, reduced, runToken]);
-
-  const view = useMemo(
-    () => deriveView(reduced ? FINAL_STEP : step, data),
-    [reduced, step, data],
-  );
-
-  const replay = useCallback(() => {
-    setAccordion({ open: -1, userOpened: false });
-    setStep(0);
-    setRunToken((token) => token + 1);
-  }, []);
+  const view = useMemo(() => deriveView(data), [data]);
 
   const toggleControl = useCallback((index: number) => {
     setAccordion((current) => ({
@@ -138,10 +97,9 @@ export function useVerificationRun({
 
   return {
     view,
-    clock: formatClock(seconds),
+    clock,
     openControl: accordion.userOpened ? accordion.open : view.autoOpen,
     toggleControl,
-    replay,
     railOpen,
     toggleRail,
     railWidth,

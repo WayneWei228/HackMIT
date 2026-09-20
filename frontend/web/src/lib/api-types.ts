@@ -44,6 +44,10 @@ export type CaseRow = {
   workflow_stage: string;
   next_action: string;
   updated_at: string;
+  stages_completed?: FrontStage[];
+  current_agent?: string | null;
+  log_count?: number;
+  handoff_count?: number;
 };
 
 export type CloseView = {
@@ -73,6 +77,13 @@ export type Header = {
   difference: string | null;
   /** False until an agent has worked the case; every stage screen is empty until then. */
   started: boolean;
+  /** How many entries the case's reasoning log and handoff list hold right now. */
+  log_count?: number;
+  handoff_count?: number;
+  /** The stages every one of whose agents has run, in order. */
+  stages_completed?: FrontStage[];
+  /** The agent working the case right now, or the one that runs next. */
+  current_agent?: string | null;
   status: CaseStatus;
   stage: FrontStage;
   workflow_stage: string;
@@ -106,7 +117,10 @@ export type SourceFile = {
   kind: string;
   format: string;
   size_label: string;
+  /** The effective selection: the agent's pick, less anything the reader removed. */
   selected: boolean;
+  /** The reader removed this file from the agent's selection. */
+  user_removed?: boolean;
   reason: string | null;
   preview: Preview;
 };
@@ -144,6 +158,10 @@ export type EvidenceDocument = {
 
 export type EvidenceView = {
   available: boolean;
+  /** What this stage received from the one before it (present once it has run). */
+  received?: Received | null;
+  /** The checks this stage ran, one row per real check (present once it has run). */
+  stage_checks?: StageCheck[];
   summary: string | null;
   documents: EvidenceDocument[];
   facts: EvidenceFact[];
@@ -154,6 +172,10 @@ export type Signal = { name: string; value: string; points_to: string };
 
 export type ObligationView = {
   available: boolean;
+  /** What this stage received from the one before it (present once it has run). */
+  received?: Received | null;
+  /** The checks this stage ran, one row per real check (present once it has run). */
+  stage_checks?: StageCheck[];
   purchase_type: string;
   purchase_type_label: string;
   rationale: string | null;
@@ -205,6 +227,10 @@ export type InputCard = { label: string; value: string; sub: string | null };
 
 export type EstimationView = {
   available: boolean;
+  /** What this stage received from the one before it (present once it has run). */
+  received?: Received | null;
+  /** The checks this stage ran, one row per real check (present once it has run). */
+  stage_checks?: StageCheck[];
   outcome: string | null;
   outcome_note: string | null;
   method: string | null;
@@ -273,6 +299,10 @@ export type OutreachMessage = {
 
 export type VerificationView = {
   available: boolean;
+  /** What this stage received from the one before it (present once it has run). */
+  received?: Received | null;
+  /** The checks this stage ran, one row per real check (present once it has run). */
+  stage_checks?: StageCheck[];
   policy_decision: string | null;
   policy_summary: string | null;
   rules: PolicyRule[];
@@ -306,6 +336,8 @@ export type ObligationDetail = {
   estimation: EstimationView;
   verification: VerificationView;
   timeline: TimelineEntry[];
+  /** Present when the reader's file selection left too little evidence to accrue. */
+  escalation?: Escalation | null;
 };
 
 export type ReplayLine = {
@@ -420,4 +452,137 @@ export type AuditReport = {
   counts: Record<string, number>;
   summary: string;
   obligations: { obligation_id: string; controls: AuditControl[]; findings: AuditFinding[] }[];
+};
+
+/* -------------------------------------------------------------------------- */
+/* Reasoning log, handoffs and file-removal escalation                         */
+/* -------------------------------------------------------------------------- */
+
+export type GateVerdict = "PERMIT" | "BLOCK" | "REVIEW" | "OUTREACH";
+
+export type GateCheck = {
+  check_id: string;
+  passed: boolean;
+  sentence: string;
+  expected: string | null;
+  actual: string | null;
+};
+
+/** What the verifier decided at one handoff: the verdict and every control it checked. */
+export type GateResult = {
+  verdict: GateVerdict;
+  passed: number;
+  total: number;
+  policy_version: string;
+  checks: GateCheck[];
+};
+
+export type LogKind =
+  | "AGENT"
+  | "VERIFICATION"
+  | "REVIEW"
+  | "CONTROLLER"
+  | "HUMAN_OVERRIDE"
+  | "SYSTEM";
+
+/** How a step reached its decision: fixed rules, a language model, or a person. */
+export type LogMethod = "CODE" | "LLM" | "HUMAN";
+
+/** A rule the step evaluated, and whether it fired. */
+export type RuleTest = { rule_id: string; fired: boolean; sentence: string };
+
+/** A file the step read, with the verbatim span it relied on. */
+export type LogSource = { file_name: string; evidence_id: string | null; quote: string | null };
+
+export type LogEntry = {
+  seq: number;
+  at: string;
+  /** The `trueup_agent_runs` row this entry is read from. */
+  run_id?: number;
+  agent: string;
+  action: string;
+  kind: LogKind;
+  method?: LogMethod | null;
+  /** Set on entries a later re-run replaced, so the trail can strike them through. */
+  superseded?: boolean;
+  stage_from: string | null;
+  stage_to: string | null;
+  title: string;
+  summary: string;
+  detail: {
+    facts_used: unknown[];
+    uncertainties: string[];
+    input_ids: string[];
+    output_ids: string[];
+    sources?: LogSource[];
+    rules?: RuleTest[];
+  };
+  verification: GateResult | null;
+};
+
+export type CaseLog = { obligation_id: string; entries: LogEntry[] };
+
+export type Handoff = {
+  seq: number;
+  at: string;
+  run_id?: number | null;
+  /** Ids of the database rows the payload was built from. */
+  record_ids?: string[];
+  from_agent: string;
+  to_agent: string;
+  stage_from: string;
+  stage_to: string;
+  payload_kind: string;
+  payload: unknown;
+  verification: GateResult | null;
+};
+
+export type CaseHandoffs = { obligation_id: string; handoffs: Handoff[] };
+
+/** Set when removing files left too little evidence to accrue, so the case was routed on. */
+export type Escalation = {
+  reason: "INSUFFICIENT_INFORMATION";
+  missing: string[];
+  message: string;
+  routed_to: "OUTREACH" | "CONTROLLER" | "BLOCKED";
+};
+
+/* -------------------------------------------------------------------------- */
+/* Stage-by-stage execution                                                    */
+/* -------------------------------------------------------------------------- */
+
+/** What a stage received from the stage before it. */
+export type Received = {
+  from_agent: string;
+  handoff_seq: number;
+  payload_kind: string;
+  summary: string;
+  counts: Record<string, number>;
+};
+
+/** One real check a stage ran; the set differs by purchase type. */
+export type StageCheck = {
+  check_id: string;
+  label: string;
+  status: "PASS" | "FLAG" | "INFO" | "PENDING";
+  body: string;
+  log_seq: number | null;
+  evidence_ids: string[];
+};
+
+/** One stage of the close, run by the backend in a single call. */
+export type StageRun = {
+  agent: string;
+  stage_from: string;
+  stage_to: string;
+  duration_ms: number;
+  log_seqs: number[];
+  handoff_seqs: number[];
+};
+
+export type AdvanceResult = {
+  case: ObligationDetail;
+  stage_run: StageRun | null;
+  done: boolean;
+  resting_state: string | null;
 };

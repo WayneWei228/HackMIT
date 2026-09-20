@@ -1,5 +1,7 @@
 "use client";
 
+import { useShownHeader } from "@/lib/stage-status";
+
 import { motion } from "motion/react";
 
 import { cn } from "@/lib/cn";
@@ -15,7 +17,8 @@ const cell = "border-l border-line px-6";
  * `StatStrip` these carry their label above the numeral, so it is built here.
  */
 export function SummaryStrip() {
-  const { header } = useEstimationScreen();
+  const { header: backendHeader } = useEstimationScreen();
+  const header = useShownHeader(backendHeader);
   const stats = [
     { label: "PREVIOUS ACCRUAL", value: formatMoney(header.previous_accrual), tone: undefined },
     { label: "SUPPORTED", value: formatMoney(header.supported), tone: undefined },

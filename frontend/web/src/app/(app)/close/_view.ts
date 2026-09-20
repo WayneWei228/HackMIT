@@ -1,4 +1,4 @@
-import type { Header, ObligationDetail, Preview, SourceFile } from "@/lib/api-types";
+import type { Escalation, Header, ObligationDetail, Preview, SourceFile } from "@/lib/api-types";
 
 import type { SourceGlyph, TabGlyph } from "./_data";
 
@@ -44,8 +44,10 @@ export type SourceCardData = {
   format: string;
   detail: string;
   glyph: SourceGlyph;
-  /** The Ingestion agent kept this file for the Evidence agent. */
+  /** The Ingestion agent kept this file for the Evidence agent, and the reader did not remove it. */
   picked: boolean;
+  /** The reader removed this file from the agent's selection. */
+  removed: boolean;
   reason: string | null;
   preview: Preview;
 };
@@ -61,12 +63,21 @@ export type CloseCaseView = {
   filesLoaded: number;
   judge: string | null;
   summary: string | null;
+  /** Set when the reader's file selection left too little evidence to accrue. */
+  escalation: Escalation | null;
+  /** Changes whenever the case's trail grows, so it is read again. */
+  trailVersion: string;
 };
 
 function glyphFor(file: SourceFile): SourceGlyph {
   if (file.kind === "email") return "mail";
   if (file.kind === "slack") return "chat";
   return "page";
+}
+
+/** A key that changes whenever the log or handoff list of the case grows. */
+export function trailVersion(header: Header): string {
+  return `${header.log_count ?? 0}:${header.handoff_count ?? 0}`;
 }
 
 export function buildCloseView(detail: ObligationDetail): CloseCaseView {
@@ -80,6 +91,7 @@ export function buildCloseView(detail: ObligationDetail): CloseCaseView {
     detail: file.size_label,
     glyph: glyphFor(file),
     picked: file.selected,
+    removed: file.user_removed ?? false,
     reason: file.reason,
     preview: file.preview,
   }));
@@ -109,5 +121,7 @@ export function buildCloseView(detail: ObligationDetail): CloseCaseView {
     filesLoaded: ingestion.files_loaded,
     judge: ingestion.judge,
     summary: ingestion.summary,
+    escalation: detail.escalation ?? null,
+    trailVersion: trailVersion(header),
   };
 }

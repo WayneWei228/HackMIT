@@ -2,14 +2,17 @@ import type {
   AuditReport,
   CloseView,
   ControllerView,
+  Escalation,
   Header,
   JournalEntry,
   ObligationDetail,
   OutreachMessage,
   Person,
+  Received,
   ReconciliationView,
   Row,
   RuleRef,
+  StageCheck,
 } from "@/lib/api-types";
 import { formatMoney } from "@/lib/money";
 
@@ -36,6 +39,10 @@ export type VerificationScreenView = {
   available: boolean;
   /** The Auditor's re-performance of the controls on this obligation, when one exists. */
   audit: AuditReport | null;
+  received: Received | null;
+  stageChecks: StageCheck[] | null;
+  escalation: Escalation | null;
+  trailVersion: string;
 };
 
 const TAGS = { PASS: "Passed", HIT: "Flagged", NOTE: "Noted" } as const;
@@ -68,9 +75,12 @@ export function buildVerificationView(
 
   const duplicateRule = verification.rules.find((rule) => rule.rule_id === "POL-02");
   const credits = estimation.checks.find((check) => check.name === "credits_and_refunds");
+  /* An extra check is listed only when the backend recorded the rule or check behind it. */
   const extras = [
-    { label: "No duplicate accrual", ok: duplicateRule ? duplicateRule.status === "PASS" : true },
-    { label: "No offsetting credits", ok: credits ? credits.result === "none found" : true },
+    ...(duplicateRule
+      ? [{ label: "No duplicate accrual", ok: duplicateRule.status === "PASS" }]
+      : []),
+    ...(credits ? [{ label: "No offsetting credits", ok: credits.result === "none found" }] : []),
   ];
 
   const accrual = verification.entries.find(
@@ -89,9 +99,6 @@ export function buildVerificationView(
       finalStatus: header.status,
       noteTitle: verification.note_title,
       noteBody: verification.note_body,
-      closing: verification.available
-        ? `Verification complete · case is ${header.status.toLowerCase()}`
-        : "Verification has not run for this case yet",
     },
     amount: formatMoney(header.supported),
     finalRows: [
@@ -114,5 +121,9 @@ export function buildVerificationView(
     policySummary: verification.policy_summary,
     available: verification.available,
     audit,
+    received: verification.received ?? null,
+    stageChecks: verification.stage_checks ?? null,
+    escalation: detail.escalation ?? null,
+    trailVersion: `${header.log_count ?? 0}:${header.handoff_count ?? 0}`,
   };
 }

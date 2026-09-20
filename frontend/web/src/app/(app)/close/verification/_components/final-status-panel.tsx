@@ -2,13 +2,11 @@
 
 import { motion } from "motion/react";
 
-import { cn } from "@/lib/cn";
 import { easeOutSoft } from "@/lib/motion";
 import { DecisionBox } from "./decision-box";
 import { FinalMark } from "./marks";
 import { useVerificationScreen } from "./screen-context";
 
-const SETTLE = { duration: 0.45, ease: easeOutSoft };
 const TINT = { duration: 0.4, ease: easeOutSoft };
 
 function NoteIcon({ complete }: { complete: boolean }) {
@@ -50,19 +48,17 @@ function NoteIcon({ complete }: { complete: boolean }) {
 }
 
 export function FinalStatusPanel({
-  complete,
   finalStatus,
   noteTitle,
   noteBody,
 }: {
-  complete: boolean;
   finalStatus: string;
   noteTitle: string;
   noteBody: string;
 }) {
   const { amount, finalRows, journal, controller, header } = useVerificationScreen();
   const ready = header.status === "Close-ready" || header.status === "Complete";
-  const settled = complete && ready;
+  const settled = ready;
   const statusColor = settled ? "#2E8047" : header.status === "Blocked" ? "#A4452F" : "#B9791F";
   return (
     <section className="min-h-full rounded-xl border border-divider bg-panel p-5 shadow-[var(--shadow-tile)]">
@@ -81,10 +77,10 @@ export function FinalStatusPanel({
         <div className="flex items-center justify-between gap-[14px] border-t border-wash-deep py-3">
           <span className="text-ui text-muted-4">Status</span>
           <span className="flex items-center gap-2.5">
-            <FinalMark complete={settled} tone={complete && !ready ? statusColor : undefined} />
+            <FinalMark complete={settled} tone={!ready ? statusColor : undefined} />
             <motion.span
               initial={false}
-              animate={{ color: complete ? statusColor : "#1D1F1B" }}
+              animate={{ color: statusColor }}
               transition={{ duration: 0.35, ease: easeOutSoft }}
               className="text-ui"
             >
@@ -144,14 +140,7 @@ export function FinalStatusPanel({
         </div>
       </motion.div>
 
-      <motion.div
-        initial={false}
-        animate={{ opacity: complete ? 1 : 0, y: complete ? 0 : 8 }}
-        transition={SETTLE}
-        className={cn(!complete && "pointer-events-none")}
-      >
-        {controller.in_queue && <DecisionBox />}
-      </motion.div>
+      {controller.in_queue && <DecisionBox />}
     </section>
   );
 }

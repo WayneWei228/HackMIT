@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { NoCases } from "@/components/close/no-cases";
 import { NotStarted } from "@/components/close/not-started";
+import { stageDone } from "@/lib/trail";
 import { loadCase, type SearchParams } from "@/lib/load-case";
 
 import { EvidenceScreen } from "./_components/evidence-screen";
@@ -20,8 +21,8 @@ export default async function EvidencePage({
 }) {
   const { close, detail } = await loadCase(searchParams);
   if (!detail) return <NoCases close={close} />;
-  if (!detail.header.started) {
-    return <NotStarted close={close} header={detail.header} screen="Evidence" />;
+  if (!stageDone(detail.header, "evidence")) {
+    return <NotStarted close={close} header={detail.header} stage="evidence" />;
   }
   return <EvidenceScreen view={buildEvidenceView(detail)} />;
 }

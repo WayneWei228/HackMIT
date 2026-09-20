@@ -1,24 +1,30 @@
 "use client";
 
+import { TrailPanel } from "@/components/close/case-trail-panel";
+import { EscalationBanner } from "@/components/close/escalation-banner";
+
 import { AgentStatusBar } from "./agent-status-bar";
 import { AnalysisPanel } from "./analysis-panel";
 import { CaseHeader } from "./case-header";
 import { ConclusionPanel } from "./conclusion-panel";
 import { FactsPanel } from "./facts-panel";
 import { LiveExecutionRail } from "./live-execution-rail";
+import { useObligationScreen } from "./screen-context";
 import { useObligationRun } from "./use-obligation-run";
 
 /**
  * Obligation agent - stage 03 of the close run.
  *
  * The screen is three working columns: the facts the agent was handed, the
- * accounting checks it is applying to them, and the conclusion it is willing
- * to pass on. The rail on the right narrates the run itself.
+ * checks it ran, and the conclusion it is willing to pass on. It renders only
+ * once the backend has run the agents, and every value on it comes from their
+ * output. The rail on the right lists the steps they recorded.
  *
  * All data is synthetic and every upstream system is simulated.
  */
 export function ObligationScreen() {
   const run = useObligationRun();
+  const { escalation, header } = useObligationScreen();
 
   return (
     <>
@@ -27,34 +33,31 @@ export function ObligationScreen() {
 
         <div className="h-px flex-none bg-line" />
 
-        <AgentStatusBar
-          step={run.step}
-          complete={run.complete}
-          onReplay={run.replay}
-        />
+        <AgentStatusBar />
+        <TrailPanel />
+
+        {escalation && (
+          <div className="flex-none pt-3">
+            <EscalationBanner escalation={escalation} />
+          </div>
+        )}
 
         <div className="min-h-0 flex-1 overflow-y-auto px-[34px] pb-[26px]">
           <div className="grid min-h-full grid-cols-[minmax(0,0.82fr)_minmax(0,1.28fr)_minmax(0,0.9fr)] items-start gap-3.5">
-            <FactsPanel step={run.step} />
-            <AnalysisPanel
-              step={run.step}
-              openIndex={run.openIndex}
-              onToggle={run.toggleCheck}
-            />
-            <ConclusionPanel step={run.step} complete={run.complete} />
+            <FactsPanel />
+            <AnalysisPanel />
+            <ConclusionPanel />
           </div>
         </div>
       </main>
 
       <LiveExecutionRail
-        step={run.step}
-        complete={run.complete}
+        header={header}
         clock={run.clock}
         open={run.railOpen}
         mini={run.railMini}
         width={run.railWidth}
         dragging={run.dragging}
-        autoAdvance={run.autoAdvance}
         onToggle={run.toggleRail}
         onResizeStart={run.startResize}
       />

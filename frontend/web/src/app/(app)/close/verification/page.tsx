@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { NoCases } from "@/components/close/no-cases";
 import { NotStarted } from "@/components/close/not-started";
 import { getAudit } from "@/lib/api";
+import { stageDone } from "@/lib/trail";
 import { loadCase, type SearchParams } from "@/lib/load-case";
 
 import { VerificationScreen } from "./_components/verification-screen";
@@ -22,8 +23,8 @@ export default async function VerificationPage({
 }) {
   const { close, detail } = await loadCase(searchParams);
   if (!detail) return <NoCases close={close} />;
-  if (!detail.header.started) {
-    return <NotStarted close={close} header={detail.header} screen="Verification" />;
+  if (!stageDone(detail.header, "verification")) {
+    return <NotStarted close={close} header={detail.header} stage="verification" />;
   }
   const audit = await getAudit(detail.header.obligation_id);
   return (

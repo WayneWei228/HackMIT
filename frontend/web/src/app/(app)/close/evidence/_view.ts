@@ -19,8 +19,6 @@ export type FactRow = {
   value: string;
   /** Where in the source it was read, for the tooltip. */
   citation: string;
-  /** Step at which this fact lands in the rail. */
-  at: number;
   docId: string | null;
   page: number | null;
 };
@@ -34,6 +32,8 @@ export type EvidenceScreenView = {
   /** Quoted spans to highlight, by document id. */
   excerpts: Record<string, string[]>;
   facts: FactRow[];
+  /** Changes whenever the case's trail grows, so it is read again. */
+  trailVersion: string;
   /** The document and page holding the first quoted fact. */
   match: { docId: string; page: number } | null;
   uncertainties: string[];
@@ -45,9 +45,17 @@ const MAX_HIGHLIGHT_CHARS = 400;
 /** Which documents to open on first, most telling first. */
 const KIND_PRIORITY = ["agreement", "po", "order", "usage", "receipt", "delivery"];
 
-/** Facts land between steps 5 and 7 of the scripted run, spread evenly. */
-function landingStep(index: number, count: number): number {
-  return 5 + Math.min(2, Math.floor((index * 3) / Math.max(count, 1)));
+/** A fact the agent extracted twice from the same place is one fact. */
+function dedupe<T extends { label: string; value: string | null; file_id: string | null }>(
+  facts: readonly T[],
+): T[] {
+  const seen = new Set<string>();
+  return facts.filter((fact) => {
+    const key = `${fact.label}\u0000${fact.value ?? ""}\u0000${fact.file_id ?? ""}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 export function buildEvidenceView(detail: ObligationDetail): EvidenceScreenView {
@@ -69,14 +77,13 @@ export function buildEvidenceView(detail: ObligationDetail): EvidenceScreenView 
     }
   }
 
-  const facts = evidence.facts.map<FactRow>((fact, index) => ({
+  const facts = dedupe(evidence.facts).map<FactRow>((fact) => ({
     id: fact.evidence_id,
     label: fact.label,
     value: fact.value || fact.label,
     citation: [fact.file_name, fact.page ? `p. ${fact.page}` : null]
       .filter(Boolean)
       .join(" · "),
-    at: landingStep(index, evidence.facts.length),
     docId: fact.file_id,
     page: fact.page,
   }));
@@ -107,5 +114,6 @@ export function buildEvidenceView(detail: ObligationDetail): EvidenceScreenView 
     facts,
     match: first ? { docId: first.file_id as string, page: first.page as number } : null,
     uncertainties: evidence.uncertainties,
+    trailVersion: `${header.log_count ?? 0}:${header.handoff_count ?? 0}`,
   };
 }

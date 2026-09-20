@@ -13,6 +13,7 @@ import { ExecutionSteps } from "./execution-steps";
 import { ExtractedFacts } from "./extracted-facts";
 import { NextHandoff } from "./next-handoff";
 import { PulseDot } from "./pulse-dot";
+import type { Header } from "@/lib/api-types";
 import type { FactRow } from "../_view";
 import type { EvidenceRun } from "./use-evidence-run";
 
@@ -25,7 +26,7 @@ export function ExecutionRail({
   facts,
   width,
   dragging,
-  autoAdvance,
+  header,
   onResizeStart,
   onCollapse,
 }: {
@@ -33,7 +34,7 @@ export function ExecutionRail({
   facts: readonly FactRow[];
   width: number;
   dragging: boolean;
-  autoAdvance: boolean;
+  header: Header;
   onResizeStart: (event: ReactMouseEvent) => void;
   onCollapse: () => void;
 }) {
@@ -71,21 +72,17 @@ export function ExecutionRail({
 
         <div className="mt-[14px] flex items-center justify-between">
           <div className="flex items-center gap-[11px]">
-            <PulseDot pulsing={!run.complete} halo />
-            <span className="text-lead text-ink">{RAIL.running}</span>
+            <PulseDot pulsing={false} halo />
+            <span className="text-lead text-ink">Complete</span>
           </div>
           <div className="text-sm text-faint tabular-nums">{run.clock}</div>
         </div>
 
-        <ExecutionSteps
-          done={run.done}
-          active={run.active}
-          complete={run.complete}
-        />
+        <ExecutionSteps header={header} />
 
-        <ExtractedFacts facts={facts} step={run.step} />
+        <ExtractedFacts facts={facts} />
 
-        <NextHandoff complete={run.complete} autoAdvance={autoAdvance} />
+        <NextHandoff header={header} />
       </div>
     </motion.aside>
   );

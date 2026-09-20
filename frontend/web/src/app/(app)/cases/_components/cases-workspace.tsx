@@ -7,6 +7,7 @@ import type { SortDir } from "@/components/ui/primitives";
 import { CasesToolbar } from "./cases-toolbar";
 import { CategoryTabs } from "./category-tabs";
 import { CaseTable } from "./case-table";
+import { useLiveRecords } from "./use-live-records";
 import { compareMoney } from "@/lib/money";
 
 import {
@@ -48,12 +49,13 @@ function matchesFilters(
  * they produce. The page's title block above is static.
  */
 export function CasesWorkspace({
-  cases,
+  cases: backendCases,
   animateRows = true,
 }: {
   cases: readonly CaseRecord[];
   animateRows?: boolean;
 }) {
+  const cases = useLiveRecords(backendCases);
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState<CategoryTab>("All");
   const [status, setStatus] = useState<StatusFilter>(ALL_STATUSES);

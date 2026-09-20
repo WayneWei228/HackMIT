@@ -4,7 +4,7 @@ import { motion } from "motion/react";
 
 import { cn } from "@/lib/cn";
 import { transitions } from "@/lib/motion";
-import type { MarkerState } from "../_data";
+export type MarkerState = "rest" | "active" | "done";
 
 /**
  * Marks and glyphs specific to the Obligation screen.

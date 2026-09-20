@@ -1,15 +1,17 @@
-import type { Header, ObligationDetail } from "@/lib/api-types";
+import type {
+  Escalation,
+  Header,
+  ObligationDetail,
+  Received,
+  StageCheck,
+} from "@/lib/api-types";
 import { formatMoney, formatSigned } from "@/lib/money";
-import { periodLabel } from "@/lib/time";
-
-import { FINAL_STEP, type AnalysisCheck } from "./_data";
+import { stageDone } from "@/lib/trail";
 
 export type ScreenFact = {
   label: string;
   amount: string;
   source: string;
-  /** Step at which the fact lands in the panel. */
-  appearsAt: number;
 };
 
 export type ConclusionRow =
@@ -23,18 +25,16 @@ export type ObligationScreenView = {
   sourceDocumentsLabel: string;
   facts: ScreenFact[];
   attributes: { label: string; value: string }[];
-  attributesAppearAt: number;
-  intro: string;
-  /** The words each check reports once the agent has its answer. */
-  narrative: {
-    contractTerms: string;
-    servicePeriod: string;
-    eligibility: string;
-    amount: string;
-  };
-  conclusion: { amountLabel: string; amount: string; note: string };
+  /** What this stage received from the Evidence agent, straight from the backend. */
+  received: Received | null;
+  /** The checks the agents ran, one row per real check; null when the backend sent none. */
+  checks: StageCheck[] | null;
+  /** The number the agent stands behind: shown only once Estimation has really produced it. */
+  conclusion: { amountLabel: string; amount: string; note: string | null };
   rows: ConclusionRow[];
-  closing: string;
+  escalation: Escalation | null;
+  /** Changes whenever the case's trail grows, so it is read again. */
+  trailVersion: string;
 };
 
 /** The panel has room for this many facts; the rest stay on the Evidence screen. */
@@ -47,34 +47,16 @@ const CONFIDENCE = {
 
 export function buildObligationView(detail: ObligationDetail): ObligationScreenView {
   const { obligation, header, evidence } = detail;
-  const amount = obligation.estimated_amount;
-  const shown = obligation.facts.slice(0, MAX_FACTS);
-  const period = periodLabel(header.period);
+  /* An amount is drawn only after the stage that produces it has really run. */
+  const estimated = stageDone(header, "estimation");
+  const amount = estimated ? obligation.estimated_amount : null;
+  const change = estimated ? obligation.change_vs_prior : null;
 
-  const facts = shown.map<ScreenFact>((fact, index) => ({
+  const facts = obligation.facts.slice(0, MAX_FACTS).map<ScreenFact>((fact) => ({
     label: fact.label,
     amount: fact.value || fact.label,
     source: [fact.file_name, fact.page ? `p. ${fact.page}` : null].filter(Boolean).join(" · "),
-    appearsAt: 1 + Math.min(index, 2),
   }));
-
-  const signalText = obligation.signals.length
-    ? obligation.signals.map((s) => `${s.name} = ${s.value}`).join("; ")
-    : "no structural signal";
-  const eligibility =
-    obligation.accrual_required === null
-      ? "Waiting for the invoice search."
-      : obligation.accrual_required
-        ? "No invoice covers the period, so an accrual is required."
-        : "An invoice already covers the period, so no accrual is needed.";
-
-  const amountText = !amount
-    ? "No amount yet: the evidence does not support an estimate."
-    : `${formatMoney(amount)} by ${obligation.basis?.toLowerCase() ?? "estimate"}${
-        obligation.change_vs_prior
-          ? `, ${formatSigned(obligation.change_vs_prior)} on the prior accrual`
-          : ""
-      }.`;
 
   const confidence =
     CONFIDENCE[obligation.evidence_status as keyof typeof CONFIDENCE] ??
@@ -92,30 +74,22 @@ export function buildObligationView(detail: ObligationDetail): ObligationScreenV
       { label: "Service period", value: obligation.service_period },
       { label: "Service type", value: obligation.purchase_type_label },
     ],
-    attributesAppearAt: 3,
-    intro: `Applying accounting logic to determine the ${period} obligation.`,
-    narrative: {
-      contractTerms: `Classified as ${obligation.purchase_type_label.toLowerCase()} from ${signalText}.`,
-      servicePeriod: `${obligation.service_period}.`,
-      eligibility: `${obligation.invoice_note ?? ""} ${eligibility}`.trim(),
-      amount: amountText,
-    },
+    received: obligation.received ?? null,
+    checks: obligation.stage_checks ?? null,
     conclusion: {
       amountLabel: "Estimated obligation",
       amount: formatMoney(amount),
-      note: amount
-        ? "Final amount will be passed to the Estimation agent for journal construction."
-        : "There is no amount yet. Estimation cannot run until the evidence is complete.",
+      note: obligation.rationale,
     },
     rows: [
       { kind: "text", label: "Service period", value: obligation.service_period, tone: "ink" },
-      { kind: "text", label: "Basis", value: obligation.basis ?? "Not estimated", tone: "ink" },
       {
         kind: "text",
-        label: "Change vs. prior",
-        value: formatSigned(obligation.change_vs_prior),
-        tone: "accent",
+        label: "Basis",
+        value: estimated ? (obligation.basis ?? "-") : "-",
+        tone: "ink",
       },
+      { kind: "text", label: "Change vs. prior", value: formatSigned(change), tone: "accent" },
       {
         kind: "text",
         label: "Accrual required",
@@ -125,47 +99,7 @@ export function buildObligationView(detail: ObligationDetail): ObligationScreenV
       },
       { kind: "confidence", label: "Confidence", ...confidence },
     ],
-    closing: amount
-      ? `Obligation determined · ${formatMoney(amount)} for ${period}`
-      : `Obligation reviewed · no amount for ${period} yet`,
+    escalation: detail.escalation ?? null,
+    trailVersion: `${header.log_count ?? 0}:${header.handoff_count ?? 0}`,
   };
-}
-
-/** The four analysis checks; a check's body is what it says at a given step of the run. */
-export function buildChecks(narrative: ObligationScreenView["narrative"]): AnalysisCheck[] {
-  return [
-    {
-      label: "Contract terms",
-      body: () => narrative.contractTerms,
-      bodyDuration: 0.34,
-    },
-    {
-      label: "Service period",
-      body: () => narrative.servicePeriod,
-      bodyDuration: 0.34,
-    },
-    {
-      label: "Accrual eligibility",
-      body: (step) =>
-        step >= 10
-          ? narrative.eligibility
-          : "Assessing whether service was received and payment is incurred...",
-      subChecks: [
-        "Search AP for an invoice",
-        "Check the evidence status",
-        "Confirm the purchase type",
-        "Confirm the service window",
-      ],
-      bodyDuration: 0.38,
-    },
-    {
-      label: "Obligation amount",
-      body: (step) =>
-        step >= FINAL_STEP
-          ? narrative.amount
-          : "Computing from the governing terms and the service period...",
-      pending: { label: "Waiting", until: 10 },
-      bodyDuration: 0.34,
-    },
-  ];
 }

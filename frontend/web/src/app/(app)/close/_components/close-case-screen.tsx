@@ -1,6 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { EscalationBanner } from "@/components/close/escalation-banner";
+import { TrailPanel } from "@/components/close/case-trail-panel";
+import { CaseProvider, useCaseId } from "@/lib/case-context";
+import { useCaseUi } from "@/lib/case-store";
 
 import type { CloseCaseView } from "../_view";
 import { AgentStatusBar } from "./agent-status-bar";
@@ -10,44 +13,40 @@ import { ExecutionRail } from "./execution-rail";
 import { SourceGrid } from "./source-grid";
 import { SourceTabs } from "./source-tabs";
 import { useCloseRun } from "./use-close-run";
+import { useFileSelection } from "./use-file-selection";
 
 export type CloseCaseScreenProps = {
   /** What the Ingestion agent saw and kept for this obligation. */
   view: CloseCaseView;
-  /** Run the scripted ingestion timeline on mount. */
-  autoplay?: boolean;
-  /**
-   * Navigate to the evidence agent once ingestion lands. Off in this port -
-   * the handoff button in the rail is what moves the close forward.
-   */
-  autoAdvance?: boolean;
   /** Render the live execution rail beside the grid. */
   showExecutionPanel?: boolean;
   /** Shorter source cards, for dense viewports. */
   compactCards?: boolean;
-  /** Tick the run clock. */
-  liveTimer?: boolean;
 };
 
 /**
- * The case the ingestion agent is working, and the entry point of the agent
- * chain.
+ * The case the ingestion agent has worked, and the entry point of the agent
+ * chain. It renders only once the backend has run the agent: everything on it is
+ * the agent's own output, and the file selection can be changed by the reader.
  *
  * The rail is a sibling of `<main>` rather than a child, because the whole
  * desktop frame is one horizontal flex row - sidebar, case, rail - and the
  * rail has to be able to take width away from the grid when it is dragged.
  */
-export function CloseCaseScreen({
-  view,
-  autoplay = true,
-  autoAdvance = false,
-  showExecutionPanel = true,
-  compactCards = false,
-  liveTimer = true,
-}: CloseCaseScreenProps) {
-  const [tab, setTab] = useState("all");
-  const [railOpen, setRailOpen] = useState(true);
-  const run = useCloseRun({ view, autoplay, autoAdvance, liveTimer });
+export function CloseCaseScreen(props: CloseCaseScreenProps) {
+  return (
+    <CaseProvider obligationId={props.view.obligationId} version={props.view.trailVersion}>
+      <CloseCaseBody {...props} />
+    </CaseProvider>
+  );
+}
+
+function CloseCaseBody({ view, showExecutionPanel = true, compactCards = false }: CloseCaseScreenProps) {
+  const obligationId = useCaseId();
+  const [tab, setTab] = useCaseUi(obligationId, "ingestion.tab", "all");
+  const [railOpen, setRailOpen] = useCaseUi(obligationId, "ingestion.rail", true);
+  const run = useCloseRun({ view });
+  const files = useFileSelection(view.obligationId, view.cards);
 
   return (
     <>
@@ -60,18 +59,28 @@ export function CloseCaseScreen({
 
         <div className="h-px flex-none bg-line" />
 
-        <AgentStatusBar
-          statusText={run.statusText}
-          complete={run.complete}
-          selectedCount={run.selected.length}
-          filesLoaded={view.filesLoaded}
-        />
+        <AgentStatusBar selectedCount={run.selected.length} filesLoaded={view.filesLoaded} />
+        <TrailPanel />
+
+        {view.escalation && (
+          <div className="flex-none pt-3">
+            <EscalationBanner
+              escalation={view.escalation}
+              onRestore={files.restoreAll}
+              pending={files.pending}
+            />
+          </div>
+        )}
+        {files.error && (
+          <div className="flex-none px-[34px] pt-2 text-meta text-[#A4452F]">{files.error}</div>
+        )}
 
         <SourceGrid
           cards={view.cards}
           tab={tab}
-          isSelected={run.isSelected}
-          onToggle={run.toggle}
+          onRemove={files.remove}
+          onRestore={files.restore}
+          busy={files.pending}
           compactCards={compactCards}
         />
       </main>
@@ -80,9 +89,9 @@ export function CloseCaseScreen({
         <ExecutionRail
           run={run}
           obligationId={view.obligationId}
+          header={view.header}
           open={railOpen}
-          onToggle={() => setRailOpen((open) => !open)}
-          autoAdvance={autoAdvance}
+          onToggle={() => setRailOpen(!railOpen)}
         />
       )}
     </>

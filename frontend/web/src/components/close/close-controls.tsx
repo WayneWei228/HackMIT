@@ -1,8 +1,10 @@
 "use client";
 
 import { Button } from "@/components/ui/primitives";
-import { advanceToJanuary, resetDemo, runClose } from "@/lib/api";
-import type { CloseView } from "@/lib/api-types";
+import { advanceToJanuary, resetDemo } from "@/lib/api";
+import type { CaseRow, CloseView } from "@/lib/api-types";
+import { useCaseRunner, useRunner } from "@/lib/case-runner";
+import { useCaseStoreActions } from "@/lib/case-store";
 import { cn } from "@/lib/cn";
 import { useApiAction } from "@/lib/use-api-action";
 
@@ -10,12 +12,31 @@ const ADVANCE_HINT = "Start at least one case first";
 
 /**
  * Drives the simulated calendar: start the Pending cases (each one by hand, or
- * all at once), then let January's invoices arrive. Reset rebuilds the demo
- * company from day one, with every case Pending again.
+ * all at once, one stage at a time), then let January's invoices arrive. Reset
+ * rebuilds the demo company from day one, with every case Pending again.
  */
-export function CloseControls({ close }: { close: Pick<CloseView, "phase" | "actions"> }) {
+export function CloseControls({
+  close,
+}: {
+  close: Pick<CloseView, "phase" | "actions"> & { cases: CaseRow[] };
+}) {
   const { run, pending, error } = useApiAction();
+  const runner = useCaseRunner();
+  const { runs } = useRunner();
+  const store = useCaseStoreActions();
   const { actions, phase } = close;
+  const running = Object.values(runs).some((state) => state.active || state.queued);
+  const startable = close.cases.filter((row) => row.can_start && row.status === "Pending");
+
+  function startAll() {
+    runner.start(
+      startable.map((row) => ({
+        obligationId: row.obligation_id,
+        completed: row.stages_completed ?? [],
+        agent: row.current_agent ?? null,
+      })),
+    );
+  }
 
   return (
     <div className="flex flex-none flex-col items-end gap-2">
@@ -23,18 +44,24 @@ export function CloseControls({ close }: { close: Pick<CloseView, "phase" | "act
         <Button
           className="text-[13.5px]/[1]"
           disabled={pending}
-          onClick={() => run(resetDemo)}
+          onClick={() =>
+            run(async () => {
+              runner.cancelAll();
+              store.clearAll();
+              await resetDemo();
+            })
+          }
         >
           Reset demo
         </Button>
-        {actions.can_run_close && (
+        {startable.length > 0 && (
           <Button
             variant="primary"
             className="text-[13.5px]/[1]"
-            disabled={pending}
-            onClick={() => run(runClose)}
+            disabled={pending || running}
+            onClick={startAll}
           >
-            {pending ? "Working..." : "Start all"}
+            {running ? "Running..." : "Start all"}
           </Button>
         )}
         {phase !== "JANUARY" && (
@@ -45,7 +72,7 @@ export function CloseControls({ close }: { close: Pick<CloseView, "phase" | "act
               !actions.can_advance_to_january &&
                 "cursor-not-allowed opacity-45 hover:bg-panel hover:text-accent",
             )}
-            disabled={pending || !actions.can_advance_to_january}
+            disabled={pending || running || !actions.can_advance_to_january}
             title={actions.can_advance_to_january ? undefined : ADVANCE_HINT}
             onClick={() => run(advanceToJanuary)}
           >

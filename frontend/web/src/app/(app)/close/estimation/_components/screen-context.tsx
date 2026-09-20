@@ -18,7 +18,7 @@ export function EstimationScreenProvider({
   children: ReactNode;
 }) {
   return (
-    <CaseProvider obligationId={view.obligationId}>
+    <CaseProvider obligationId={view.obligationId} version={view.trailVersion}>
       <ScreenContext value={view}>{children}</ScreenContext>
     </CaseProvider>
   );

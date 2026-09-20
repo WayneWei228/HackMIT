@@ -1,5 +1,7 @@
 "use client";
 
+import { useShownHeader } from "@/lib/stage-status";
+
 import { motion } from "motion/react";
 
 import {
@@ -23,7 +25,8 @@ import { useObligationScreen } from "./screen-context";
  * four numbers the whole screen is arguing about.
  */
 export function CaseHeader() {
-  const { header } = useObligationScreen();
+  const { header: backendHeader } = useObligationScreen();
+  const header = useShownHeader(backendHeader);
   const caseHref = useCaseHref();
   const stats = [
     { label: "PREVIOUS ACCRUAL", value: formatMoney(header.previous_accrual), tone: "ink" },

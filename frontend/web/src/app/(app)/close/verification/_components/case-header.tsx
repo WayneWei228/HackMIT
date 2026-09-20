@@ -1,5 +1,7 @@
 "use client";
 
+import { useShownHeader } from "@/lib/stage-status";
+
 import { motion } from "motion/react";
 
 import { Breadcrumb, Button } from "@/components/ui/primitives";
@@ -33,7 +35,8 @@ function CaseNotesIcon() {
 }
 
 export function CaseHeader() {
-  const { header } = useVerificationScreen();
+  const { header: backendHeader } = useVerificationScreen();
+  const header = useShownHeader(backendHeader);
   const caseHref = useCaseHref();
   const stats = [
     { label: "PREVIOUS ACCRUAL", value: formatMoney(header.previous_accrual), accent: false },

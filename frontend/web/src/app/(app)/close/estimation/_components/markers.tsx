@@ -65,31 +65,6 @@ export function SubMarker({ state }: { state: NodeState }) {
   );
 }
 
-/** 13px node beside a task bullet in the live execution rail. */
-export function TaskMarker({ state }: { state: NodeState }) {
-  return (
-    <span className="relative mx-px h-[13px] w-[13px] flex-none">
-      <motion.span
-        {...fade(state === "pending", timing.subRing)}
-        className="absolute inset-px rounded-full border border-rule"
-      />
-      <motion.span
-        animate={{
-          opacity: state === "active" ? 1 : 0,
-          scale: state === "active" ? 1 : 0.5,
-        }}
-        transition={timing.subRing}
-        className="absolute inset-px rounded-full bg-accent"
-      />
-      <motion.span
-        {...fade(state === "done", timing.subDone)}
-        className="absolute inset-0"
-      >
-        <TickIcon size={13} />
-      </motion.span>
-    </span>
-  );
-}
 
 /** The green dot with its slow expanding ring, used in headers and the rail. */
 export function LiveDot({

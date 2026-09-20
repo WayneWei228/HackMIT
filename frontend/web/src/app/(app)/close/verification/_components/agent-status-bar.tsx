@@ -1,93 +1,51 @@
 "use client";
 
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
 
-import { RefreshIcon } from "@/components/ui/icons";
+import { NarrationText, TrailToggle } from "@/components/close/case-trail-panel";
 import { easeOutSoft } from "@/lib/motion";
+import { useStageNarration } from "@/lib/stage-narration";
+
 import { LiveDot } from "./marks";
 import { useVerificationScreen } from "./screen-context";
 
-/** The travelling highlight on the progress bar while the run is live. */
-function Sheen({ show }: { show: boolean }) {
-  const reduced = useReducedMotion();
-  return (
-    <motion.div
-      aria-hidden="true"
-      initial={false}
-      animate={{ opacity: show ? 1 : 0 }}
-      transition={{ duration: 0.3, ease: easeOutSoft }}
-      className="pointer-events-none absolute inset-0"
-    >
-      <motion.div
-        className="absolute top-0 left-0 h-full w-[36%] bg-[linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.6),rgba(255,255,255,0))]"
-        animate={reduced ? undefined : { x: ["-120%", "330%", "330%"] }}
-        transition={
-          reduced
-            ? undefined
-            : {
-                duration: 2.2,
-                times: [0, 0.55, 1],
-                ease: "easeInOut",
-                repeat: Infinity,
-              }
-        }
-      />
-    </motion.div>
-  );
-}
-
+/**
+ * The narration strip under the header. The line is the newest step the
+ * Verification agents recorded in the run log, never a script, and clicking it
+ * opens the full log. The bar shows how many of the policy rules passed.
+ */
 export function AgentStatusBar({
-  statusText,
   passedLabel,
   progress,
-  pulse,
-  onReplay,
 }: {
-  statusText: string;
   passedLabel: string;
   progress: number;
-  pulse: boolean;
-  onReplay: () => void;
 }) {
   const ruleCount = useVerificationScreen().data.controls.length;
-  return (
-    <div className="flex flex-none items-center justify-between gap-5 px-[34px] py-[13px]">
-      <div className="flex min-w-0 items-center gap-[11px]">
-        <LiveDot pulse={pulse} ring={false} />
-        <span className="text-ui font-medium whitespace-nowrap text-ink">
-          Verification agent
-        </span>
-        <span className="overflow-hidden text-ellipsis whitespace-nowrap text-ui text-faint-3">
-          {statusText}
-        </span>
-      </div>
+  const { running } = useStageNarration("verification");
 
-      <div className="flex flex-none items-center gap-[14px] text-sm">
+  return (
+    <div className="flex flex-none items-center justify-between gap-5 px-[34px] py-[9px]">
+      <TrailToggle>
+        <LiveDot pulse={running} ring={false} />
+        <span className="text-ui font-medium whitespace-nowrap text-ink">Verification agent</span>
+        <NarrationText screen="verification" />
+      </TrailToggle>
+
+      <div className="flex flex-none items-center gap-3.5 text-sm">
         <span className="whitespace-nowrap text-faint-2">{ruleCount} rules</span>
-        <span className="text-line-mute" aria-hidden="true">
+        <span aria-hidden="true" className="text-line-mute">
           |
         </span>
-        <span className="font-medium whitespace-nowrap text-ink tabular-nums">
-          {passedLabel}
-        </span>
+        <span className="font-medium whitespace-nowrap text-ink tabular-nums">{passedLabel}</span>
         <div className="relative h-[5px] w-[104px] overflow-hidden rounded-sm bg-divider-2">
           <motion.div
-            className="h-full rounded-sm bg-accent"
             initial={false}
             animate={{ width: `${progress}%` }}
             transition={{ duration: 0.9, ease: easeOutSoft }}
+            className="h-full rounded-sm bg-accent"
           />
-          <Sheen show={pulse} />
         </div>
-        <button
-          type="button"
-          onClick={onReplay}
-          title="Replay sequence"
-          className="flex cursor-pointer items-center gap-[7px] rounded-lg border border-transparent px-[9px] py-1.5 text-meta leading-none whitespace-nowrap text-faint-2 transition-colors duration-[160ms] ease-[var(--ease-out-soft)] hover:bg-wash hover:text-ink"
-        >
-          <RefreshIcon size={12} />
-          Replay
-        </button>
       </div>
     </div>
   );

@@ -4,54 +4,58 @@ import type { ReactNode } from "react";
 import { motion } from "motion/react";
 
 import { ChevronDownIcon } from "@/components/ui/icons";
+import type { StageCheck } from "@/lib/api-types";
 import { cn } from "@/lib/cn";
-import type { NodeState } from "../_data";
 import { timing } from "../_motion";
 import { StepMarker } from "./markers";
 
+const STATUS_CHIP: Record<StageCheck["status"], string> = {
+  PASS: "bg-accent-soft-2 text-accent-press",
+  FLAG: "bg-[#F6ECD3] text-[#8A6516]",
+  INFO: "bg-[#E4EBF3] text-[#3F5A7C]",
+  PENDING: "bg-wash text-muted-3",
+};
+
 /**
  * One rung of the Estimate build timeline: a marker, a clickable title, a
- * collapsible body, and the hairline that joins it to the next rung.
+ * collapsible body, and the hairline that joins it to the next rung. The rung
+ * only exists because the workpaper recorded it, so it is always complete.
  */
 export function BuildStep({
   n,
   title,
-  state,
+  status,
   open,
   last = false,
   tallBody = false,
-  waiting,
   onToggle,
   children,
 }: {
   n: string;
   title: string;
-  state: NodeState;
+  /** What the Estimation agent's own check for this rung concluded, if it raised one. */
+  status: StageCheck["status"] | null;
   open: boolean;
   last?: boolean;
-  /** The calc table and the sub-check list open a touch slower in the comp. */
   tallBody?: boolean;
-  /**
-   * Steps 4 and 5 carry a "Waiting" line under the body. Omit the prop for the
-   * steps that do not have one; pass false to fade it out.
-   */
-  waiting?: boolean;
   onToggle: () => void;
   children: ReactNode;
 }) {
-  const lit = state === "done" || state === "active";
-
   return (
     <div className={cn("relative pl-10", last ? "pb-0" : "pb-[22px]")}>
       {!last && (
-        <span
-          className={cn(
-            "absolute top-[22px] bottom-0 left-2 w-px transition-colors duration-500 ease-[var(--ease-out-soft)]",
-            state === "done" ? "bg-accent-line" : "bg-line",
-          )}
-        />
+        <span className="absolute top-[22px] bottom-0 left-2 w-px bg-accent-line" />
       )}
-      <StepMarker state={state} />
+      {status === "FLAG" ? (
+        <span
+          aria-label="Flagged"
+          className="absolute top-[2px] left-0 flex h-[17px] w-[17px] items-center justify-center rounded-full bg-[#D6A43C] text-[10px] leading-none font-bold text-white"
+        >
+          !
+        </span>
+      ) : (
+        <StepMarker state="done" />
+      )}
 
       <button
         type="button"
@@ -59,16 +63,18 @@ export function BuildStep({
         aria-expanded={open}
         className="flex w-full cursor-pointer items-center gap-3.5 text-left"
       >
-        <span className="text-sm leading-[normal] text-faint-3 tabular-nums">
-          {n}
-        </span>
-        <span
-          className={`flex-1 text-nav leading-[normal] transition-colors duration-[280ms] ease-[var(--ease-out-soft)] ${
-            lit ? "text-ink" : "text-faint-3"
-          }`}
-        >
-          {title}
-        </span>
+        <span className="text-sm leading-[normal] text-faint-3 tabular-nums">{n}</span>
+        <span className="min-w-0 flex-1 text-nav leading-[normal] break-words text-ink">{title}</span>
+        {status && (
+          <span
+            className={cn(
+              "flex-none rounded-sm px-1.5 py-[3px] text-nano leading-none font-semibold tracking-caps",
+              STATUS_CHIP[status],
+            )}
+          >
+            {status}
+          </span>
+        )}
         <motion.span
           animate={{ rotate: open ? 180 : 0 }}
           transition={timing.chevron}
@@ -86,16 +92,6 @@ export function BuildStep({
       >
         {children}
       </motion.div>
-
-      {waiting !== undefined && (
-        <motion.div
-          animate={{ opacity: waiting ? 1 : 0 }}
-          transition={timing.waiting}
-          className="pt-[7px] pr-[26px] pl-[27px] text-sm leading-[normal] text-faint-3"
-        >
-          Waiting
-        </motion.div>
-      )}
     </div>
   );
 }

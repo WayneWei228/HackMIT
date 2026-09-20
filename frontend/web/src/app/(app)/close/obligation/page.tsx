@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { NoCases } from "@/components/close/no-cases";
 import { NotStarted } from "@/components/close/not-started";
+import { stageDone } from "@/lib/trail";
 import { loadCase, type SearchParams } from "@/lib/load-case";
 
 import { ObligationScreen } from "./_components/obligation-screen";
@@ -21,8 +22,8 @@ export default async function ObligationPage({
 }) {
   const { close, detail } = await loadCase(searchParams);
   if (!detail) return <NoCases close={close} />;
-  if (!detail.header.started) {
-    return <NotStarted close={close} header={detail.header} screen="Obligation" />;
+  if (!stageDone(detail.header, "obligation")) {
+    return <NotStarted close={close} header={detail.header} stage="obligation" />;
   }
   return (
     <ObligationScreenProvider view={buildObligationView(detail)}>

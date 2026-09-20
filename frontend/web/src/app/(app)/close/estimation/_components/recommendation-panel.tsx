@@ -1,104 +1,72 @@
 "use client";
 
-import { motion } from "motion/react";
-
-import { MoreIcon } from "@/components/ui/icons";
-import { stagger, timing } from "../_motion";
 import { ConfirmIcon } from "./icons";
 import { useEstimationScreen } from "./screen-context";
 
-/** Right column: the number the agent lands on and the entry it implies. */
-export function RecommendationPanel({
-  step,
-  complete,
-}: {
-  step: number;
-  complete: boolean;
-}) {
-  const { amount, recommendation, note, journal } = useEstimationScreen();
-  const settled = step >= 12;
-  const rowsIn = step >= 13;
+/** Right column: the number the agent landed on and the entry it implies, from the workpaper. */
+export function RecommendationPanel() {
+  const { amount, recommendation, note, journal, hasEstimate } = useEstimationScreen();
 
   return (
     <section className="min-h-full rounded-xl border border-divider bg-panel p-5 shadow-[var(--shadow-tile)]">
-      <div className="flex items-center justify-between gap-2.5 border-b border-divider-3 pb-3.5">
-        <div className="font-display text-2xl leading-[normal] text-ink-deep">
-          Recommended accrual
-        </div>
-        <button
-          type="button"
-          aria-label="Recommendation actions"
-          className="-mr-1 flex h-[26px] w-[26px] cursor-pointer items-center justify-center rounded-md border border-transparent text-faint-3 transition-colors duration-[160ms] ease-[var(--ease-out-soft)] hover:bg-wash"
-        >
-          <MoreIcon className="text-body" />
-        </button>
+      <div className="border-b border-divider-3 pb-3.5">
+        <div className="font-display text-2xl leading-[normal] text-ink-deep">Recommended accrual</div>
       </div>
 
       <div className="mt-[18px] text-ui leading-[normal] text-ink-2">Accrual amount</div>
-      <div className="relative mt-1.5 h-[50px]">
-        <motion.span
-          animate={{ opacity: settled ? 0 : 1 }}
-          transition={timing.dash}
-          className="font-display absolute top-0 left-0 text-[44px] leading-[1.1] text-[#C4C8BE]"
-        >
-          -
-        </motion.span>
-        <motion.span
-          animate={{ opacity: settled ? 1 : 0, y: settled ? 0 : 8 }}
-          transition={timing.settle}
-          className="font-display absolute top-0 left-0 text-[44px] leading-[1.1] whitespace-nowrap text-ink-deep"
-        >
-          {amount}
-        </motion.span>
+      <div className="font-display mt-1.5 min-h-[50px] text-[44px] leading-[1.1] break-words text-ink-deep">
+        {amount}
       </div>
 
       <div className="mt-[18px] flex flex-col">
-        {recommendation.map((row, i) => (
-          <motion.div
+        {recommendation.map((row) => (
+          <div
             key={row.label}
-            animate={{ opacity: rowsIn ? 1 : 0, y: rowsIn ? 0 : 5 }}
-            transition={stagger(timing.fact, i * 0.06)}
-            className="flex items-center justify-between gap-3.5 border-t border-wash-deep py-[11px]"
+            className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] items-center gap-x-3.5 border-t border-wash-deep py-[11px]"
           >
-            <span className="text-ui leading-[normal] text-muted-4">{row.label}</span>
+            <span className="min-w-0 text-ui leading-[normal] text-muted-4">{row.label}</span>
             <span
-              className={`text-right text-ui leading-[normal] ${
+              className={`min-w-0 text-right text-ui leading-[normal] break-words ${
                 row.tone === "accent" ? "text-accent" : "text-ink"
               }`}
             >
               {row.value}
             </span>
-          </motion.div>
+          </div>
         ))}
       </div>
 
-      <motion.div
-        animate={{ opacity: complete ? 1 : 0, y: complete ? 0 : 6 }}
-        transition={timing.settle}
-        className="mt-5 flex items-start gap-[11px] rounded-lg bg-accent-tint px-3.5 py-[13px]"
-      >
-        <ConfirmIcon className="mt-px flex-none" />
-        <div className="text-meta leading-[1.65] text-pretty text-accent-slate">
-          {note}
+      {note && (
+        <div
+          className={`mt-5 flex items-start gap-[11px] rounded-lg px-3.5 py-[13px] ${
+            hasEstimate ? "bg-accent-tint" : "border border-[#EBD9A8] bg-[#FBF5E6]"
+          }`}
+        >
+          {hasEstimate && <ConfirmIcon className="mt-px flex-none" />}
+          <div
+            className={`min-w-0 text-meta leading-[1.65] text-pretty break-words ${
+              hasEstimate ? "text-accent-slate" : "text-[#8A6516]"
+            }`}
+          >
+            {note}
+          </div>
         </div>
-      </motion.div>
+      )}
 
-      <motion.div
-        animate={{ opacity: complete ? 1 : 0, y: complete ? 0 : 6 }}
-        transition={timing.settle}
-        className="mt-[22px]"
-      >
-        <div className="text-ui leading-[normal] text-ink-2">Journal preview</div>
-        <div className="mt-3 grid grid-cols-[22px_1fr_auto] gap-2.5 text-sm leading-[normal] text-ink">
-          {journal.map((line) => (
-            <div key={`${line.side}-${line.account}`} className="contents">
-              <span className="text-faint-2">{line.side}</span>
-              <span>{line.account}</span>
-              <span className="text-right tabular-nums">{line.amount}</span>
-            </div>
-          ))}
+      {journal.length > 0 && (
+        <div className="mt-[22px]">
+          <div className="text-ui leading-[normal] text-ink-2">Journal preview</div>
+          <div className="mt-3 grid grid-cols-[22px_minmax(0,1fr)_auto] gap-2.5 text-sm leading-[normal] text-ink">
+            {journal.map((line) => (
+              <div key={`${line.side}-${line.account}`} className="contents">
+                <span className="text-faint-2">{line.side}</span>
+                <span className="min-w-0 break-words">{line.account}</span>
+                <span className="text-right tabular-nums">{line.amount}</span>
+              </div>
+            ))}
+          </div>
         </div>
-      </motion.div>
+      )}
     </section>
   );
 }
