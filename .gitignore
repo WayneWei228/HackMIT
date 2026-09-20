@@ -6,3 +6,6 @@ __pycache__/
 startup/db/
 startup/state/
 startup/close_packages/
+
+# Local tooling state (browse/skill harness); per-machine, not the product.
+.gstack/
