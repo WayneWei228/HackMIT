@@ -1,4 +1,4 @@
-"""Run the workers built so far (Evidence, then Detection) month by month on a folder of PDFs.
+"""Run the workers built so far (Evidence, Detection, Invoice Lookup) month by month on a folder of PDFs.
 
     cd startup && ../.venv/bin/python -m close.try_run ../output/pdf/startup_minimal_data [2026-12 ...] [--skip-jev] [--fresh]
 
@@ -13,7 +13,7 @@ import re
 import shutil
 from pathlib import Path
 
-from . import detection, evidence, store
+from . import detection, evidence, invoice_lookup, store
 from .jev import TypeSafeJev
 from .llm import bedrock_llm
 from .workspace import CLOSE_DIR, Workspace
@@ -69,17 +69,36 @@ def show(title: str, rows: list[dict], cols: tuple[str, ...]) -> None:
         print("    " + "  ".join(f"{c}={r.get(c)}" for c in cols))
 
 
-def snapshot(ws, period: str, documents: list[dict], cases: list[dict]) -> None:
+def snapshot(ws, period: str, documents: list[dict], cases: list[dict], matched: list[dict]) -> None:
     """Freeze what each worker produced for this month under out/<period>/, so later months do not overwrite it."""
     out = ws.out_dir / period
     shutil.rmtree(out, ignore_errors=True)
     (out / "evidence" / "tables").mkdir(parents=True)
     (out / "detection").mkdir()
     (out / "evidence" / "documents_read_this_month.json").write_text(json.dumps(documents, indent=2))
+    (out / "evidence" / "documents").mkdir()
+    for d in documents:  # one file per PDF, for checking them one by one
+        rows = store.load_table(ws, d["applied_to"]) if d["applied_to"] else []
+        one = {"pdf": d["file"], "doc_id": d["doc_id"], "doc_type": d["doc_type"], "extracted": d["record"],
+               "matched_vendor_id": d["vendor_id"], "matched_po_line_id": d["po_line_id"], "jev_checks": d["checks"],
+               "quality": d["quality"], "reasons": d["reasons"], "written_to_table": d["applied_to"],
+               "written_row": next((r for r in rows if r.get("source_doc") == d["doc_id"]), None)}
+        (out / "evidence" / "documents" / f"{d['doc_id']}.json").write_text(json.dumps(one, indent=2))
     for table in sorted(ws.db_dir.glob("*.json")):
         if table.name != "documents.json":
             shutil.copy(table, out / "evidence" / "tables" / table.name)
     (out / "detection" / "cases.json").write_text(json.dumps(cases, indent=2))
+    (out / "invoice_lookup").mkdir()
+    (out / "invoice_lookup" / "cases.json").write_text(json.dumps(matched, indent=2))
+    invoices = store.visible(store.load_table(ws, "invoices"), ws.as_of)
+    for c in matched:  # one file per detected PO line: what lookup saw, and what it concluded
+        same_line = [i for i in invoices if i.get("po_line_id") == c["po_line_id"]]
+        one = {"case_id": c["case_id"], "po_line_id": c["po_line_id"], "vendor_id": c["vendor_id"],
+               "recognition_basis": c["obligation"]["recognition_basis"],
+               "input_invoices_for_this_line": [{k: i.get(k) for k in ("invoice_id", "service_period", "amount", "status")} for i in same_line],
+               "output_invoice_match": c["invoice_match"], "flags": c["flags"],
+               "decision": [d for d in c["decision_log"] if d["worker"] == "invoice_lookup"]}
+        (out / "invoice_lookup" / f"{c['case_key']}.json").write_text(json.dumps(one, indent=2))
 
 
 def main() -> None:
@@ -115,7 +134,14 @@ def main() -> None:
         for c in cases:
             o = c["obligation"]
             print(f"  {c['case_key']:<18} {o['recognition_basis']:<17} why: {'; '.join(o['reasons'])}")
-        snapshot(ws, period, done, cases)
+        detected = json.loads(json.dumps(cases))  # Detection's output, before Invoice Lookup writes on the cases
+        print(f"\n  --- Invoice Lookup for {period} (input: detected cases + invoices + po_lines) ---")
+        matched = invoice_lookup.run(ws, jev, period)
+        for c in matched:
+            m = c["invoice_match"]
+            where = f"on AP {m['on_ap']} / in queue {m['in_queue']}" if m["invoice_ids"] else "nothing on the AP or in the queue"
+            print(f"  {c['case_key']:<18} {m['result']:<19} invoiced={m['invoiced_amount']:>10,.2f}  {where}")
+        snapshot(ws, period, done, detected, matched)
 
     print(f"\n=== db after {periods[-1]} ===")
     show("contracts", store.load_table(ws, "contracts"),
@@ -124,7 +150,7 @@ def main() -> None:
     show("activity", store.load_table(ws, "activity"),
          ("activity_id", "po_line_id", "kind", "service_period", "coverage_start", "coverage_end", "quantity", "value"))
     show("goods_receipts", store.load_table(ws, "goods_receipts"), ("gr_id", "po_line_id", "received_date", "quantity"))
-    print(f"\nPer-month output files: {root / 'out'}/<YYYY-MM>/evidence/ and .../detection/cases.json")
+    print(f"\nPer-month output files: {root / 'out'}/<YYYY-MM>/{evidence,detection,invoice_lookup}/")
 
 
 if __name__ == "__main__":
