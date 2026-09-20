@@ -428,6 +428,12 @@ def _document_fee_for(ctx: Context, day: date) -> tuple[m.TrueUpEvidence, Decima
     An EFFECTIVE_DATE card with the same source_id dates the fee; undated fees apply from the
     start of time. When several fees apply, the one with the latest effective date wins.
     """
+    return _pick_document_fee(_document_fee_candidates(ctx, day), day)
+
+
+def _document_fee_candidates(
+    ctx: Context, day: date
+) -> list[tuple[m.TrueUpEvidence, Decimal, date, bool]]:
     effective_by_source: dict[str, date] = {}
     for card in ctx.cards:
         value = card.value_json or {}
@@ -439,7 +445,7 @@ def _document_fee_for(ctx: Context, day: date) -> tuple[m.TrueUpEvidence, Decima
             continue
         if effective > effective_by_source.get(card.source_id, date.min):
             effective_by_source[card.source_id] = effective
-    candidates: list[tuple[m.TrueUpEvidence, Decimal, date]] = []
+    candidates: list[tuple[m.TrueUpEvidence, Decimal, date, bool]] = []
     for card in ctx.cards:
         if (
             card.evidence_type != e.EvidenceCardType.CONTRACT_TERM
@@ -454,13 +460,28 @@ def _document_fee_for(ctx: Context, day: date) -> tuple[m.TrueUpEvidence, Decima
         except InvalidOperation:
             continue
         effective = effective_by_source.get(card.source_id)
+        own = False
+        if value.get("date"):
+            try:
+                effective = date.fromisoformat(str(value["date"]))
+                own = True
+            except ValueError:
+                pass
         if effective is not None and effective > day:
             continue
-        candidates.append((card, fee, effective or date.min))
+        candidates.append((card, fee, effective or date.min, own))
+    return candidates
+
+
+def _pick_document_fee(
+    candidates: list[tuple[m.TrueUpEvidence, Decimal, date, bool]], day: date
+) -> tuple[m.TrueUpEvidence, Decimal] | None:
     if not candidates:
         return None
-    latest = max(effective for _, _, effective in candidates)
-    winners = [(card, fee) for card, fee, effective in candidates if effective == latest]
+    latest = max((effective, own) for _, _, effective, own in candidates)
+    winners = [
+        (card, fee) for card, fee, effective, own in candidates if (effective, own) == latest
+    ]
     fees = {fee for _, fee in winners}
     if len(fees) > 1:
         ids = ", ".join(card.evidence_id for card, _ in winners)
@@ -541,6 +562,10 @@ def _fixed(ctx: Context) -> Estimate:
     inputs: dict[str, Any] = {"segments": segment_inputs, "period_days": total}
     if card_warnings:
         inputs["rate_source"] = "document"
+        # A card that an amendment superseded is not a conflict: it documented the old fee.
+        rates |= {
+            fee for day in days for _card, fee, _eff, _own in _document_fee_candidates(ctx, day)
+        }
     return Estimate(
         method=e.EstimationMethod.FIXED_CONTRACT_RATE,
         amount=_round(raw),

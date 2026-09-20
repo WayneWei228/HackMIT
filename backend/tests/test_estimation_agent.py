@@ -457,6 +457,56 @@ def test_later_amendment_card_not_yet_effective_falls_back_to_the_original(sessi
     assert result.expression == "1200.00 x 1 month"
 
 
+def test_fee_card_dated_after_the_period_is_not_used(session):
+    obligation = ready(session, "VEN-MINTLIFY")
+    no_contract_rate(session)
+    session.add(card(obligation.obligation_id, "MONTHLY_FEE", "1400.00", date="2027-01-01"))
+    session.flush()
+    result = estimate(session, obligation.obligation_id, now=NOW)
+    assert result.outcome == "NEEDS_CONTROLLER" and result.workpaper_id is None
+    assert obligation.evidence_status == e.EvidenceStatus.MISSING_RATE
+    assert (obligation.workflow_stage, obligation.next_action) == CONTROLLER
+
+
+def test_fee_card_dated_before_the_period_is_used(session):
+    obligation = ready(session, "VEN-MINTLIFY")
+    no_contract_rate(session)
+    session.add(card(obligation.obligation_id, "MONTHLY_FEE", "1400.00", date="2026-11-15"))
+    session.flush()
+    result = estimate(session, obligation.obligation_id, now=NOW)
+    assert result.outcome == "ESTIMATED"
+    assert result.amount == Decimal("1400.00")
+
+
+def test_dated_fee_from_a_price_change_sentence_wins(session):
+    obligation = ready(session, "VEN-MINTLIFY")
+    no_contract_rate(session)
+    session.add(card(obligation.obligation_id, "MONTHLY_FEE", "1200.00"))
+    session.add(
+        card(
+            obligation.obligation_id,
+            "MONTHLY_FEE",
+            "1400.00",
+            evidence_id="EVD-T-02",
+            date="2026-12-01",
+        )
+    )
+    session.add(
+        card(
+            obligation.obligation_id,
+            "EFFECTIVE_DATE",
+            None,
+            evidence_id="EVD-T-03",
+            date="2026-12-01",
+        )
+    )
+    session.flush()
+    result = estimate(session, obligation.obligation_id, now=NOW)
+    assert result.outcome == "ESTIMATED" and not result.conflicts
+    assert result.amount == Decimal("1400.00")
+    assert result.expression == "1400.00 x 1 month"
+
+
 def test_amendment_in_force_beats_the_original(session):
     obligation = ready(session, "VEN-MINTLIFY")
     no_contract_rate(session)

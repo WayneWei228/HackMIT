@@ -563,11 +563,27 @@ def _evidence_control(world: _World, case: _Case, rec: _Recorder) -> None:
 def _trace_source(world: _World, case: _Case, rec: _Recorder, source_id: str) -> None:
     ob, wp = case.ob, case.wp
     row = world.source_row(source_id)
-    if row is None and any(
-        c.evidence_id == source_id and c.status == e.EvidenceCardStatus.VERIFIED for c in case.cards
-    ):
-        return
     if row is None:
+        card = next(
+            (
+                c
+                for c in case.cards
+                if c.evidence_id == source_id and c.status == e.EvidenceCardStatus.VERIFIED
+            ),
+            None,
+        )
+        if card is not None:
+            if wp is not None and _utc(card.created_at) > _utc(wp.created_at):
+                rec.critical(
+                    "AUD-01",
+                    f"Cited evidence card {card.evidence_id} was created at "
+                    f"{_utc(card.created_at).isoformat()}, after the workpaper at "
+                    f"{_utc(wp.created_at).isoformat()}.",
+                    expected=f"on or before {_utc(wp.created_at).isoformat()}",
+                    actual=_utc(card.created_at).isoformat(),
+                    records=[wp.workpaper_id, card.evidence_id],
+                )
+            return
         rec.critical(
             "AUD-01",
             f"The workpaper cites {source_id}, which is not in any company table.",

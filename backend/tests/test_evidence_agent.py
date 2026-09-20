@@ -311,3 +311,19 @@ def test_ingestion_output_flows_into_evidence_on_the_real_seed(universe):
 def test_evidence_module_is_wired_to_the_ingest_layer_only():
     source = Path(evidence_agent.__file__).read_text()
     assert "trueup.simulator" not in source
+
+
+def test_rule_extractor_dates_the_new_fee_in_a_price_change_sentence():
+    from trueup.agents import evidence_rules
+
+    text = (
+        "Commencing December 1, 2026, the monthly subscription fee for the plan "
+        "shall increase from $1,200 per month to $1,400 per month."
+    )
+    facts = evidence_rules._agreement(None, text)
+    found = [(f.key, f.number, f.date) for f in facts]
+    assert found == [
+        (FactKey.MONTHLY_FEE, Decimal("1200"), None),
+        (FactKey.MONTHLY_FEE, Decimal("1400"), "2026-12-01"),
+        (FactKey.EFFECTIVE_DATE, None, "2026-12-01"),
+    ]
