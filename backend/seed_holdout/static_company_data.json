@@ -1,0 +1,1213 @@
+{
+  "meta": {
+    "generator": "scripts/generate_holdout.py",
+    "seed": 7,
+    "company": "Northstar Analytics, Inc.",
+    "currency": "USD",
+    "simulation_start": "2026-12-01T08:00:00Z",
+    "historical_periods": [
+      "2026-09",
+      "2026-10",
+      "2026-11"
+    ],
+    "live_periods": [
+      "2026-12",
+      "2027-01"
+    ]
+  },
+  "company_vendors": [
+    {
+      "vendor_id": "VEN-TERRASTACK",
+      "vendor_name": "Terrastack Compute",
+      "vendor_category": "CLOUD",
+      "billing_cadence": "USAGE_BASED",
+      "default_currency": "USD",
+      "billing_contact_email": "billing@terrastack.example",
+      "is_active": true
+    },
+    {
+      "vendor_id": "VEN-LARKSPUR",
+      "vendor_name": "Larkspur Design Studio",
+      "vendor_category": "CONSULTING",
+      "billing_cadence": "AD_HOC",
+      "default_currency": "USD",
+      "billing_contact_email": "billing@larkspur.example",
+      "is_active": true
+    },
+    {
+      "vendor_id": "VEN-CORVID",
+      "vendor_name": "Corvid Security",
+      "vendor_category": "SAAS",
+      "billing_cadence": "MONTHLY",
+      "default_currency": "USD",
+      "billing_contact_email": "billing@corvidsec.example",
+      "is_active": true
+    }
+  ],
+  "company_contracts": [
+    {
+      "contract_row_id": "CON-TERRASTACK-V1",
+      "contract_id": "CON-TERRASTACK",
+      "contract_version": 1,
+      "vendor_id": "VEN-TERRASTACK",
+      "contract_name": "Terrastack GPU Compute Master Services Agreement",
+      "status": "ACTIVE",
+      "effective_start_date": "2026-01-01",
+      "effective_end_date": "2027-12-31",
+      "billing_model": "USAGE_BASED",
+      "base_rate": "2.50",
+      "rate_unit": "COMPUTE_HOUR",
+      "billing_frequency": "VARIABLE",
+      "escalator_percent": "8",
+      "escalator_effective_date": "2026-10-01",
+      "service_owner_id": "ENG-001",
+      "procurement_owner_id": "PROC-001",
+      "contract_text": "6.1 Customer pays USD 2.50 per GPU compute-hour. 6.2 From 1 October 2026 the charge rises by 8 percent to USD 2.70 per compute-hour."
+    },
+    {
+      "contract_row_id": "CON-LARKSPUR-V1",
+      "contract_id": "CON-LARKSPUR",
+      "contract_version": 1,
+      "vendor_id": "VEN-LARKSPUR",
+      "contract_name": "Larkspur Statement of Work No. 2 - Brand System Design",
+      "status": "ACTIVE",
+      "effective_start_date": "2026-10-01",
+      "effective_end_date": "2027-03-31",
+      "billing_model": "MILESTONE_BASED",
+      "base_rate": null,
+      "rate_unit": "PROJECT",
+      "billing_frequency": "VARIABLE",
+      "escalator_percent": null,
+      "escalator_effective_date": null,
+      "service_owner_id": "MKT-001",
+      "procurement_owner_id": "PROC-001",
+      "contract_text": "Fees are payable per accepted Deliverable, not to exceed USD 96,000.00: D1 18,000.00, D2 22,500.00, D3 27,450.00, D4 28,050.00."
+    },
+    {
+      "contract_row_id": "CON-CORVID-V1",
+      "contract_id": "CON-CORVID",
+      "contract_version": 1,
+      "vendor_id": "VEN-CORVID",
+      "contract_name": "Corvid Sentinel Business Subscription",
+      "status": "SUPERSEDED",
+      "effective_start_date": "2026-01-01",
+      "effective_end_date": "2026-12-15",
+      "billing_model": "FIXED_FEE",
+      "base_rate": "3250.00",
+      "rate_unit": "MONTH",
+      "billing_frequency": "MONTHLY_IN_ARREARS",
+      "escalator_percent": null,
+      "escalator_effective_date": null,
+      "service_owner_id": "ENG-001",
+      "procurement_owner_id": "PROC-001",
+      "contract_text": "Sentinel Business plan, up to 250 endpoints, monthly fee USD 3,250.00, billed monthly in arrears."
+    },
+    {
+      "contract_row_id": "CON-CORVID-V2",
+      "contract_id": "CON-CORVID",
+      "contract_version": 2,
+      "vendor_id": "VEN-CORVID",
+      "contract_name": "Corvid Sentinel Enterprise Subscription (amended)",
+      "status": "ACTIVE",
+      "effective_start_date": "2026-12-16",
+      "effective_end_date": "2027-12-31",
+      "billing_model": "FIXED_FEE",
+      "base_rate": "3900.00",
+      "rate_unit": "MONTH",
+      "billing_frequency": "MONTHLY_IN_ARREARS",
+      "escalator_percent": null,
+      "escalator_effective_date": null,
+      "service_owner_id": "ENG-001",
+      "procurement_owner_id": "PROC-001",
+      "contract_text": "Upgrade to Sentinel Enterprise. From 16 December 2026 the monthly fee is USD 3,900.00. The transition month is prorated by calendar day."
+    }
+  ],
+  "company_purchase_orders": [
+    {
+      "po_id": "PO-TERRASTACK-2026",
+      "po_number": "PO-2026-2101",
+      "vendor_id": "VEN-TERRASTACK",
+      "contract_id": "CON-TERRASTACK",
+      "status": "OPEN",
+      "order_type": "BLANKET",
+      "entity_id": "ENT-001",
+      "cost_center": "CC-ENG-100",
+      "po_owner_id": "ENG-001",
+      "approved_total": "240000.00",
+      "currency": "USD",
+      "service_start_date": "2026-01-01",
+      "service_end_date": "2026-12-31",
+      "gl_account": "610200",
+      "description": "Terrastack GPU compute under annual commitment",
+      "line_items_json": [
+        {
+          "po_line_id": "PO-2026-2101-001",
+          "item_category": "BLANKET_LIMIT",
+          "gl_account_code": "610200",
+          "quantity_ordered": null,
+          "unit_price": "2.50",
+          "quantity_received": "0",
+          "quantity_billed": "0",
+          "line_description": "GPU compute-hours, on-demand tier, annual commitment",
+          "service_start_date": "2026-01-01",
+          "service_end_date": "2026-12-31",
+          "receipt_required": false,
+          "useful_life_months": null,
+          "in_service_date": null
+        }
+      ]
+    },
+    {
+      "po_id": "PO-LARKSPUR-2026",
+      "po_number": "PO-2026-2102",
+      "vendor_id": "VEN-LARKSPUR",
+      "contract_id": "CON-LARKSPUR",
+      "status": "OPEN",
+      "order_type": "PROJECT",
+      "entity_id": "ENT-001",
+      "cost_center": "CC-MKT-300",
+      "po_owner_id": "MKT-001",
+      "approved_total": "96000.00",
+      "currency": "USD",
+      "service_start_date": "2026-10-01",
+      "service_end_date": "2027-03-31",
+      "gl_account": "610300",
+      "description": "Brand system design project, SOW No. 2, not to exceed USD 96,000",
+      "line_items_json": [
+        {
+          "po_line_id": "PO-2026-2102-001",
+          "item_category": "SERVICE",
+          "gl_account_code": "610300",
+          "quantity_ordered": "1",
+          "unit_price": "96000.00",
+          "quantity_received": "0",
+          "quantity_billed": "0",
+          "line_description": "Brand system design services, fee per accepted deliverable",
+          "service_start_date": "2026-10-01",
+          "service_end_date": "2027-03-31",
+          "receipt_required": true,
+          "useful_life_months": null,
+          "in_service_date": null
+        }
+      ]
+    },
+    {
+      "po_id": "PO-CORVID-2026",
+      "po_number": "PO-2026-2103",
+      "vendor_id": "VEN-CORVID",
+      "contract_id": "CON-CORVID",
+      "status": "OPEN",
+      "order_type": "FRAMEWORK",
+      "entity_id": "ENT-001",
+      "cost_center": "CC-ENG-100",
+      "po_owner_id": "ENG-001",
+      "approved_total": "39000.00",
+      "currency": "USD",
+      "service_start_date": "2026-01-01",
+      "service_end_date": "2026-12-31",
+      "gl_account": "610100",
+      "description": "Corvid Sentinel Business subscription, 2026",
+      "line_items_json": [
+        {
+          "po_line_id": "PO-2026-2103-001",
+          "item_category": "SERVICE",
+          "gl_account_code": "610100",
+          "quantity_ordered": "12",
+          "unit_price": "3250.00",
+          "quantity_received": "11",
+          "quantity_billed": "11",
+          "line_description": "Sentinel Business subscription, monthly",
+          "service_start_date": "2026-01-01",
+          "service_end_date": "2026-12-31",
+          "receipt_required": false,
+          "useful_life_months": null,
+          "in_service_date": null
+        }
+      ]
+    }
+  ],
+  "company_service_evidence": [
+    {
+      "service_evidence_id": "USE-TERRASTACK-2026-09",
+      "vendor_id": "VEN-TERRASTACK",
+      "contract_id": "CON-TERRASTACK",
+      "po_id": "PO-TERRASTACK-2026",
+      "service_start_date": "2026-09-01",
+      "service_end_date": "2026-09-30",
+      "evidence_type": "SYSTEM_USAGE",
+      "quantity": "5800",
+      "unit": "COMPUTE_HOUR",
+      "accepted_amount": null,
+      "source_system": "ENGINEERING_PLATFORM",
+      "confirmed_by_person_id": null,
+      "confirmation_status": "SYSTEM_VERIFIED",
+      "created_at": "2026-09-30T23:00:00Z"
+    },
+    {
+      "service_evidence_id": "USE-TERRASTACK-2026-10",
+      "vendor_id": "VEN-TERRASTACK",
+      "contract_id": "CON-TERRASTACK",
+      "po_id": "PO-TERRASTACK-2026",
+      "service_start_date": "2026-10-01",
+      "service_end_date": "2026-10-31",
+      "evidence_type": "SYSTEM_USAGE",
+      "quantity": "6200",
+      "unit": "COMPUTE_HOUR",
+      "accepted_amount": null,
+      "source_system": "ENGINEERING_PLATFORM",
+      "confirmed_by_person_id": null,
+      "confirmation_status": "SYSTEM_VERIFIED",
+      "created_at": "2026-10-31T23:00:00Z"
+    },
+    {
+      "service_evidence_id": "USE-TERRASTACK-2026-11",
+      "vendor_id": "VEN-TERRASTACK",
+      "contract_id": "CON-TERRASTACK",
+      "po_id": "PO-TERRASTACK-2026",
+      "service_start_date": "2026-11-01",
+      "service_end_date": "2026-11-30",
+      "evidence_type": "SYSTEM_USAGE",
+      "quantity": "6500",
+      "unit": "COMPUTE_HOUR",
+      "accepted_amount": null,
+      "source_system": "ENGINEERING_PLATFORM",
+      "confirmed_by_person_id": null,
+      "confirmation_status": "SYSTEM_VERIFIED",
+      "created_at": "2026-11-30T23:00:00Z"
+    },
+    {
+      "service_evidence_id": "USE-LARKSPUR-2026-10",
+      "vendor_id": "VEN-LARKSPUR",
+      "contract_id": "CON-LARKSPUR",
+      "po_id": "PO-LARKSPUR-2026",
+      "service_start_date": "2026-10-27",
+      "service_end_date": "2026-10-27",
+      "evidence_type": "MILESTONE_ACCEPTANCE",
+      "quantity": null,
+      "unit": null,
+      "accepted_amount": "18000.00",
+      "source_system": "PROJECT_MANAGEMENT",
+      "confirmed_by_person_id": "MKT-001",
+      "confirmation_status": "OWNER_CONFIRMED",
+      "created_at": "2026-10-27T15:00:00Z"
+    },
+    {
+      "service_evidence_id": "USE-LARKSPUR-2026-11",
+      "vendor_id": "VEN-LARKSPUR",
+      "contract_id": "CON-LARKSPUR",
+      "po_id": "PO-LARKSPUR-2026",
+      "service_start_date": "2026-11-19",
+      "service_end_date": "2026-11-19",
+      "evidence_type": "MILESTONE_ACCEPTANCE",
+      "quantity": null,
+      "unit": null,
+      "accepted_amount": "22500.00",
+      "source_system": "PROJECT_MANAGEMENT",
+      "confirmed_by_person_id": "MKT-001",
+      "confirmation_status": "OWNER_CONFIRMED",
+      "created_at": "2026-11-19T15:00:00Z"
+    }
+  ],
+  "company_non_po_spend": [],
+  "company_ap_invoices": [
+    {
+      "invoice_id": "INV-TERRASTACK-2026-09",
+      "vendor_id": "VEN-TERRASTACK",
+      "invoice_number": "TSK-90388",
+      "invoice_date": "2026-09-30",
+      "received_at": "2026-10-01T04:30:00Z",
+      "service_start_date": "2026-09-01",
+      "service_end_date": "2026-09-30",
+      "amount": "14500.00",
+      "currency": "USD",
+      "po_id": "PO-TERRASTACK-2026",
+      "contract_id": "CON-TERRASTACK",
+      "status": "PAID",
+      "duplicate_flag": false,
+      "credit_flag": false,
+      "description": "Terrastack GPU compute, September 2026",
+      "line_items_json": null,
+      "created_at": "2026-10-01T04:30:00Z",
+      "updated_at": "2026-10-01T04:30:00Z"
+    },
+    {
+      "invoice_id": "INV-TERRASTACK-2026-10",
+      "vendor_id": "VEN-TERRASTACK",
+      "invoice_number": "TSK-90455",
+      "invoice_date": "2026-10-31",
+      "received_at": "2026-11-01T04:30:00Z",
+      "service_start_date": "2026-10-01",
+      "service_end_date": "2026-10-31",
+      "amount": "16740.00",
+      "currency": "USD",
+      "po_id": "PO-TERRASTACK-2026",
+      "contract_id": "CON-TERRASTACK",
+      "status": "PAID",
+      "duplicate_flag": false,
+      "credit_flag": false,
+      "description": "Terrastack GPU compute, October 2026",
+      "line_items_json": null,
+      "created_at": "2026-11-01T04:30:00Z",
+      "updated_at": "2026-11-01T04:30:00Z"
+    },
+    {
+      "invoice_id": "INV-TERRASTACK-2026-11",
+      "vendor_id": "VEN-TERRASTACK",
+      "invoice_number": "TSK-90512",
+      "invoice_date": "2026-11-30",
+      "received_at": "2026-12-01T04:30:00Z",
+      "service_start_date": "2026-11-01",
+      "service_end_date": "2026-11-30",
+      "amount": "17550.00",
+      "currency": "USD",
+      "po_id": "PO-TERRASTACK-2026",
+      "contract_id": "CON-TERRASTACK",
+      "status": "POSTED",
+      "duplicate_flag": false,
+      "credit_flag": false,
+      "description": "Terrastack GPU compute, November 2026",
+      "line_items_json": null,
+      "created_at": "2026-12-01T04:30:00Z",
+      "updated_at": "2026-12-01T04:30:00Z"
+    },
+    {
+      "invoice_id": "INV-LARKSPUR-2026-10",
+      "vendor_id": "VEN-LARKSPUR",
+      "invoice_number": "LDS-0231",
+      "invoice_date": "2026-10-31",
+      "received_at": "2026-11-02T09:00:00Z",
+      "service_start_date": "2026-10-27",
+      "service_end_date": "2026-10-27",
+      "amount": "18000.00",
+      "currency": "USD",
+      "po_id": "PO-LARKSPUR-2026",
+      "contract_id": "CON-LARKSPUR",
+      "status": "PAID",
+      "duplicate_flag": false,
+      "credit_flag": false,
+      "description": "Larkspur Deliverable D1, brand audit",
+      "line_items_json": null,
+      "created_at": "2026-11-02T09:00:00Z",
+      "updated_at": "2026-11-02T09:00:00Z"
+    },
+    {
+      "invoice_id": "INV-LARKSPUR-2026-11",
+      "vendor_id": "VEN-LARKSPUR",
+      "invoice_number": "LDS-0247",
+      "invoice_date": "2026-11-30",
+      "received_at": "2026-12-01T05:00:00Z",
+      "service_start_date": "2026-11-19",
+      "service_end_date": "2026-11-19",
+      "amount": "23700.00",
+      "currency": "USD",
+      "po_id": "PO-LARKSPUR-2026",
+      "contract_id": "CON-LARKSPUR",
+      "status": "POSTED",
+      "duplicate_flag": false,
+      "credit_flag": false,
+      "description": "Larkspur Deliverable D2, brand strategy, with expenses",
+      "line_items_json": null,
+      "created_at": "2026-12-01T05:00:00Z",
+      "updated_at": "2026-12-01T05:00:00Z"
+    },
+    {
+      "invoice_id": "INV-CORVID-2026-09",
+      "vendor_id": "VEN-CORVID",
+      "invoice_number": "CSEC-2609",
+      "invoice_date": "2026-09-30",
+      "received_at": "2026-10-01T06:00:00Z",
+      "service_start_date": "2026-09-01",
+      "service_end_date": "2026-09-30",
+      "amount": "3250.00",
+      "currency": "USD",
+      "po_id": "PO-CORVID-2026",
+      "contract_id": "CON-CORVID",
+      "status": "PAID",
+      "duplicate_flag": false,
+      "credit_flag": false,
+      "description": "Corvid Sentinel Business subscription, September 2026",
+      "line_items_json": null,
+      "created_at": "2026-10-01T06:00:00Z",
+      "updated_at": "2026-10-01T06:00:00Z"
+    },
+    {
+      "invoice_id": "INV-CORVID-2026-10",
+      "vendor_id": "VEN-CORVID",
+      "invoice_number": "CSEC-2610",
+      "invoice_date": "2026-10-31",
+      "received_at": "2026-11-01T06:00:00Z",
+      "service_start_date": "2026-10-01",
+      "service_end_date": "2026-10-31",
+      "amount": "3250.00",
+      "currency": "USD",
+      "po_id": "PO-CORVID-2026",
+      "contract_id": "CON-CORVID",
+      "status": "PAID",
+      "duplicate_flag": false,
+      "credit_flag": false,
+      "description": "Corvid Sentinel Business subscription, October 2026",
+      "line_items_json": null,
+      "created_at": "2026-11-01T06:00:00Z",
+      "updated_at": "2026-11-01T06:00:00Z"
+    },
+    {
+      "invoice_id": "INV-CORVID-2026-11",
+      "vendor_id": "VEN-CORVID",
+      "invoice_number": "CSEC-2611",
+      "invoice_date": "2026-11-30",
+      "received_at": "2026-12-01T06:00:00Z",
+      "service_start_date": "2026-11-01",
+      "service_end_date": "2026-11-30",
+      "amount": "3250.00",
+      "currency": "USD",
+      "po_id": "PO-CORVID-2026",
+      "contract_id": "CON-CORVID",
+      "status": "POSTED",
+      "duplicate_flag": false,
+      "credit_flag": false,
+      "description": "Corvid Sentinel Business subscription, November 2026",
+      "line_items_json": null,
+      "created_at": "2026-12-01T06:00:00Z",
+      "updated_at": "2026-12-01T06:00:00Z"
+    }
+  ],
+  "company_gl_entries": [
+    {
+      "gl_entry_id": "GL-TERRASTACK-2026-09",
+      "period": "2026-10",
+      "posting_date": "2026-10-01",
+      "vendor_id": "VEN-TERRASTACK",
+      "obligation_id": null,
+      "entry_type": "AP_INVOICE",
+      "status": "POSTED",
+      "description": "Terrastack GPU compute, September 2026 (TSK-90388)",
+      "lines_json": [
+        {
+          "account_code": "610200",
+          "debit": "14500.00",
+          "credit": "0.00",
+          "description": "Terrastack GPU compute, September 2026 (TSK-90388)"
+        },
+        {
+          "account_code": "200100",
+          "debit": "0.00",
+          "credit": "14500.00",
+          "description": "Terrastack GPU compute, September 2026 (TSK-90388)"
+        }
+      ],
+      "source_workpaper_id": null,
+      "reversal_of_gl_entry_id": null,
+      "created_at": "2026-10-01T06:30:00Z"
+    },
+    {
+      "gl_entry_id": "GL-TERRASTACK-2026-10",
+      "period": "2026-11",
+      "posting_date": "2026-11-01",
+      "vendor_id": "VEN-TERRASTACK",
+      "obligation_id": null,
+      "entry_type": "AP_INVOICE",
+      "status": "POSTED",
+      "description": "Terrastack GPU compute, October 2026 (TSK-90455)",
+      "lines_json": [
+        {
+          "account_code": "610200",
+          "debit": "16740.00",
+          "credit": "0.00",
+          "description": "Terrastack GPU compute, October 2026 (TSK-90455)"
+        },
+        {
+          "account_code": "200100",
+          "debit": "0.00",
+          "credit": "16740.00",
+          "description": "Terrastack GPU compute, October 2026 (TSK-90455)"
+        }
+      ],
+      "source_workpaper_id": null,
+      "reversal_of_gl_entry_id": null,
+      "created_at": "2026-11-01T06:30:00Z"
+    },
+    {
+      "gl_entry_id": "GL-TERRASTACK-2026-11",
+      "period": "2026-12",
+      "posting_date": "2026-12-01",
+      "vendor_id": "VEN-TERRASTACK",
+      "obligation_id": null,
+      "entry_type": "AP_INVOICE",
+      "status": "POSTED",
+      "description": "Terrastack GPU compute, November 2026 (TSK-90512)",
+      "lines_json": [
+        {
+          "account_code": "610200",
+          "debit": "17550.00",
+          "credit": "0.00",
+          "description": "Terrastack GPU compute, November 2026 (TSK-90512)"
+        },
+        {
+          "account_code": "200100",
+          "debit": "0.00",
+          "credit": "17550.00",
+          "description": "Terrastack GPU compute, November 2026 (TSK-90512)"
+        }
+      ],
+      "source_workpaper_id": null,
+      "reversal_of_gl_entry_id": null,
+      "created_at": "2026-12-01T06:30:00Z"
+    },
+    {
+      "gl_entry_id": "GL-TERRASTACK-2026-09-ACCRUAL",
+      "period": "2026-09",
+      "posting_date": "2026-09-30",
+      "vendor_id": "VEN-TERRASTACK",
+      "obligation_id": null,
+      "entry_type": "ACCRUAL",
+      "status": "REVERSED",
+      "description": "Terrastack 2026-09 accrual",
+      "lines_json": [
+        {
+          "account_code": "610200",
+          "debit": "14500.00",
+          "credit": "0.00",
+          "description": "Terrastack 2026-09 accrual"
+        },
+        {
+          "account_code": "210100",
+          "debit": "0.00",
+          "credit": "14500.00",
+          "description": "Terrastack 2026-09 accrual"
+        }
+      ],
+      "source_workpaper_id": null,
+      "reversal_of_gl_entry_id": null,
+      "created_at": "2026-09-30T18:00:00Z"
+    },
+    {
+      "gl_entry_id": "GL-TERRASTACK-2026-09-ACCRUAL-REV",
+      "period": "2026-10",
+      "posting_date": "2026-10-01",
+      "vendor_id": "VEN-TERRASTACK",
+      "obligation_id": null,
+      "entry_type": "ACCRUAL_REVERSAL",
+      "status": "POSTED",
+      "description": "Reverse Terrastack 2026-09 accrual",
+      "lines_json": [
+        {
+          "account_code": "210100",
+          "debit": "14500.00",
+          "credit": "0.00",
+          "description": "Reverse Terrastack 2026-09 accrual"
+        },
+        {
+          "account_code": "610200",
+          "debit": "0.00",
+          "credit": "14500.00",
+          "description": "Reverse Terrastack 2026-09 accrual"
+        }
+      ],
+      "source_workpaper_id": null,
+      "reversal_of_gl_entry_id": "GL-TERRASTACK-2026-09-ACCRUAL",
+      "created_at": "2026-10-01T05:30:00Z"
+    },
+    {
+      "gl_entry_id": "GL-TERRASTACK-2026-10-ACCRUAL",
+      "period": "2026-10",
+      "posting_date": "2026-10-31",
+      "vendor_id": "VEN-TERRASTACK",
+      "obligation_id": null,
+      "entry_type": "ACCRUAL",
+      "status": "REVERSED",
+      "description": "Terrastack 2026-10 accrual",
+      "lines_json": [
+        {
+          "account_code": "610200",
+          "debit": "15500.00",
+          "credit": "0.00",
+          "description": "Terrastack 2026-10 accrual"
+        },
+        {
+          "account_code": "210100",
+          "debit": "0.00",
+          "credit": "15500.00",
+          "description": "Terrastack 2026-10 accrual"
+        }
+      ],
+      "source_workpaper_id": null,
+      "reversal_of_gl_entry_id": null,
+      "created_at": "2026-10-31T18:00:00Z"
+    },
+    {
+      "gl_entry_id": "GL-TERRASTACK-2026-10-ACCRUAL-REV",
+      "period": "2026-11",
+      "posting_date": "2026-11-01",
+      "vendor_id": "VEN-TERRASTACK",
+      "obligation_id": null,
+      "entry_type": "ACCRUAL_REVERSAL",
+      "status": "POSTED",
+      "description": "Reverse Terrastack 2026-10 accrual",
+      "lines_json": [
+        {
+          "account_code": "210100",
+          "debit": "15500.00",
+          "credit": "0.00",
+          "description": "Reverse Terrastack 2026-10 accrual"
+        },
+        {
+          "account_code": "610200",
+          "debit": "0.00",
+          "credit": "15500.00",
+          "description": "Reverse Terrastack 2026-10 accrual"
+        }
+      ],
+      "source_workpaper_id": null,
+      "reversal_of_gl_entry_id": "GL-TERRASTACK-2026-10-ACCRUAL",
+      "created_at": "2026-11-01T05:30:00Z"
+    },
+    {
+      "gl_entry_id": "GL-TERRASTACK-2026-11-ACCRUAL",
+      "period": "2026-11",
+      "posting_date": "2026-11-30",
+      "vendor_id": "VEN-TERRASTACK",
+      "obligation_id": null,
+      "entry_type": "ACCRUAL",
+      "status": "REVERSED",
+      "description": "Terrastack 2026-11 accrual",
+      "lines_json": [
+        {
+          "account_code": "610200",
+          "debit": "16250.00",
+          "credit": "0.00",
+          "description": "Terrastack 2026-11 accrual"
+        },
+        {
+          "account_code": "210100",
+          "debit": "0.00",
+          "credit": "16250.00",
+          "description": "Terrastack 2026-11 accrual"
+        }
+      ],
+      "source_workpaper_id": null,
+      "reversal_of_gl_entry_id": null,
+      "created_at": "2026-11-30T18:00:00Z"
+    },
+    {
+      "gl_entry_id": "GL-TERRASTACK-2026-11-ACCRUAL-REV",
+      "period": "2026-12",
+      "posting_date": "2026-12-01",
+      "vendor_id": "VEN-TERRASTACK",
+      "obligation_id": null,
+      "entry_type": "ACCRUAL_REVERSAL",
+      "status": "POSTED",
+      "description": "Reverse Terrastack 2026-11 accrual",
+      "lines_json": [
+        {
+          "account_code": "210100",
+          "debit": "16250.00",
+          "credit": "0.00",
+          "description": "Reverse Terrastack 2026-11 accrual"
+        },
+        {
+          "account_code": "610200",
+          "debit": "0.00",
+          "credit": "16250.00",
+          "description": "Reverse Terrastack 2026-11 accrual"
+        }
+      ],
+      "source_workpaper_id": null,
+      "reversal_of_gl_entry_id": "GL-TERRASTACK-2026-11-ACCRUAL",
+      "created_at": "2026-12-01T05:30:00Z"
+    },
+    {
+      "gl_entry_id": "GL-LARKSPUR-2026-10",
+      "period": "2026-11",
+      "posting_date": "2026-11-03",
+      "vendor_id": "VEN-LARKSPUR",
+      "obligation_id": null,
+      "entry_type": "AP_INVOICE",
+      "status": "POSTED",
+      "description": "Larkspur Deliverable D1, brand audit (LDS-0231)",
+      "lines_json": [
+        {
+          "account_code": "610300",
+          "debit": "18000.00",
+          "credit": "0.00",
+          "description": "Larkspur Deliverable D1, brand audit (LDS-0231)"
+        },
+        {
+          "account_code": "200100",
+          "debit": "0.00",
+          "credit": "18000.00",
+          "description": "Larkspur Deliverable D1, brand audit (LDS-0231)"
+        }
+      ],
+      "source_workpaper_id": null,
+      "reversal_of_gl_entry_id": null,
+      "created_at": "2026-11-03T06:30:00Z"
+    },
+    {
+      "gl_entry_id": "GL-LARKSPUR-2026-11",
+      "period": "2026-12",
+      "posting_date": "2026-12-01",
+      "vendor_id": "VEN-LARKSPUR",
+      "obligation_id": null,
+      "entry_type": "AP_INVOICE",
+      "status": "POSTED",
+      "description": "Larkspur Deliverable D2, brand strategy, with expenses (LDS-0247)",
+      "lines_json": [
+        {
+          "account_code": "610300",
+          "debit": "23700.00",
+          "credit": "0.00",
+          "description": "Larkspur Deliverable D2, brand strategy, with expenses (LDS-0247)"
+        },
+        {
+          "account_code": "200100",
+          "debit": "0.00",
+          "credit": "23700.00",
+          "description": "Larkspur Deliverable D2, brand strategy, with expenses (LDS-0247)"
+        }
+      ],
+      "source_workpaper_id": null,
+      "reversal_of_gl_entry_id": null,
+      "created_at": "2026-12-01T06:30:00Z"
+    },
+    {
+      "gl_entry_id": "GL-LARKSPUR-2026-10-ACCRUAL",
+      "period": "2026-10",
+      "posting_date": "2026-10-31",
+      "vendor_id": "VEN-LARKSPUR",
+      "obligation_id": null,
+      "entry_type": "ACCRUAL",
+      "status": "REVERSED",
+      "description": "Larkspur 2026-10 accrual",
+      "lines_json": [
+        {
+          "account_code": "610300",
+          "debit": "18000.00",
+          "credit": "0.00",
+          "description": "Larkspur 2026-10 accrual"
+        },
+        {
+          "account_code": "210100",
+          "debit": "0.00",
+          "credit": "18000.00",
+          "description": "Larkspur 2026-10 accrual"
+        }
+      ],
+      "source_workpaper_id": null,
+      "reversal_of_gl_entry_id": null,
+      "created_at": "2026-10-31T18:00:00Z"
+    },
+    {
+      "gl_entry_id": "GL-LARKSPUR-2026-10-ACCRUAL-REV",
+      "period": "2026-11",
+      "posting_date": "2026-11-01",
+      "vendor_id": "VEN-LARKSPUR",
+      "obligation_id": null,
+      "entry_type": "ACCRUAL_REVERSAL",
+      "status": "POSTED",
+      "description": "Reverse Larkspur 2026-10 accrual",
+      "lines_json": [
+        {
+          "account_code": "210100",
+          "debit": "18000.00",
+          "credit": "0.00",
+          "description": "Reverse Larkspur 2026-10 accrual"
+        },
+        {
+          "account_code": "610300",
+          "debit": "0.00",
+          "credit": "18000.00",
+          "description": "Reverse Larkspur 2026-10 accrual"
+        }
+      ],
+      "source_workpaper_id": null,
+      "reversal_of_gl_entry_id": "GL-LARKSPUR-2026-10-ACCRUAL",
+      "created_at": "2026-11-01T05:30:00Z"
+    },
+    {
+      "gl_entry_id": "GL-LARKSPUR-2026-11-ACCRUAL",
+      "period": "2026-11",
+      "posting_date": "2026-11-30",
+      "vendor_id": "VEN-LARKSPUR",
+      "obligation_id": null,
+      "entry_type": "ACCRUAL",
+      "status": "REVERSED",
+      "description": "Larkspur 2026-11 accrual",
+      "lines_json": [
+        {
+          "account_code": "610300",
+          "debit": "22500.00",
+          "credit": "0.00",
+          "description": "Larkspur 2026-11 accrual"
+        },
+        {
+          "account_code": "210100",
+          "debit": "0.00",
+          "credit": "22500.00",
+          "description": "Larkspur 2026-11 accrual"
+        }
+      ],
+      "source_workpaper_id": null,
+      "reversal_of_gl_entry_id": null,
+      "created_at": "2026-11-30T18:00:00Z"
+    },
+    {
+      "gl_entry_id": "GL-LARKSPUR-2026-11-ACCRUAL-REV",
+      "period": "2026-12",
+      "posting_date": "2026-12-01",
+      "vendor_id": "VEN-LARKSPUR",
+      "obligation_id": null,
+      "entry_type": "ACCRUAL_REVERSAL",
+      "status": "POSTED",
+      "description": "Reverse Larkspur 2026-11 accrual",
+      "lines_json": [
+        {
+          "account_code": "210100",
+          "debit": "22500.00",
+          "credit": "0.00",
+          "description": "Reverse Larkspur 2026-11 accrual"
+        },
+        {
+          "account_code": "610300",
+          "debit": "0.00",
+          "credit": "22500.00",
+          "description": "Reverse Larkspur 2026-11 accrual"
+        }
+      ],
+      "source_workpaper_id": null,
+      "reversal_of_gl_entry_id": "GL-LARKSPUR-2026-11-ACCRUAL",
+      "created_at": "2026-12-01T05:30:00Z"
+    },
+    {
+      "gl_entry_id": "GL-CORVID-2026-09",
+      "period": "2026-10",
+      "posting_date": "2026-10-02",
+      "vendor_id": "VEN-CORVID",
+      "obligation_id": null,
+      "entry_type": "AP_INVOICE",
+      "status": "POSTED",
+      "description": "Corvid Sentinel Business subscription, September 2026 (CSEC-2609)",
+      "lines_json": [
+        {
+          "account_code": "610100",
+          "debit": "3250.00",
+          "credit": "0.00",
+          "description": "Corvid Sentinel Business subscription, September 2026 (CSEC-2609)"
+        },
+        {
+          "account_code": "200100",
+          "debit": "0.00",
+          "credit": "3250.00",
+          "description": "Corvid Sentinel Business subscription, September 2026 (CSEC-2609)"
+        }
+      ],
+      "source_workpaper_id": null,
+      "reversal_of_gl_entry_id": null,
+      "created_at": "2026-10-02T06:30:00Z"
+    },
+    {
+      "gl_entry_id": "GL-CORVID-2026-10",
+      "period": "2026-11",
+      "posting_date": "2026-11-02",
+      "vendor_id": "VEN-CORVID",
+      "obligation_id": null,
+      "entry_type": "AP_INVOICE",
+      "status": "POSTED",
+      "description": "Corvid Sentinel Business subscription, October 2026 (CSEC-2610)",
+      "lines_json": [
+        {
+          "account_code": "610100",
+          "debit": "3250.00",
+          "credit": "0.00",
+          "description": "Corvid Sentinel Business subscription, October 2026 (CSEC-2610)"
+        },
+        {
+          "account_code": "200100",
+          "debit": "0.00",
+          "credit": "3250.00",
+          "description": "Corvid Sentinel Business subscription, October 2026 (CSEC-2610)"
+        }
+      ],
+      "source_workpaper_id": null,
+      "reversal_of_gl_entry_id": null,
+      "created_at": "2026-11-02T06:30:00Z"
+    },
+    {
+      "gl_entry_id": "GL-CORVID-2026-11",
+      "period": "2026-12",
+      "posting_date": "2026-12-01",
+      "vendor_id": "VEN-CORVID",
+      "obligation_id": null,
+      "entry_type": "AP_INVOICE",
+      "status": "POSTED",
+      "description": "Corvid Sentinel Business subscription, November 2026 (CSEC-2611)",
+      "lines_json": [
+        {
+          "account_code": "610100",
+          "debit": "3250.00",
+          "credit": "0.00",
+          "description": "Corvid Sentinel Business subscription, November 2026 (CSEC-2611)"
+        },
+        {
+          "account_code": "200100",
+          "debit": "0.00",
+          "credit": "3250.00",
+          "description": "Corvid Sentinel Business subscription, November 2026 (CSEC-2611)"
+        }
+      ],
+      "source_workpaper_id": null,
+      "reversal_of_gl_entry_id": null,
+      "created_at": "2026-12-01T06:30:00Z"
+    }
+  ],
+  "company_config": [
+    {
+      "config_key": "people",
+      "config_value_json": [
+        {
+          "person_id": "CONTROLLER-001",
+          "name": "Rudraksh Awasthi",
+          "role": "Controller",
+          "email": "rudraksh.awasthi@northstar.example"
+        },
+        {
+          "person_id": "AP-001",
+          "name": "Jordan Patel",
+          "role": "AP Specialist",
+          "email": "jordan.patel@northstar.example"
+        },
+        {
+          "person_id": "PROC-001",
+          "name": "Avery Rivera",
+          "role": "Procurement Manager",
+          "email": "avery.rivera@northstar.example"
+        },
+        {
+          "person_id": "ENG-001",
+          "name": "Riley Kim",
+          "role": "Engineering Service Owner",
+          "email": "riley.kim@northstar.example"
+        },
+        {
+          "person_id": "OPS-001",
+          "name": "Taylor Morgan",
+          "role": "Operations Owner",
+          "email": "taylor.morgan@northstar.example"
+        },
+        {
+          "person_id": "MKT-001",
+          "name": "Priya Nair",
+          "role": "Marketing Owner",
+          "email": "priya.nair@northstar.example"
+        }
+      ],
+      "updated_at": "2026-12-01T08:00:00Z"
+    },
+    {
+      "config_key": "ownership_map",
+      "config_value_json": {
+        "controller": "CONTROLLER-001",
+        "default_ap_owner": "AP-001",
+        "vendors": {
+          "VEN-TERRASTACK": {
+            "service_owner_id": "ENG-001",
+            "procurement_owner_id": "PROC-001",
+            "po_owner_id": "ENG-001"
+          },
+          "VEN-LARKSPUR": {
+            "service_owner_id": "MKT-001",
+            "procurement_owner_id": "PROC-001",
+            "po_owner_id": "MKT-001"
+          },
+          "VEN-CORVID": {
+            "service_owner_id": "ENG-001",
+            "procurement_owner_id": "PROC-001",
+            "po_owner_id": "ENG-001"
+          }
+        }
+      },
+      "updated_at": "2026-12-01T08:00:00Z"
+    },
+    {
+      "config_key": "accounting_periods",
+      "config_value_json": {
+        "2026-09": {
+          "status": "CLOSED",
+          "phase": "HISTORICAL",
+          "period_start": "2026-09-01",
+          "period_end": "2026-09-30",
+          "close_cutoff": "2026-09-30T23:59:00Z"
+        },
+        "2026-10": {
+          "status": "CLOSED",
+          "phase": "HISTORICAL",
+          "period_start": "2026-10-01",
+          "period_end": "2026-10-31",
+          "close_cutoff": "2026-10-31T23:59:00Z"
+        },
+        "2026-11": {
+          "status": "CLOSED",
+          "phase": "HISTORICAL",
+          "period_start": "2026-11-01",
+          "period_end": "2026-11-30",
+          "close_cutoff": "2026-11-30T23:59:00Z"
+        },
+        "2026-12": {
+          "status": "OPEN",
+          "phase": "LIVE",
+          "period_start": "2026-12-01",
+          "period_end": "2026-12-31",
+          "close_cutoff": "2026-12-31T23:59:00Z"
+        },
+        "2027-01": {
+          "status": "OPEN",
+          "phase": "LIVE",
+          "period_start": "2027-01-01",
+          "period_end": "2027-01-31",
+          "close_cutoff": "2027-01-31T23:59:00Z"
+        }
+      },
+      "updated_at": "2026-12-01T08:00:00Z"
+    },
+    {
+      "config_key": "approval_thresholds",
+      "config_value_json": {
+        "controller_review_above_usd": "25000",
+        "mandatory_review_above_usd": "100000",
+        "de_minimis_threshold_usd": "5000"
+      },
+      "updated_at": "2026-12-01T08:00:00Z"
+    },
+    {
+      "config_key": "policy_rules",
+      "config_value_json": [
+        {
+          "rule_id": "POL-01",
+          "text": "Never auto-post a case that requires Controller review"
+        },
+        {
+          "rule_id": "POL-02",
+          "text": "Never accrue when a matching AP invoice exists"
+        },
+        {
+          "rule_id": "POL-03",
+          "text": "Require evidence of service receipt for receipt or usage-based spend"
+        },
+        {
+          "rule_id": "POL-04",
+          "text": "Require an open accounting period"
+        },
+        {
+          "rule_id": "POL-05",
+          "text": "Require a balanced journal entry"
+        },
+        {
+          "rule_id": "POL-06",
+          "text": "Require an active contract or PO, or an approved fallback"
+        },
+        {
+          "rule_id": "POL-07",
+          "text": "Capitalize equipment over the threshold and depreciate it over its life"
+        },
+        {
+          "rule_id": "POL-08",
+          "text": "Record prepaid services as an asset and expense them over the term"
+        }
+      ],
+      "updated_at": "2026-12-01T08:00:00Z"
+    },
+    {
+      "config_key": "allowed_gl_accounts",
+      "config_value_json": [
+        {
+          "account_code": "610100",
+          "name": "SaaS Expense",
+          "type": "EXPENSE"
+        },
+        {
+          "account_code": "610200",
+          "name": "Cloud & Data Expense",
+          "type": "EXPENSE"
+        },
+        {
+          "account_code": "610300",
+          "name": "Consulting Expense",
+          "type": "EXPENSE"
+        },
+        {
+          "account_code": "610400",
+          "name": "Office & Supplies Expense",
+          "type": "EXPENSE"
+        },
+        {
+          "account_code": "610500",
+          "name": "Marketing & Travel Expense",
+          "type": "EXPENSE"
+        },
+        {
+          "account_code": "610600",
+          "name": "Depreciation Expense",
+          "type": "EXPENSE"
+        },
+        {
+          "account_code": "150100",
+          "name": "Prepaid Expenses",
+          "type": "ASSET"
+        },
+        {
+          "account_code": "150200",
+          "name": "Fixed Assets - Computer Equipment",
+          "type": "ASSET"
+        },
+        {
+          "account_code": "150290",
+          "name": "Accumulated Depreciation",
+          "type": "CONTRA_ASSET"
+        },
+        {
+          "account_code": "210100",
+          "name": "Accrued Expenses",
+          "type": "LIABILITY"
+        },
+        {
+          "account_code": "210200",
+          "name": "Accrued Card Expenses",
+          "type": "LIABILITY"
+        },
+        {
+          "account_code": "200100",
+          "name": "Accounts Payable",
+          "type": "LIABILITY"
+        }
+      ],
+      "updated_at": "2026-12-01T08:00:00Z"
+    },
+    {
+      "config_key": "capitalization_policy",
+      "config_value_json": {
+        "threshold_usd": "5000",
+        "useful_life_months": 36
+      },
+      "updated_at": "2026-12-01T08:00:00Z"
+    },
+    {
+      "config_key": "simulation_clock",
+      "config_value_json": {
+        "current_time": "2026-12-01T08:00:00Z"
+      },
+      "updated_at": "2026-12-01T08:00:00Z"
+    },
+    {
+      "config_key": "company_profile",
+      "config_value_json": {
+        "name": "Northstar Analytics, Inc.",
+        "currency": "USD",
+        "close_cycle": "CALENDAR_MONTH",
+        "entities": [
+          "ENT-001"
+        ],
+        "accounting_basis": "ACCRUAL"
+      },
+      "updated_at": "2026-12-01T08:00:00Z"
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+# #ml-infra
+[2026-12-09 10:12] ana: a100 pool is at 80 percent today, moving the nightly eval to the small pool
+[2026-12-09 10:20] riley: fine by me, just keep the checkpoints on the shared volume
+[2026-12-14 16:45] sam: holiday change freeze starts the 23rd, get your deploys in before then
+[2026-12-15 09:03] ana: who owns the terrastack console login for the contractors?

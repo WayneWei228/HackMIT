@@ -1,0 +1,154 @@
+{
+  "note": "Worked out by hand from the case descriptions in generate_holdout.py.",
+  "cases": {
+    "CASE-TERRASTACK-2026-12": {
+      "vendor_id": "VEN-TERRASTACK",
+      "purchase_type": "USAGE_BASED",
+      "method": "USAGE_TIMES_RATE",
+      "at_close": {
+        "accrual": null,
+        "stage": "AWAITING_OUTREACH"
+      },
+      "final": {
+        "accrued": "18630.00",
+        "invoice": "18630.00",
+        "variance": "0.00",
+        "root_cause": null,
+        "stage": "CLOSED"
+      },
+      "history": {
+        "2026-09": null,
+        "2026-10": "MISSED_ESCALATOR",
+        "2026-11": "MISSED_ESCALATOR"
+      },
+      "rule_expected": true,
+      "facts": [
+        {
+          "label": "stepped-up rate 2.70 per hour",
+          "keys": [
+            "UNIT_RATE"
+          ],
+          "number": "2.70",
+          "date": null
+        },
+        {
+          "label": "base rate 2.50 per hour",
+          "keys": [
+            "UNIT_RATE"
+          ],
+          "number": "2.50",
+          "date": null
+        },
+        {
+          "label": "usage to date 4,690 hours",
+          "keys": [
+            "USAGE_QUANTITY"
+          ],
+          "number": "4690",
+          "date": null
+        },
+        {
+          "label": "usage covers only to 2026-12-21",
+          "keys": [
+            "USAGE_COVERAGE_END",
+            "EVIDENCE_GAP"
+          ],
+          "number": null,
+          "date": null
+        }
+      ]
+    },
+    "CASE-LARKSPUR-2026-12": {
+      "vendor_id": "VEN-LARKSPUR",
+      "purchase_type": "MILESTONE_BASED",
+      "method": "MILESTONE_ACCEPTED_AMOUNT",
+      "at_close": {
+        "accrual": "27450.00",
+        "stage": "AWAITING_ACTUAL_INVOICE",
+        "controller_decision": true
+      },
+      "final": {
+        "accrued": "27450.00",
+        "invoice": "27450.00",
+        "variance": "0.00",
+        "root_cause": null,
+        "stage": "CLOSED"
+      },
+      "history": {
+        "2026-10": null,
+        "2026-11": "SOURCE_DATA_ERROR"
+      },
+      "rule_expected": false,
+      "facts": [
+        {
+          "label": "not-to-exceed budget 96,000",
+          "keys": [
+            "BUDGET_CEILING",
+            "ORDER_TOTAL"
+          ],
+          "number": "96000",
+          "date": null
+        },
+        {
+          "label": "D3 accepted, fee 27,450",
+          "keys": [
+            "DELIVERED_AMOUNT",
+            "INVOICE_AMOUNT",
+            "ORDER_TOTAL"
+          ],
+          "number": "27450",
+          "date": null
+        }
+      ]
+    },
+    "CASE-CORVID-2026-12": {
+      "vendor_id": "VEN-CORVID",
+      "purchase_type": "FIXED_RECURRING",
+      "method": "FIXED_CONTRACT_RATE",
+      "at_close": {
+        "accrual": "3585.48",
+        "stage": "AWAITING_ACTUAL_INVOICE"
+      },
+      "final": {
+        "accrued": "3585.48",
+        "invoice": "3585.48",
+        "variance": "0.00",
+        "root_cause": null,
+        "stage": "CLOSED"
+      },
+      "history": {
+        "2026-09": null,
+        "2026-10": null,
+        "2026-11": null
+      },
+      "rule_expected": false,
+      "facts": [
+        {
+          "label": "amended monthly fee 3,900",
+          "keys": [
+            "MONTHLY_FEE"
+          ],
+          "number": "3900",
+          "date": null
+        },
+        {
+          "label": "original monthly fee 3,250",
+          "keys": [
+            "MONTHLY_FEE"
+          ],
+          "number": "3250",
+          "date": null
+        },
+        {
+          "label": "amendment effective 2026-12-16",
+          "keys": [
+            "EFFECTIVE_DATE",
+            "MONTHLY_FEE"
+          ],
+          "number": null,
+          "date": "2026-12-16"
+        }
+      ]
+    }
+  }
+}

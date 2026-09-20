@@ -1,0 +1,30 @@
+[
+  {
+    "outreach_key": "TERRASTACK-2026-12-USAGE_CONFIRMATION",
+    "available_at": "2027-01-03T10:00:00Z",
+    "recipient_role": "SERVICE_OWNER",
+    "response_text": "Jordan - the rollup finished. December came to 6,900 GPU compute-hours for 1 to 31 December.",
+    "parsed_truth": {
+      "resolved": true,
+      "service_received": true,
+      "quantity": "6900",
+      "unit": "COMPUTE_HOUR"
+    },
+    "service_evidence_on_response": {
+      "service_evidence_id": "USE-TERRASTACK-2026-12-CONFIRMED",
+      "vendor_id": "VEN-TERRASTACK",
+      "contract_id": "CON-TERRASTACK",
+      "po_id": "PO-TERRASTACK-2026",
+      "service_start_date": "2026-12-01",
+      "service_end_date": "2026-12-31",
+      "evidence_type": "SYSTEM_USAGE",
+      "quantity": "6900",
+      "unit": "COMPUTE_HOUR",
+      "accepted_amount": null,
+      "source_system": "ENGINEERING_PLATFORM",
+      "confirmed_by_person_id": "ENG-001",
+      "confirmation_status": "OWNER_CONFIRMED",
+      "created_at": "2027-01-03T10:00:00Z"
+    }
+  }
+]

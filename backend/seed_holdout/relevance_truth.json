@@ -1,0 +1,276 @@
+{
+  "entries": {
+    "FILE-TERRASTACK-01": {
+      "file_id": "FILE-TERRASTACK-01",
+      "case_id": "CASE-TERRASTACK-2026-12",
+      "relevant": true,
+      "role": "SUPPORTS_AMOUNT",
+      "in_universe": true,
+      "reason": "The signed agreement sets USD 2.50 per compute-hour and the 8 percent uplift to 2.70 from 1 October 2026."
+    },
+    "FILE-TERRASTACK-02": {
+      "file_id": "FILE-TERRASTACK-02",
+      "case_id": "CASE-TERRASTACK-2026-12",
+      "relevant": true,
+      "role": "SUPPORTS_DISCREPANCY",
+      "in_universe": true,
+      "reason": "The only December usage data, and it stops on the 21st, so the month is incomplete."
+    },
+    "FILE-TERRASTACK-03": {
+      "file_id": "FILE-TERRASTACK-03",
+      "case_id": "CASE-TERRASTACK-2026-12",
+      "relevant": true,
+      "role": "SUPPORTS_DISCREPANCY",
+      "in_universe": true,
+      "reason": "The owner says the full-month total is not available yet, so the accrual cannot be finalised."
+    },
+    "FILE-TERRASTACK-04": {
+      "file_id": "FILE-TERRASTACK-04",
+      "case_id": "CASE-TERRASTACK-2026-12",
+      "relevant": true,
+      "role": "SUPPORTS_DISCREPANCY",
+      "in_universe": true,
+      "reason": "Records that the October and November accruals used 2.50 while the vendor billed 2.70 after the uplift."
+    },
+    "FILE-TERRASTACK-05": {
+      "file_id": "FILE-TERRASTACK-05",
+      "case_id": "CASE-TERRASTACK-2026-12",
+      "relevant": false,
+      "role": "HARD_NEGATIVE",
+      "in_universe": true,
+      "reason": "A September invoice at the pre-uplift rate covers a closed period and would mislead the December estimate."
+    },
+    "FILE-TERRASTACK-06": {
+      "file_id": "FILE-TERRASTACK-06",
+      "case_id": "CASE-TERRASTACK-2026-12",
+      "relevant": false,
+      "role": "HARD_NEGATIVE",
+      "in_universe": true,
+      "reason": "A 2025 order form at USD 2.20 per hour that the 2026 master agreement replaced."
+    },
+    "FILE-TERRASTACK-07": {
+      "file_id": "FILE-TERRASTACK-07",
+      "case_id": "CASE-TERRASTACK-2026-12",
+      "relevant": false,
+      "role": "HARD_NEGATIVE",
+      "in_universe": true,
+      "reason": "An invoice from a different vendor with a similar name, for object storage."
+    },
+    "FILE-TERRASTACK-08": {
+      "file_id": "FILE-TERRASTACK-08",
+      "case_id": "CASE-TERRASTACK-2026-12",
+      "relevant": false,
+      "role": "NOISE",
+      "in_universe": true,
+      "reason": "Static supplier identity and payment terms carry no amount or period evidence."
+    },
+    "FILE-TERRASTACK-09": {
+      "file_id": "FILE-TERRASTACK-09",
+      "case_id": "CASE-TERRASTACK-2026-12",
+      "relevant": false,
+      "role": "NOISE",
+      "in_universe": true,
+      "reason": "Infrastructure chatter about pools and freezes with no accounting facts."
+    },
+    "FILE-TERRASTACK-10": {
+      "file_id": "FILE-TERRASTACK-10",
+      "case_id": "CASE-TERRASTACK-2026-12",
+      "relevant": false,
+      "role": "HARD_NEGATIVE",
+      "in_universe": true,
+      "reason": "A bulk export whose rows are mostly other vendors and show only past periods."
+    },
+    "FILE-TERRASTACK-L1": {
+      "file_id": "FILE-TERRASTACK-L1",
+      "case_id": "CASE-TERRASTACK-2026-12",
+      "relevant": true,
+      "role": "LATE_ARRIVAL",
+      "in_universe": false,
+      "reason": "The real December invoice arrives after the close and grades the accrual."
+    },
+    "FILE-TERRASTACK-L2": {
+      "file_id": "FILE-TERRASTACK-L2",
+      "case_id": "CASE-TERRASTACK-2026-12",
+      "relevant": true,
+      "role": "LATE_ARRIVAL",
+      "in_universe": false,
+      "reason": "The owner's reply with the full-month hours arrives after the close."
+    },
+    "FILE-LARKSPUR-01": {
+      "file_id": "FILE-LARKSPUR-01",
+      "case_id": "CASE-LARKSPUR-2026-12",
+      "relevant": true,
+      "role": "SUPPORTS_AMOUNT",
+      "in_universe": true,
+      "reason": "The signed statement of work fixes the fee per deliverable and the USD 96,000 ceiling."
+    },
+    "FILE-LARKSPUR-02": {
+      "file_id": "FILE-LARKSPUR-02",
+      "case_id": "CASE-LARKSPUR-2026-12",
+      "relevant": true,
+      "role": "SUPPORTS_AMOUNT",
+      "in_universe": true,
+      "reason": "Signed proof that D3 was delivered and accepted, with the fee payable."
+    },
+    "FILE-LARKSPUR-03": {
+      "file_id": "FILE-LARKSPUR-03",
+      "case_id": "CASE-LARKSPUR-2026-12",
+      "relevant": true,
+      "role": "SUPPORTS_DISCREPANCY",
+      "in_universe": true,
+      "reason": "Confirms D3 acceptance and warns that the studio billed unapproved expenses on D2."
+    },
+    "FILE-LARKSPUR-04": {
+      "file_id": "FILE-LARKSPUR-04",
+      "case_id": "CASE-LARKSPUR-2026-12",
+      "relevant": true,
+      "role": "SUPPORTS_DISCREPANCY",
+      "in_universe": true,
+      "reason": "Explains that the November invoice exceeded the accepted D2 fee by unapproved expenses."
+    },
+    "FILE-LARKSPUR-05": {
+      "file_id": "FILE-LARKSPUR-05",
+      "case_id": "CASE-LARKSPUR-2026-12",
+      "relevant": false,
+      "role": "HARD_NEGATIVE",
+      "in_universe": true,
+      "reason": "An unsigned draft with D3 at USD 24,000 that the signed statement of work replaced."
+    },
+    "FILE-LARKSPUR-06": {
+      "file_id": "FILE-LARKSPUR-06",
+      "case_id": "CASE-LARKSPUR-2026-12",
+      "relevant": false,
+      "role": "HARD_NEGATIVE",
+      "in_universe": true,
+      "reason": "An invoice from a different vendor with a similar name, for signage."
+    },
+    "FILE-LARKSPUR-07": {
+      "file_id": "FILE-LARKSPUR-07",
+      "case_id": "CASE-LARKSPUR-2026-12",
+      "relevant": false,
+      "role": "HARD_NEGATIVE",
+      "in_universe": true,
+      "reason": "The November invoice covers a closed period and includes charges the statement of work does not allow."
+    },
+    "FILE-LARKSPUR-08": {
+      "file_id": "FILE-LARKSPUR-08",
+      "case_id": "CASE-LARKSPUR-2026-12",
+      "relevant": false,
+      "role": "NOISE",
+      "in_universe": true,
+      "reason": "Static supplier identity and payment terms carry no amount or period evidence."
+    },
+    "FILE-LARKSPUR-09": {
+      "file_id": "FILE-LARKSPUR-09",
+      "case_id": "CASE-LARKSPUR-2026-12",
+      "relevant": false,
+      "role": "NOISE",
+      "in_universe": true,
+      "reason": "Creative chatter about colours and fonts with no accounting facts."
+    },
+    "FILE-LARKSPUR-10": {
+      "file_id": "FILE-LARKSPUR-10",
+      "case_id": "CASE-LARKSPUR-2026-12",
+      "relevant": false,
+      "role": "HARD_NEGATIVE",
+      "in_universe": true,
+      "reason": "Past invoices are for closed periods and tempt an estimate from history instead of the acceptance."
+    },
+    "FILE-LARKSPUR-L1": {
+      "file_id": "FILE-LARKSPUR-L1",
+      "case_id": "CASE-LARKSPUR-2026-12",
+      "relevant": true,
+      "role": "LATE_ARRIVAL",
+      "in_universe": false,
+      "reason": "The real invoice for D3 arrives after the close and grades the accrual."
+    },
+    "FILE-CORVID-01": {
+      "file_id": "FILE-CORVID-01",
+      "case_id": "CASE-CORVID-2026-12",
+      "relevant": true,
+      "role": "SUPPORTS_AMOUNT",
+      "in_universe": true,
+      "reason": "The subscription agreement's order table sets the original monthly fee and the term."
+    },
+    "FILE-CORVID-02": {
+      "file_id": "FILE-CORVID-02",
+      "case_id": "CASE-CORVID-2026-12",
+      "relevant": true,
+      "role": "SUPPORTS_AMOUNT",
+      "in_universe": true,
+      "reason": "The confirmed email amendment sets the new monthly fee and the date it takes effect."
+    },
+    "FILE-CORVID-03": {
+      "file_id": "FILE-CORVID-03",
+      "case_id": "CASE-CORVID-2026-12",
+      "relevant": true,
+      "role": "SUPPORTS_AMOUNT",
+      "in_universe": true,
+      "reason": "Internal approval of the upgrade with the effective date and the proration instruction."
+    },
+    "FILE-CORVID-04": {
+      "file_id": "FILE-CORVID-04",
+      "case_id": "CASE-CORVID-2026-12",
+      "relevant": false,
+      "role": "HARD_NEGATIVE",
+      "in_universe": true,
+      "reason": "An expired 2024 starter plan at USD 2,900 a month, replaced by the 2026 agreement."
+    },
+    "FILE-CORVID-05": {
+      "file_id": "FILE-CORVID-05",
+      "case_id": "CASE-CORVID-2026-12",
+      "relevant": false,
+      "role": "HARD_NEGATIVE",
+      "in_universe": true,
+      "reason": "The November invoice at the old fee covers a closed period."
+    },
+    "FILE-CORVID-06": {
+      "file_id": "FILE-CORVID-06",
+      "case_id": "CASE-CORVID-2026-12",
+      "relevant": false,
+      "role": "HARD_NEGATIVE",
+      "in_universe": true,
+      "reason": "An invoice from a different vendor with a similar name, for rack hardware."
+    },
+    "FILE-CORVID-07": {
+      "file_id": "FILE-CORVID-07",
+      "case_id": "CASE-CORVID-2026-12",
+      "relevant": false,
+      "role": "HARD_NEGATIVE",
+      "in_universe": true,
+      "reason": "The purchase order still carries the pre-amendment price and was never updated."
+    },
+    "FILE-CORVID-08": {
+      "file_id": "FILE-CORVID-08",
+      "case_id": "CASE-CORVID-2026-12",
+      "relevant": false,
+      "role": "NOISE",
+      "in_universe": true,
+      "reason": "Static supplier identity and payment terms carry no amount or period evidence."
+    },
+    "FILE-CORVID-09": {
+      "file_id": "FILE-CORVID-09",
+      "case_id": "CASE-CORVID-2026-12",
+      "relevant": false,
+      "role": "NOISE",
+      "in_universe": true,
+      "reason": "Security operations chatter about alerts with no accounting facts."
+    },
+    "FILE-CORVID-10": {
+      "file_id": "FILE-CORVID-10",
+      "case_id": "CASE-CORVID-2026-12",
+      "relevant": false,
+      "role": "HARD_NEGATIVE",
+      "in_universe": true,
+      "reason": "Past invoices show the old fee and tempt a run-rate estimate."
+    },
+    "FILE-CORVID-L1": {
+      "file_id": "FILE-CORVID-L1",
+      "case_id": "CASE-CORVID-2026-12",
+      "relevant": true,
+      "role": "LATE_ARRIVAL",
+      "in_universe": false,
+      "reason": "The real December invoice arrives after the close and grades the accrual."
+    }
+  }
+}

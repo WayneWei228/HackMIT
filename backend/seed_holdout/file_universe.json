@@ -1,0 +1,606 @@
+{
+  "as_of": "2026-12-31T23:59:59Z",
+  "cases": [
+    {
+      "case_id": "CASE-TERRASTACK-2026-12",
+      "vendor_id": "VEN-TERRASTACK",
+      "vendor_name": "Terrastack Compute",
+      "title": "Terrastack Compute December accrual",
+      "period": "2026-12"
+    },
+    {
+      "case_id": "CASE-LARKSPUR-2026-12",
+      "vendor_id": "VEN-LARKSPUR",
+      "vendor_name": "Larkspur Design Studio",
+      "title": "Larkspur Design Studio December accrual",
+      "period": "2026-12"
+    },
+    {
+      "case_id": "CASE-CORVID-2026-12",
+      "vendor_id": "VEN-CORVID",
+      "vendor_name": "Corvid Security",
+      "title": "Corvid Security December accrual",
+      "period": "2026-12"
+    }
+  ],
+  "files": [
+    {
+      "file_id": "FILE-TERRASTACK-01",
+      "case_id": "CASE-TERRASTACK-2026-12",
+      "vendor_id": "VEN-TERRASTACK",
+      "name": "terrastack_msa_signed.pdf",
+      "kind": "agreement",
+      "format": "PDF",
+      "path": "files/terrastack/terrastack_msa_signed.pdf",
+      "size_label": "1 page",
+      "available_at": "2026-01-05T09:00:00Z",
+      "preview": {
+        "card": "memo",
+        "title": "Master Services Agreement",
+        "subtitle": "Terrastack Compute",
+        "body": "Master Services Agreement - GPU Compute Between Terrastack Compute, Inc. (Terrastack) and Northstar Analytics, Inc. (Customer). Effective 1 January 2026. 1. Services Terrastack provides on-demand GPU compute capacity through its cloud conso"
+      }
+    },
+    {
+      "file_id": "FILE-TERRASTACK-02",
+      "case_id": "CASE-TERRASTACK-2026-12",
+      "vendor_id": "VEN-TERRASTACK",
+      "name": "gpu_hours_daily_dec_partial.xlsx",
+      "kind": "usage",
+      "format": "XLSX",
+      "path": "files/terrastack/gpu_hours_daily_dec_partial.xlsx",
+      "size_label": "26 rows",
+      "available_at": "2026-12-23T18:00:00Z",
+      "preview": {
+        "card": "memo",
+        "title": "Daily GPU hours",
+        "subtitle": "Terrastack Compute",
+        "body": "# Console export Terrastack console - daily GPU compute-hours (export generated 2026-12-23) | Account: Northstar Analytics, Inc. Region: us-east Tier: on-demand | Date | GPU compute-hours 2026-12-01 | 212 2026-12-02 | 216 2026-12-03 | 238 2"
+      }
+    },
+    {
+      "file_id": "FILE-TERRASTACK-03",
+      "case_id": "CASE-TERRASTACK-2026-12",
+      "vendor_id": "VEN-TERRASTACK",
+      "name": "re_december_gpu_hours_missing.eml",
+      "kind": "email",
+      "format": "EML",
+      "path": "files/terrastack/re_december_gpu_hours_missing.eml",
+      "size_label": "2 messages",
+      "available_at": "2026-12-31T08:30:00Z",
+      "preview": {
+        "card": "memo",
+        "title": "December GPU hours",
+        "subtitle": "Terrastack Compute",
+        "body": "From: Jordan Patel <jordan.patel@northstar.example> To: Riley Kim <riley.kim@northstar.example> Date: Thu, 31 Dec 2026 08:30:00 +0000 Subject: Re: December GPU hours Riley - thanks. The console export in the shared folder stops on the 21st."
+      }
+    },
+    {
+      "file_id": "FILE-TERRASTACK-04",
+      "case_id": "CASE-TERRASTACK-2026-12",
+      "vendor_id": "VEN-TERRASTACK",
+      "name": "q4_accrual_review_terrastack.docx",
+      "kind": "prior",
+      "format": "DOCX",
+      "path": "files/terrastack/q4_accrual_review_terrastack.docx",
+      "size_label": "1 page",
+      "available_at": "2026-12-03T09:00:00Z",
+      "preview": {
+        "card": "memo",
+        "title": "Q4 accrual review",
+        "subtitle": "Terrastack Compute",
+        "body": "Q4 accrual review - Terrastack Compute Prepared by Finance Operations on 3 December 2026 for the Controller. What happened September was accrued and invoiced at USD 2.50 per compute-hour and matched. October: accrued USD 15,500.00 (6,200 ho"
+      }
+    },
+    {
+      "file_id": "FILE-TERRASTACK-05",
+      "case_id": "CASE-TERRASTACK-2026-12",
+      "vendor_id": "VEN-TERRASTACK",
+      "name": "invoice_tsk-90388_sep.pdf",
+      "kind": "invoice",
+      "format": "PDF",
+      "path": "files/terrastack/invoice_tsk-90388_sep.pdf",
+      "size_label": "1 page",
+      "available_at": "2026-12-01T08:00:00Z",
+      "preview": {
+        "card": "memo",
+        "title": "Invoice TSK-90388",
+        "subtitle": "Terrastack Compute",
+        "body": "Invoice TSK-90388 Terrastack Compute, Inc. Bill to: Northstar Analytics, Inc. Invoice date: 30 September 2026 Description Period Hours Rate (USD) Amount (USD) GPU compute-hours 1 Sep - 30 Sep 2026 5,800 2.50 14,500.00 Total due: USD 14,500."
+      }
+    },
+    {
+      "file_id": "FILE-TERRASTACK-06",
+      "case_id": "CASE-TERRASTACK-2026-12",
+      "vendor_id": "VEN-TERRASTACK",
+      "name": "terrastack_order_form_2025.pdf",
+      "kind": "agreement",
+      "format": "PDF",
+      "path": "files/terrastack/terrastack_order_form_2025.pdf",
+      "size_label": "1 page",
+      "available_at": "2026-12-01T08:00:00Z",
+      "preview": {
+        "card": "memo",
+        "title": "Order Form OF-2025-114",
+        "subtitle": "Terrastack Compute",
+        "body": "Order Form OF-2025-114 Terrastack Compute, Inc. and Northstar Analytics, Inc. Term: 1 July 2025 to 31 December 2025. GPU compute-hours are charged at USD 2.20 per hour on the on-demand tier. This order form is replaced by the Master Service"
+      }
+    },
+    {
+      "file_id": "FILE-TERRASTACK-07",
+      "case_id": "CASE-TERRASTACK-2026-12",
+      "vendor_id": "VEN-TERRASTACK",
+      "name": "terrastack_storage_invoice_dec.pdf",
+      "kind": "invoice",
+      "format": "PDF",
+      "path": "files/terrastack/terrastack_storage_invoice_dec.pdf",
+      "size_label": "1 page",
+      "available_at": "2026-12-20T10:00:00Z",
+      "preview": {
+        "card": "memo",
+        "title": "Invoice TSL-2210",
+        "subtitle": "Terrastack Compute",
+        "body": "Invoice TSL-2210 Terrastack Storage Ltd. Bill to: Northstar Analytics, Inc. Invoice date: 20 December 2026 Description Period Quantity Rate (USD) Amount (USD) Object storage, TB-months 1 Nov - 30 Nov 2026 41.2 100.00 4,120.00 Total due: USD"
+      }
+    },
+    {
+      "file_id": "FILE-TERRASTACK-08",
+      "case_id": "CASE-TERRASTACK-2026-12",
+      "vendor_id": "VEN-TERRASTACK",
+      "name": "vendor_master_terrastack.pdf",
+      "kind": "vendor",
+      "format": "PDF",
+      "path": "files/terrastack/vendor_master_terrastack.pdf",
+      "size_label": "1 page",
+      "available_at": "2026-12-01T08:00:00Z",
+      "preview": {
+        "card": "memo",
+        "title": "Supplier record",
+        "subtitle": "Terrastack Compute",
+        "body": "Supplier master - Terrastack Compute Supplier record Field Value Supplier ID VEN-TERRASTACK Legal name Terrastack Compute, Inc. Status Active Payment terms Net 30 Remit-to 410 Harbor Way, Seattle, WA 98101 Billing contact billing@terrastack"
+      }
+    },
+    {
+      "file_id": "FILE-TERRASTACK-09",
+      "case_id": "CASE-TERRASTACK-2026-12",
+      "vendor_id": "VEN-TERRASTACK",
+      "name": "slack_export_ml_infra.txt",
+      "kind": "slack",
+      "format": "TXT",
+      "path": "files/terrastack/slack_export_ml_infra.txt",
+      "size_label": "4 messages",
+      "available_at": "2026-12-01T08:00:00Z",
+      "preview": {
+        "card": "memo",
+        "title": "Slack export",
+        "subtitle": "Terrastack Compute",
+        "body": "# #ml-infra [2026-12-09 10:12] ana: a100 pool is at 80 percent today, moving the nightly eval to the small pool [2026-12-09 10:20] riley: fine by me, just keep the checkpoints on the shared volume [2026-12-14 16:45] sam: holiday change free"
+      }
+    },
+    {
+      "file_id": "FILE-TERRASTACK-10",
+      "case_id": "CASE-TERRASTACK-2026-12",
+      "vendor_id": "VEN-TERRASTACK",
+      "name": "general_ledger_export_dec.xlsx",
+      "kind": "gl",
+      "format": "XLSX",
+      "path": "files/terrastack/general_ledger_export_dec.xlsx",
+      "size_label": "16 rows",
+      "available_at": "2026-12-01T08:00:00Z",
+      "preview": {
+        "card": "memo",
+        "title": "General ledger",
+        "subtitle": "Terrastack Compute",
+        "body": "# GL export Posting date | Journal | Vendor | Description | Debit | Credit 2026-10-01 | GL-TERRASTACK-2026-09 | Terrastack Compute | GPU compute Sep | 14500 | 2026-10-01 | GL-HOLLIS-2026-09 | Hollis Office Supply | Toner and paper | 812.4 |"
+      }
+    },
+    {
+      "file_id": "FILE-TERRASTACK-L1",
+      "case_id": "CASE-TERRASTACK-2026-12",
+      "vendor_id": "VEN-TERRASTACK",
+      "name": "invoice_tsk-90671_dec.pdf",
+      "kind": "invoice",
+      "format": "PDF",
+      "path": "files/terrastack/invoice_tsk-90671_dec.pdf",
+      "size_label": "1 page",
+      "available_at": "2027-01-06T09:00:00Z",
+      "preview": {
+        "card": "memo",
+        "title": "Invoice TSK-90671",
+        "subtitle": "Terrastack Compute",
+        "body": "Invoice TSK-90671 Terrastack Compute, Inc. Bill to: Northstar Analytics, Inc. Invoice date: 5 January 2027 Description Period Hours Rate (USD) Amount (USD) GPU compute-hours 1 Dec - 31 Dec 2026 6,900 2.70 18,630.00 Total due: USD 18,630.00."
+      }
+    },
+    {
+      "file_id": "FILE-TERRASTACK-L2",
+      "case_id": "CASE-TERRASTACK-2026-12",
+      "vendor_id": "VEN-TERRASTACK",
+      "name": "reply_terrastack_20270103.eml",
+      "kind": "email",
+      "format": "EML",
+      "path": "files/terrastack/reply_terrastack_20270103.eml",
+      "size_label": "1 message",
+      "available_at": "2027-01-03T10:00:00Z",
+      "preview": {
+        "card": "memo",
+        "title": "December GPU hours",
+        "subtitle": "Terrastack Compute",
+        "body": "From: Riley Kim <riley.kim@northstar.example> To: Jordan Patel <jordan.patel@northstar.example> Date: Sun, 03 Jan 2027 10:00:00 +0000 Subject: Re: Terrastack: information needed for month-end Jordan - the rollup finished. December came to 6"
+      }
+    },
+    {
+      "file_id": "FILE-LARKSPUR-01",
+      "case_id": "CASE-LARKSPUR-2026-12",
+      "vendor_id": "VEN-LARKSPUR",
+      "name": "sow_no2_signed.pdf",
+      "kind": "agreement",
+      "format": "PDF",
+      "path": "files/larkspur/sow_no2_signed.pdf",
+      "size_label": "1 page",
+      "available_at": "2026-10-02T09:00:00Z",
+      "preview": {
+        "card": "memo",
+        "title": "Statement of Work No. 2",
+        "subtitle": "Larkspur Design Studio",
+        "body": "Statement of Work No. 2 - Brand System Design Larkspur Design Studio LLC (Studio) for Northstar Analytics, Inc. (Client). Effective 1 October 2026. 3. Deliverables and fees Deliverable Description Fee (USD) D1 Discovery and brand audit 18,0"
+      }
+    },
+    {
+      "file_id": "FILE-LARKSPUR-02",
+      "case_id": "CASE-LARKSPUR-2026-12",
+      "vendor_id": "VEN-LARKSPUR",
+      "name": "acceptance_certificate_d3.pdf",
+      "kind": "delivery",
+      "format": "PDF",
+      "path": "files/larkspur/acceptance_certificate_d3.pdf",
+      "size_label": "1 page",
+      "available_at": "2026-12-29T16:30:00Z",
+      "preview": {
+        "card": "memo",
+        "title": "Acceptance Certificate D3",
+        "subtitle": "Larkspur Design Studio",
+        "body": "Acceptance Certificate - Deliverable D3 Statement of Work No. 2, Larkspur Design Studio LLC. Item Detail Deliverable D3 - Visual identity system and usage guidelines Delivered 14 December 2026 Accepted by Priya Nair, Marketing, on 29 Decemb"
+      }
+    },
+    {
+      "file_id": "FILE-LARKSPUR-03",
+      "case_id": "CASE-LARKSPUR-2026-12",
+      "vendor_id": "VEN-LARKSPUR",
+      "name": "d3_signoff_thread.eml",
+      "kind": "email",
+      "format": "EML",
+      "path": "files/larkspur/d3_signoff_thread.eml",
+      "size_label": "1 message",
+      "available_at": "2026-12-30T10:00:00Z",
+      "preview": {
+        "card": "memo",
+        "title": "D3 sign-off",
+        "subtitle": "Larkspur Design Studio",
+        "body": "From: Priya Nair <priya.nair@northstar.example> To: Jordan Patel <jordan.patel@northstar.example> Date: Wed, 30 Dec 2026 10:00:00 +0000 Subject: D3 signed off - accrue the fee only Jordan - I signed the acceptance certificate for D3 yesterd"
+      }
+    },
+    {
+      "file_id": "FILE-LARKSPUR-04",
+      "case_id": "CASE-LARKSPUR-2026-12",
+      "vendor_id": "VEN-LARKSPUR",
+      "name": "november_close_note_larkspur.docx",
+      "kind": "prior",
+      "format": "DOCX",
+      "path": "files/larkspur/november_close_note_larkspur.docx",
+      "size_label": "1 page",
+      "available_at": "2026-12-04T09:00:00Z",
+      "preview": {
+        "card": "memo",
+        "title": "November close note",
+        "subtitle": "Larkspur Design Studio",
+        "body": "November close note - Larkspur Design Studio Finance Operations, 4 December 2026. D2 was accrued at the accepted fee of USD 22,500.00. Invoice LDS-0247 arrived at USD 23,700.00. The extra USD 1,200.00 is travel and materials that the statem"
+      }
+    },
+    {
+      "file_id": "FILE-LARKSPUR-05",
+      "case_id": "CASE-LARKSPUR-2026-12",
+      "vendor_id": "VEN-LARKSPUR",
+      "name": "sow_no2_draft_v1.docx",
+      "kind": "agreement",
+      "format": "DOCX",
+      "path": "files/larkspur/sow_no2_draft_v1.docx",
+      "size_label": "1 page",
+      "available_at": "2026-09-18T09:00:00Z",
+      "preview": {
+        "card": "memo",
+        "title": "SOW No. 2 draft v1",
+        "subtitle": "Larkspur Design Studio",
+        "body": "DRAFT v1 - Statement of Work No. 2 (not signed) For discussion only. Superseded by the signed Statement of Work effective 1 October 2026. Deliverable | Description | Fee (USD) D1 | Discovery and brand audit | 18,000.00 D2 | Brand strategy a"
+      }
+    },
+    {
+      "file_id": "FILE-LARKSPUR-06",
+      "case_id": "CASE-LARKSPUR-2026-12",
+      "vendor_id": "VEN-LARKSPUR",
+      "name": "lark_and_spur_studios_invoice_1190.pdf",
+      "kind": "invoice",
+      "format": "PDF",
+      "path": "files/larkspur/lark_and_spur_studios_invoice_1190.pdf",
+      "size_label": "1 page",
+      "available_at": "2026-12-12T10:00:00Z",
+      "preview": {
+        "card": "memo",
+        "title": "Invoice 1190",
+        "subtitle": "Larkspur Design Studio",
+        "body": "Invoice 1190 Lark & Spur Studios Inc. Bill to: Northstar Analytics, Inc. Date: 12 December 2026 Description Amount (USD) Lobby signage design and install 9,800.00 Total due: USD 9,800.00."
+      }
+    },
+    {
+      "file_id": "FILE-LARKSPUR-07",
+      "case_id": "CASE-LARKSPUR-2026-12",
+      "vendor_id": "VEN-LARKSPUR",
+      "name": "invoice_lds-0247_nov.pdf",
+      "kind": "invoice",
+      "format": "PDF",
+      "path": "files/larkspur/invoice_lds-0247_nov.pdf",
+      "size_label": "1 page",
+      "available_at": "2026-12-01T08:00:00Z",
+      "preview": {
+        "card": "memo",
+        "title": "Invoice LDS-0247",
+        "subtitle": "Larkspur Design Studio",
+        "body": "Invoice LDS-0247 Larkspur Design Studio LLC. Bill to: Northstar Analytics, Inc. Date: 30 November 2026 Description Amount (USD) Deliverable D2 - Brand strategy and naming 22,500.00 Travel and materials (reimbursable) 1,200.00 Total due: USD"
+      }
+    },
+    {
+      "file_id": "FILE-LARKSPUR-08",
+      "case_id": "CASE-LARKSPUR-2026-12",
+      "vendor_id": "VEN-LARKSPUR",
+      "name": "vendor_master_larkspur.pdf",
+      "kind": "vendor",
+      "format": "PDF",
+      "path": "files/larkspur/vendor_master_larkspur.pdf",
+      "size_label": "1 page",
+      "available_at": "2026-12-01T08:00:00Z",
+      "preview": {
+        "card": "memo",
+        "title": "Supplier record",
+        "subtitle": "Larkspur Design Studio",
+        "body": "Supplier master - Larkspur Design Studio Supplier record Field Value Supplier ID VEN-LARKSPUR Legal name Larkspur Design Studio LLC Status Active Payment terms Net 30 Remit-to 88 Mercer Street, New York, NY 10012 Billing contact billing@lar"
+      }
+    },
+    {
+      "file_id": "FILE-LARKSPUR-09",
+      "case_id": "CASE-LARKSPUR-2026-12",
+      "vendor_id": "VEN-LARKSPUR",
+      "name": "slack_export_brand_launch.txt",
+      "kind": "slack",
+      "format": "TXT",
+      "path": "files/larkspur/slack_export_brand_launch.txt",
+      "size_label": "3 messages",
+      "available_at": "2026-12-01T08:00:00Z",
+      "preview": {
+        "card": "memo",
+        "title": "Slack export",
+        "subtitle": "Larkspur Design Studio",
+        "body": "# #brand-launch [2026-12-10 11:20] priya: the forest green reads too dark on the deck, can we try the lighter one [2026-12-10 11:42] lee: lighter one looks better on the site too [2026-12-16 15:05] priya: guidelines PDF is a great read, sen"
+      }
+    },
+    {
+      "file_id": "FILE-LARKSPUR-10",
+      "case_id": "CASE-LARKSPUR-2026-12",
+      "vendor_id": "VEN-LARKSPUR",
+      "name": "ap_history_larkspur.xlsx",
+      "kind": "ap",
+      "format": "XLSX",
+      "path": "files/larkspur/ap_history_larkspur.xlsx",
+      "size_label": "4 rows",
+      "available_at": "2026-12-01T08:00:00Z",
+      "preview": {
+        "card": "memo",
+        "title": "Invoice history",
+        "subtitle": "Larkspur Design Studio",
+        "body": "# Invoice history Larkspur Design Studio - invoice history | | | Invoice | Date | Description | Amount (USD) LDS-0231 | 2026-10-31 | Deliverable D1 | 18000 LDS-0247 | 2026-11-30 | Deliverable D2 plus expenses | 23700"
+      }
+    },
+    {
+      "file_id": "FILE-LARKSPUR-L1",
+      "case_id": "CASE-LARKSPUR-2026-12",
+      "vendor_id": "VEN-LARKSPUR",
+      "name": "invoice_lds-0298_d3.pdf",
+      "kind": "invoice",
+      "format": "PDF",
+      "path": "files/larkspur/invoice_lds-0298_d3.pdf",
+      "size_label": "1 page",
+      "available_at": "2027-01-09T09:00:00Z",
+      "preview": {
+        "card": "memo",
+        "title": "Invoice LDS-0298",
+        "subtitle": "Larkspur Design Studio",
+        "body": "Invoice LDS-0298 Larkspur Design Studio LLC. Bill to: Northstar Analytics, Inc. Date: 8 January 2027 Description Amount (USD) Deliverable D3 - Visual identity system and usage guidelines 27,450.00 Total due: USD 27,450.00."
+      }
+    },
+    {
+      "file_id": "FILE-CORVID-01",
+      "case_id": "CASE-CORVID-2026-12",
+      "vendor_id": "VEN-CORVID",
+      "name": "corvid_subscription_agreement.docx",
+      "kind": "agreement",
+      "format": "DOCX",
+      "path": "files/corvid/corvid_subscription_agreement.docx",
+      "size_label": "1 page",
+      "available_at": "2026-01-08T09:00:00Z",
+      "preview": {
+        "card": "memo",
+        "title": "Subscription Agreement",
+        "subtitle": "Corvid Security",
+        "body": "Subscription Agreement - Corvid Security Platform Between Corvid Security, LLC and Northstar Analytics, Inc. Effective 1 January 2026. Order details Plan | Endpoints | Monthly fee (USD) | Billing Sentinel Business | Up to 250 | 3,250.00 | M"
+      }
+    },
+    {
+      "file_id": "FILE-CORVID-02",
+      "case_id": "CASE-CORVID-2026-12",
+      "vendor_id": "VEN-CORVID",
+      "name": "re_sentinel_enterprise_upgrade.eml",
+      "kind": "email",
+      "format": "EML",
+      "path": "files/corvid/re_sentinel_enterprise_upgrade.eml",
+      "size_label": "2 messages",
+      "available_at": "2026-11-24T16:00:00Z",
+      "preview": {
+        "card": "memo",
+        "title": "Sentinel Enterprise upgrade",
+        "subtitle": "Corvid Security",
+        "body": "From: Avery Rivera <avery.rivera@northstar.example> To: Dana Whitcomb <dana.whitcomb@corvidsec.example> Date: Tue, 24 Nov 2026 16:00:00 +0000 Subject: Re: Sentinel Enterprise upgrade - order confirmation Agreed. Please proceed with the upgr"
+      }
+    },
+    {
+      "file_id": "FILE-CORVID-03",
+      "case_id": "CASE-CORVID-2026-12",
+      "vendor_id": "VEN-CORVID",
+      "name": "upgrade_approval_note_corvid.docx",
+      "kind": "brief",
+      "format": "DOCX",
+      "path": "files/corvid/upgrade_approval_note_corvid.docx",
+      "size_label": "1 page",
+      "available_at": "2026-11-25T09:00:00Z",
+      "preview": {
+        "card": "memo",
+        "title": "Upgrade approval note",
+        "subtitle": "Corvid Security",
+        "body": "Upgrade approval note - Corvid Security Approved 25 November 2026 by Avery Rivera (Procurement) and Riley Kim (Engineering service owner). The plan moves from Sentinel Business to Sentinel Enterprise. The new monthly fee is USD 3,900.00 fro"
+      }
+    },
+    {
+      "file_id": "FILE-CORVID-04",
+      "case_id": "CASE-CORVID-2026-12",
+      "vendor_id": "VEN-CORVID",
+      "name": "corvid_order_form_2024.pdf",
+      "kind": "agreement",
+      "format": "PDF",
+      "path": "files/corvid/corvid_order_form_2024.pdf",
+      "size_label": "1 page",
+      "available_at": "2026-12-01T08:00:00Z",
+      "preview": {
+        "card": "memo",
+        "title": "Order Form 2024-071",
+        "subtitle": "Corvid Security",
+        "body": "Order Form 2024-071 Corvid Security, LLC and Northstar Analytics, Inc. Plan: Sentinel Starter. Monthly fee: USD 2,900.00. Term: 1 January 2024 to 31 December 2025. This order form expired on 31 December 2025 and was replaced by the 2026 Sub"
+      }
+    },
+    {
+      "file_id": "FILE-CORVID-05",
+      "case_id": "CASE-CORVID-2026-12",
+      "vendor_id": "VEN-CORVID",
+      "name": "invoice_csec-2611_nov.pdf",
+      "kind": "invoice",
+      "format": "PDF",
+      "path": "files/corvid/invoice_csec-2611_nov.pdf",
+      "size_label": "1 page",
+      "available_at": "2026-12-01T08:00:00Z",
+      "preview": {
+        "card": "memo",
+        "title": "Invoice CSEC-2611",
+        "subtitle": "Corvid Security",
+        "body": "Invoice CSEC-2611 Corvid Security, LLC. Bill to: Northstar Analytics, Inc. Date: 30 November 2026 Description Period Amount (USD) Sentinel Business subscription 1 Nov - 30 Nov 2026 3,250.00 Total due: USD 3,250.00."
+      }
+    },
+    {
+      "file_id": "FILE-CORVID-06",
+      "case_id": "CASE-CORVID-2026-12",
+      "vendor_id": "VEN-CORVID",
+      "name": "corvid_systems_invoice_88213.pdf",
+      "kind": "invoice",
+      "format": "PDF",
+      "path": "files/corvid/corvid_systems_invoice_88213.pdf",
+      "size_label": "1 page",
+      "available_at": "2026-12-09T10:00:00Z",
+      "preview": {
+        "card": "memo",
+        "title": "Invoice 88213",
+        "subtitle": "Corvid Security",
+        "body": "Invoice 88213 Corvid Systems Inc. Bill to: Northstar Analytics, Inc. Date: 9 December 2026 Description Quantity Amount (USD) Rack rails and cable trays 14 3,410.00 Total due: USD 3,410.00."
+      }
+    },
+    {
+      "file_id": "FILE-CORVID-07",
+      "case_id": "CASE-CORVID-2026-12",
+      "vendor_id": "VEN-CORVID",
+      "name": "purchase_order_2026_2103.pdf",
+      "kind": "po",
+      "format": "PDF",
+      "path": "files/corvid/purchase_order_2026_2103.pdf",
+      "size_label": "1 page",
+      "available_at": "2026-01-10T09:00:00Z",
+      "preview": {
+        "card": "memo",
+        "title": "Purchase order PO-2026-2103",
+        "subtitle": "Corvid Security",
+        "body": "Purchase Order PO-2026-2103 Vendor: Corvid Security, LLC. Buyer: Northstar Analytics, Inc. Cost center CC-ENG-100. Line Description Qty Unit price (USD) Total (USD) 1 Sentinel Business subscription, monthly 12 3,250.00 39,000.00 Approved to"
+      }
+    },
+    {
+      "file_id": "FILE-CORVID-08",
+      "case_id": "CASE-CORVID-2026-12",
+      "vendor_id": "VEN-CORVID",
+      "name": "vendor_master_corvid.pdf",
+      "kind": "vendor",
+      "format": "PDF",
+      "path": "files/corvid/vendor_master_corvid.pdf",
+      "size_label": "1 page",
+      "available_at": "2026-12-01T08:00:00Z",
+      "preview": {
+        "card": "memo",
+        "title": "Supplier record",
+        "subtitle": "Corvid Security",
+        "body": "Supplier master - Corvid Security Supplier record Field Value Supplier ID VEN-CORVID Legal name Corvid Security, LLC Status Active Payment terms Net 30 Remit-to 1200 Elm Court, Austin, TX 78701 Billing contact billing@corvidsec.example"
+      }
+    },
+    {
+      "file_id": "FILE-CORVID-09",
+      "case_id": "CASE-CORVID-2026-12",
+      "vendor_id": "VEN-CORVID",
+      "name": "slack_export_secops.txt",
+      "kind": "slack",
+      "format": "TXT",
+      "path": "files/corvid/slack_export_secops.txt",
+      "size_label": "3 messages",
+      "available_at": "2026-12-01T08:00:00Z",
+      "preview": {
+        "card": "memo",
+        "title": "Slack export",
+        "subtitle": "Corvid Security",
+        "body": "# #secops [2026-12-08 09:30] riley: corvid flagged three impossible-travel logins overnight, all false positives [2026-12-08 09:41] sam: closing them out, tuning the geo-fence on the dashboard [2026-12-17 14:12] riley: new console layout af"
+      }
+    },
+    {
+      "file_id": "FILE-CORVID-10",
+      "case_id": "CASE-CORVID-2026-12",
+      "vendor_id": "VEN-CORVID",
+      "name": "ap_history_corvid.xlsx",
+      "kind": "ap",
+      "format": "XLSX",
+      "path": "files/corvid/ap_history_corvid.xlsx",
+      "size_label": "5 rows",
+      "available_at": "2026-12-01T08:00:00Z",
+      "preview": {
+        "card": "memo",
+        "title": "Invoice history",
+        "subtitle": "Corvid Security",
+        "body": "# Invoice history Corvid Security - invoice history | | | Invoice | Date | Description | Amount (USD) CSEC-2609 | 2026-09-30 | Sentinel Business, September | 3250 CSEC-2610 | 2026-10-31 | Sentinel Business, October | 3250 CSEC-2611 | 2026-1"
+      }
+    },
+    {
+      "file_id": "FILE-CORVID-L1",
+      "case_id": "CASE-CORVID-2026-12",
+      "vendor_id": "VEN-CORVID",
+      "name": "invoice_csec-2612_dec.pdf",
+      "kind": "invoice",
+      "format": "PDF",
+      "path": "files/corvid/invoice_csec-2612_dec.pdf",
+      "size_label": "1 page",
+      "available_at": "2027-01-04T09:00:00Z",
+      "preview": {
+        "card": "memo",
+        "title": "Invoice CSEC-2612",
+        "subtitle": "Corvid Security",
+        "body": "Invoice CSEC-2612 Corvid Security, LLC. Bill to: Northstar Analytics, Inc. Date: 3 January 2027 Description Days Amount (USD) Sentinel Business at 3,250.00, 1 Dec - 15 Dec 2026 15 of 31 1,572.58 Sentinel Enterprise at 3,900.00, 16 Dec - 31 "
+      }
+    }
+  ]
+}

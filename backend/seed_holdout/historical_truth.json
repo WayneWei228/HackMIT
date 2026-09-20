@@ -1,0 +1,125 @@
+{
+  "expected_outcomes": [
+    {
+      "period": "2026-09",
+      "vendor_id": "VEN-TERRASTACK",
+      "scenario": "usage_before_uplift",
+      "invoice_id": "INV-TERRASTACK-2026-09",
+      "expected_actual_amount": "14500.00",
+      "expected_root_cause": null,
+      "invoice_arrival_time": "2026-10-01T04:30:00Z",
+      "expected_baseline_accrual": "14500.00",
+      "expected_close_status": null
+    },
+    {
+      "period": "2026-10",
+      "vendor_id": "VEN-TERRASTACK",
+      "scenario": "usage_uplift_missed",
+      "invoice_id": "INV-TERRASTACK-2026-10",
+      "expected_actual_amount": "16740.00",
+      "expected_root_cause": "MISSED_ESCALATOR",
+      "invoice_arrival_time": "2026-11-01T04:30:00Z",
+      "expected_baseline_accrual": "15500.00",
+      "expected_close_status": null
+    },
+    {
+      "period": "2026-11",
+      "vendor_id": "VEN-TERRASTACK",
+      "scenario": "usage_uplift_missed",
+      "invoice_id": "INV-TERRASTACK-2026-11",
+      "expected_actual_amount": "17550.00",
+      "expected_root_cause": "MISSED_ESCALATOR",
+      "invoice_arrival_time": "2026-12-01T04:30:00Z",
+      "expected_baseline_accrual": "16250.00",
+      "expected_close_status": null
+    },
+    {
+      "period": "2026-12",
+      "vendor_id": "VEN-TERRASTACK",
+      "scenario": "usage_partial_outreach",
+      "invoice_id": "INV-TERRASTACK-2026-12",
+      "expected_actual_amount": "18630.00",
+      "expected_root_cause": "USAGE_VARIANCE",
+      "invoice_arrival_time": "2027-01-06T09:00:00Z",
+      "expected_baseline_accrual": "11725.00",
+      "expected_close_status": "WAITING"
+    },
+    {
+      "period": "2026-10",
+      "vendor_id": "VEN-LARKSPUR",
+      "scenario": "milestone_clean",
+      "invoice_id": "INV-LARKSPUR-2026-10",
+      "expected_actual_amount": "18000.00",
+      "expected_root_cause": null,
+      "invoice_arrival_time": "2026-11-02T09:00:00Z",
+      "expected_baseline_accrual": "18000.00",
+      "expected_close_status": null
+    },
+    {
+      "period": "2026-11",
+      "vendor_id": "VEN-LARKSPUR",
+      "scenario": "milestone_invoice_over_accepted",
+      "invoice_id": "INV-LARKSPUR-2026-11",
+      "expected_actual_amount": "23700.00",
+      "expected_root_cause": "SOURCE_DATA_ERROR",
+      "invoice_arrival_time": "2026-12-01T05:00:00Z",
+      "expected_baseline_accrual": "22500.00",
+      "expected_close_status": null
+    },
+    {
+      "period": "2026-12",
+      "vendor_id": "VEN-LARKSPUR",
+      "scenario": "milestone_needs_review",
+      "invoice_id": "INV-LARKSPUR-2026-12",
+      "expected_actual_amount": "27450.00",
+      "expected_root_cause": null,
+      "invoice_arrival_time": "2027-01-09T09:00:00Z",
+      "expected_baseline_accrual": "27450.00",
+      "expected_close_status": "NEEDS_REVIEW"
+    },
+    {
+      "period": "2026-09",
+      "vendor_id": "VEN-CORVID",
+      "scenario": "clean_fixed_history",
+      "invoice_id": "INV-CORVID-2026-09",
+      "expected_actual_amount": "3250.00",
+      "expected_root_cause": null,
+      "invoice_arrival_time": "2026-10-01T06:00:00Z",
+      "expected_baseline_accrual": "3250.00",
+      "expected_close_status": null
+    },
+    {
+      "period": "2026-10",
+      "vendor_id": "VEN-CORVID",
+      "scenario": "clean_fixed_history",
+      "invoice_id": "INV-CORVID-2026-10",
+      "expected_actual_amount": "3250.00",
+      "expected_root_cause": null,
+      "invoice_arrival_time": "2026-11-01T06:00:00Z",
+      "expected_baseline_accrual": "3250.00",
+      "expected_close_status": null
+    },
+    {
+      "period": "2026-11",
+      "vendor_id": "VEN-CORVID",
+      "scenario": "clean_fixed_history",
+      "invoice_id": "INV-CORVID-2026-11",
+      "expected_actual_amount": "3250.00",
+      "expected_root_cause": null,
+      "invoice_arrival_time": "2026-12-01T06:00:00Z",
+      "expected_baseline_accrual": "3250.00",
+      "expected_close_status": null
+    },
+    {
+      "period": "2026-12",
+      "vendor_id": "VEN-CORVID",
+      "scenario": "fixed_fee_mid_month_amendment",
+      "invoice_id": "INV-CORVID-2026-12",
+      "expected_actual_amount": "3585.48",
+      "expected_root_cause": null,
+      "invoice_arrival_time": "2027-01-04T09:00:00Z",
+      "expected_baseline_accrual": "3585.48",
+      "expected_close_status": "DONE"
+    }
+  ]
+}
