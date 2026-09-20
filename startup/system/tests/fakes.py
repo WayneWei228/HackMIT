@@ -59,12 +59,15 @@ class FakeModel:
 
     The `"extract"` branch finds the `DOC:<id>` marker in the `DOCUMENT`
     variable and returns `extractions[id]`, with every extraction-record key
-    a test didn't set filled with null. `**other` maps any other prompt name
-    to the value that call should return. Every call is recorded in `calls`.
+    a test didn't set filled with null. The `"read_description"` branch
+    looks up the `PO_LINE_ID` variable in `read_description` and returns
+    that answer. `**other` maps any other prompt name to the value that
+    call should return. Every call is recorded in `calls`.
     """
 
-    def __init__(self, extractions: dict[str, dict], **other):
-        self.extractions = extractions
+    def __init__(self, extractions: dict[str, dict] | None = None, read_description: dict[str, dict] | None = None, **other):
+        self.extractions = extractions or {}
+        self.read_description_answers = read_description or {}
         self.other = other
         self.calls: list[tuple[str, dict]] = []
 
@@ -80,4 +83,9 @@ class FakeModel:
             for key in _EXTRACTION_KEYS:
                 facts.setdefault(key, None)
             return facts
+        if prompt_name == "read_description":
+            po_line_id = variables.get("PO_LINE_ID")
+            if po_line_id not in self.read_description_answers:
+                raise AssertionError(f"no read_description answer for PO_Line_ID {po_line_id!r}")
+            return self.read_description_answers[po_line_id]
         return self.other[prompt_name]
