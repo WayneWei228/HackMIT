@@ -2,7 +2,7 @@
 
 There is no messages table. A request and its reply are `trueup_evidence` cards, and the agent
 that sent or read each one logged a run row. Everything here is read back from those rows, so a
-case that never needed outreach has no threads. Every message is simulated: nothing is sent.
+case that never needed outreach has no threads. Every message is synthetic: nothing is sent.
 """
 
 from __future__ import annotations

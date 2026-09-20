@@ -18,6 +18,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from trueup.agents.evidence_agent import Extractor, ungrounded_reason
+from trueup.agents.evidence_rules import rule_extractor
 from trueup.agents.ingestion import FileDecision, IngestionResult
 from trueup.gateway import llm
 from trueup.ingest.manifest import CaseEntry, FileUniverse
@@ -151,8 +152,13 @@ def _facts_in(
         return []
     try:
         text = read_text(seed_dir / entry.path)
+    except (UnsupportedFile, OSError, ValueError):
+        return []
+    try:
         extracted = extractor(case, entry, text)
-    except (UnsupportedFile, OSError, ValueError, llm.LLMError):
+    except llm.LLMError:
+        extracted = rule_extractor(case, entry, text)
+    except (ValueError, OSError):
         return []
     facts = _unique(
         {

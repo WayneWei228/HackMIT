@@ -34,6 +34,10 @@ EXPECTED: dict[str, list[tuple[str, set[FactKey], Decimal | None, str | None]]] 
         ("20 laptops received", {K.RECEIVED_QUANTITY}, Decimal("20"), None),
         ("unit price $1,600", {K.UNIT_RATE}, Decimal("1600"), None),
     ],
+    "CASE-ASUS-2026-12-02": [
+        ("25 laptops ordered", {K.ORDERED_QUANTITY}, Decimal("25"), None),
+        ("unit price $1,600", {K.UNIT_RATE}, Decimal("1600"), None),
+    ],
     "Meta": [
         ("budget ceiling $30,000", {K.BUDGET_CEILING}, Decimal("30000"), None),
         ("delivered to date $24,700", {K.DELIVERED_AMOUNT}, Decimal("24700"), None),
@@ -96,7 +100,7 @@ def main() -> None:
         except EvidenceError as exc:
             sys.exit(str(exc))
         names = {f.file_id: f.name for f in universe.for_case(case.case_id)}
-        print(f"\n== {case.vendor_name}: {len(picked.selected)} files selected")
+        print(f"\n== {case.title}: {len(picked.selected)} files selected")
         for file in result.files:
             print(f"  {file.name}: {file.facts_kept} kept, {file.facts_dropped} dropped")
         for card in result.cards:
@@ -104,7 +108,9 @@ def main() -> None:
             print(f"    {card.value_json['key']:<24} {card.fact}  | {quote}")
         for drop in result.dropped:
             print(f"    DROPPED {drop.key.value} from {names[drop.file_id]}: {drop.reason}")
-        for label, keys, number, date in EXPECTED.get(case.vendor_name, []):
+        for label, keys, number, date in EXPECTED.get(
+            case.case_id, EXPECTED.get(case.vendor_name, [])
+        ):
             ok = _hit(result, keys, number, date)
             hits += ok
             total += 1

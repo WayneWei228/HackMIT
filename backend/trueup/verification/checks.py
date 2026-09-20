@@ -11,7 +11,7 @@ import re
 import unicodedata
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from functools import cached_property
 from pathlib import Path
@@ -20,8 +20,14 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from trueup.agents import estimation_agent, policy_agent
+from trueup.agents import estimation_agent, fallback_estimation, policy_agent
 from trueup.agents.controller_workspace import controller_id
+from trueup.estimators.fallback import (
+    MAX_CONFIDENCE,
+    RECEIPT_METHODS,
+    FallbackMethod,
+    FallbackPolicy,
+)
 from trueup.ingest.manifest import FileEntry, FileUniverse
 from trueup.ingest.readers import UnsupportedFile, read_text
 from trueup.learning.rules import CandidateRule
@@ -43,6 +49,7 @@ STATE_OWNERS: dict[State, frozenset[str]] = {
     (e.WorkflowStage.CLASSIFYING, e.NextAction.CLASSIFY): frozenset({"classification"}),
     (e.WorkflowStage.ESTIMATING, e.NextAction.ESTIMATE): frozenset({"estimation"}),
     (e.WorkflowStage.ESTIMATING, e.NextAction.VERIFY_POLICY): frozenset({"policy"}),
+    (e.WorkflowStage.ESTIMATING, e.NextAction.ESTIMATE_INCOMPLETE): frozenset({"estimation"}),
     (e.WorkflowStage.AWAITING_OUTREACH, e.NextAction.SEND_OUTREACH): frozenset({"outreach"}),
     (e.WorkflowStage.AWAITING_CONTROLLER, e.NextAction.CONTROLLER_REVIEW): frozenset(
         {"controller_workspace"}
@@ -665,13 +672,17 @@ def ver_12(h: Handoff) -> CheckResult:
             m.TrueUpObligation.period == ob.period,
             m.TrueUpObligation.obligation_id != ob.obligation_id,
             m.TrueUpObligation.accrual_status.in_(_ACTIVE_ACCRUAL),
+            m.TrueUpObligation.po_id.is_(None)
+            if ob.po_id is None
+            else m.TrueUpObligation.po_id.in_((ob.po_id,)),
         )
     ).all()
     if others:
         return _fail(
             "VER-12",
             name,
-            f"{others[0].obligation_id} already has an active accrual for this vendor and period.",
+            f"{others[0].obligation_id} already has an active accrual for this vendor, period "
+            "and purchase order.",
         )
     posted = h.session.scalars(
         select(m.CompanyGLEntry).where(
@@ -682,7 +693,9 @@ def ver_12(h: Handoff) -> CheckResult:
     ).first()
     if posted is not None:
         return _fail("VER-12", name, f"{posted.gl_entry_id} is already posted for this obligation.")
-    return _pass("VER-12", name, "No other accrual is active for this vendor and period.")
+    return _pass(
+        "VER-12", name, "No other accrual is active for this vendor, period and purchase order."
+    )
 
 
 _DECISION_FOR_TARGET = {
@@ -1124,6 +1137,331 @@ def ver_27(h: Handoff) -> CheckResult:
     )
 
 
+# ---- VER-28: the documents must state something -------------------------------------------------
+
+
+def ver_28(h: Handoff) -> CheckResult:
+    name = "The selected documents produced grounded facts"
+    runs = list(
+        h.session.scalars(
+            select(m.TrueUpAgentRun)
+            .where(
+                m.TrueUpAgentRun.obligation_id == h.ob.obligation_id,
+                m.TrueUpAgentRun.agent_name == "evidence",
+                m.TrueUpAgentRun.action == "extract_facts",
+            )
+            .order_by(m.TrueUpAgentRun.run_id)
+        )
+    )
+    if not any(run.input_record_ids_json for run in runs):
+        return _skip("VER-28", name, "No document was selected, so the Evidence agent read none.")
+    documents = [
+        c
+        for c in h.cards
+        if c.source_table == "document" and c.status != e.EvidenceCardStatus.SUPERSEDED
+    ]
+    if documents:
+        return _pass("VER-28", name, f"{len(documents)} grounded facts came from the documents.")
+    failed = any(run.status == e.AgentRunStatus.FAILED for run in runs)
+    why = (
+        "The model failed on the documents and nothing else read them."
+        if failed
+        else "No selected document states a fact the case can use."
+    )
+    return _fail(
+        "VER-28",
+        name,
+        f"The Evidence agent grounded no fact. {why} The case cannot be estimated from it.",
+        Verdict.REVIEW,
+        expected="at least 1 grounded fact",
+        actual="0",
+    )
+
+
+# ---- VER-29 to VER-32: an estimate on incomplete data after no reply ----------------------------
+
+
+def _unanswered_request(h: Handoff) -> m.TrueUpEvidence | None:
+    found = [
+        c
+        for c in h.cards
+        if c.evidence_type == e.EvidenceCardType.OUTREACH_RESPONSE
+        and (c.value_json or {}).get("direction") == "REQUEST"
+        and (c.value_json or {}).get("no_response")
+    ]
+    return found[-1] if found else None
+
+
+def _utc(stamp: datetime) -> datetime:
+    return stamp if stamp.tzinfo else stamp.replace(tzinfo=UTC)
+
+
+def ver_29(h: Handoff) -> CheckResult:
+    name = "No reply came by the company's deadline and the usage can be projected"
+    request = _unanswered_request(h)
+    if request is None:
+        return _fail(
+            "VER-29",
+            name,
+            "No outreach request was closed as unanswered, so there is no timeout to act on.",
+            Verdict.REVIEW,
+        )
+    value = request.value_json or {}
+    policy = FallbackPolicy.from_config(h.config.get("estimation_fallback"))
+    deadline = _utc(datetime.fromisoformat(value["sent_at"])) + timedelta(hours=policy.wait_hours)
+    if _utc(h.at) < deadline:
+        return _fail(
+            "VER-29",
+            name,
+            f"The request may wait until {deadline.isoformat()}; it is {h.at.isoformat()}.",
+            Verdict.REVIEW,
+            expected=f"at or after {deadline.isoformat()}",
+            actual=h.at.isoformat(),
+        )
+    answered = [
+        c
+        for c in h.cards
+        if (c.value_json or {}).get("direction") == "RESPONSE"
+        and (c.value_json or {}).get("outreach_key") == value.get("outreach_key")
+    ]
+    if answered:
+        return _fail("VER-29", name, "The owner already replied; the reply is the evidence.")
+    reason = fallback_estimation.not_eligible_reason(h.session, h.ob)
+    if reason:
+        return _fail(
+            "VER-29", name, f"This obligation cannot be projected: {reason}", Verdict.REVIEW
+        )
+    return _pass(
+        "VER-29",
+        name,
+        f"No reply by {deadline.isoformat()} ({policy.wait_hours} hours after the request).",
+    )
+
+
+def _fallback(h: Handoff) -> dict[str, Any] | None:
+    if h.wp is None or not fallback_estimation.is_incomplete(h.wp):
+        return None
+    return dict(h.inputs.get("fallback") or {})
+
+
+def ver_30(h: Handoff) -> CheckResult:
+    name = "The method is in the catalog and its parameters match the source records"
+    fallback = _fallback(h)
+    if fallback is None:
+        return _fail("VER-30", name, "The workpaper is not marked as an incomplete-data estimate.")
+    try:
+        method = FallbackMethod(fallback["method"])
+    except (KeyError, ValueError):
+        return _fail(
+            "VER-30",
+            name,
+            f"{fallback.get('method')!r} is not in the incomplete-data method catalog.",
+            expected=", ".join(m_.value for m_ in FallbackMethod),
+            actual=str(fallback.get("method")),
+        )
+    params = fallback.get("parameters") or {}
+    policy = FallbackPolicy.from_config(h.config.get("estimation_fallback"))
+    if method in RECEIPT_METHODS:
+        return _ver_30_receipt(h, name, method, params, policy)
+    try:
+        facts = fallback_estimation.usage_facts(
+            estimation_agent.load_context(h.session, h.ob), policy
+        )
+    except (fallback_estimation.NotApplicable, estimation_agent.Insufficient) as exc:
+        return _fail("VER-30", name, f"The source records no longer support a projection: {exc}")
+    recorded_units = None
+    if params.get("covered_units") is not None:
+        try:
+            recorded_units = coerce_money(params["covered_units"])
+        except (TypeError, ValueError):
+            recorded_units = None
+    wrong: list[str] = []
+    if params.get("period_days") != facts.period_days:
+        wrong.append(f"period_days {params.get('period_days')} vs {facts.period_days}")
+    if method == FallbackMethod.LINEAR_SCALE_TO_PERIOD:
+        if params.get("covered_days") != facts.covered_days:
+            wrong.append(f"covered_days {params.get('covered_days')} vs {facts.covered_days}")
+        if recorded_units != facts.covered_units:
+            wrong.append(f"covered_units {params.get('covered_units')} vs {facts.covered_units}")
+        if params.get("source_id") != facts.source_id:
+            wrong.append(f"source {params.get('source_id')} vs {facts.source_id}")
+    else:
+        known = {h_.period for h_ in facts.history}
+        unknown = [p for p in params.get("history_periods") or [] if p not in known]
+        if unknown or not params.get("history_periods"):
+            wrong.append(f"history periods {params.get('history_periods')} vs {sorted(known)}")
+    if wrong:
+        return _fail(
+            "VER-30",
+            name,
+            "A parameter differs from the source records: " + "; ".join(wrong) + ".",
+            expected="the values in the usage records",
+            actual="; ".join(wrong),
+        )
+    return _pass(
+        "VER-30",
+        name,
+        f"{method.value} uses {facts.covered_days} of {facts.period_days} days, "
+        "as the records show.",
+    )
+
+
+def _ver_30_receipt(
+    h: Handoff, name: str, method: FallbackMethod, params: dict[str, Any], policy: FallbackPolicy
+) -> CheckResult:
+    try:
+        facts = fallback_estimation.receipt_facts(
+            h.session,
+            estimation_agent.load_context(h.session, h.ob),
+            policy,
+            history_ids=list(params.get("history_sources") or []) or None,
+            reproducing=True,
+        )
+    except (fallback_estimation.NotApplicable, estimation_agent.Insufficient) as exc:
+        return _fail("VER-30", name, f"The source records no longer support an estimate: {exc}")
+    wrong: list[str] = []
+    ordered = params.get("ordered_units")
+    if ordered is None or coerce_money(ordered) != facts.ordered_units:
+        wrong.append(f"ordered_units {ordered} vs {facts.ordered_units}")
+    if method == FallbackMethod.CONSERVATIVE_ESTIMATE:
+        share = params.get("assumed_fraction")
+        if share is None or coerce_money(share) != policy.conservative_fraction:
+            wrong.append(f"assumed_fraction {share} vs the policy's {policy.conservative_fraction}")
+    else:
+        cited = list(params.get("history_sources") or [])
+        known = {r.source_id for r in facts.history}
+        if not cited or set(cited) - known:
+            wrong.append(f"history receipts {cited} vs the vendor's recorded {sorted(known)}")
+    if wrong:
+        return _fail(
+            "VER-30",
+            name,
+            "A parameter differs from the source records: " + "; ".join(wrong) + ".",
+            expected="the values in the records and the company policy",
+            actual="; ".join(wrong),
+        )
+    return _pass(
+        "VER-30",
+        name,
+        f"{method.value} rests on {facts.ordered_units} ordered"
+        + (
+            f" and the assumed share {policy.conservative_fraction} set in policy."
+            if method == FallbackMethod.CONSERVATIVE_ESTIMATE
+            else f" and {len(facts.history)} earlier receipt(s) on record."
+        ),
+    )
+
+
+def ver_31(h: Handoff) -> CheckResult:
+    name = "The amount is reproduced by the deterministic projection"
+    if _fallback(h) is None or h.wp is None:
+        return _fail("VER-31", name, "There is no incomplete-data workpaper to recompute.")
+    try:
+        fresh = fallback_estimation.reproduce(h.session, h.ob, h.wp)
+    except (fallback_estimation.NotApplicable, estimation_agent.Insufficient) as exc:
+        return _fail("VER-31", name, f"The projection cannot be reproduced: {exc}")
+    recorded = coerce_money(h.wp.proposed_amount)
+    if abs(fresh - recorded) > TOLERANCE:
+        return _fail(
+            "VER-31",
+            name,
+            f"Recomputing the projection gives {fresh}, not the recorded {recorded}.",
+            expected=str(fresh),
+            actual=str(recorded),
+        )
+    return _pass(
+        "VER-31", name, f"Recomputing the projection gives {fresh}.", expected=str(recorded)
+    )
+
+
+def ver_32(h: Handoff) -> CheckResult:
+    name = "It is marked incomplete, carries reduced confidence and needs the Controller"
+    fallback = _fallback(h)
+    if fallback is None or h.wp is None:
+        return _fail("VER-32", name, "The workpaper is not marked INCOMPLETE_DATA.")
+    try:
+        confidence = coerce_money(fallback["confidence"])
+    except (KeyError, TypeError, ValueError):
+        return _fail("VER-32", name, "The estimate carries no confidence.")
+    if not Decimal(0) < confidence <= MAX_CONFIDENCE:
+        return _fail(
+            "VER-32",
+            name,
+            f"Confidence {confidence} is above the {MAX_CONFIDENCE} an incomplete estimate "
+            "may claim.",
+            expected=f"above 0 and at most {MAX_CONFIDENCE}",
+            actual=str(confidence),
+        )
+    decision, _rules = policy_agent.evaluate(h.session, h.ob, h.wp)
+    if decision not in (e.PolicyDecision.REQUIRE_CONTROLLER, e.PolicyDecision.BLOCK):
+        return _fail(
+            "VER-32",
+            name,
+            f"Policy would give {decision.value}; an incomplete-data estimate always needs "
+            "Controller review.",
+            expected="REQUIRE_CONTROLLER",
+            actual=decision.value,
+        )
+    return _pass(
+        "VER-32",
+        name,
+        f"Marked INCOMPLETE_DATA at confidence {confidence}; policy requires the Controller.",
+    )
+
+
+def ver_33(h: Handoff) -> CheckResult:
+    name = "A quantity confirmed only by the owner is grounded in the owner's own reply"
+    if h.inputs.get("evidence_basis") != estimation_agent.OWNER_CONFIRMED_BASIS:
+        return _skip("VER-33", name, "The quantity does not rest on an owner's statement alone.")
+    try:
+        received = coerce_money(h.inputs["received_quantity"])
+        price = coerce_money(h.inputs["unit_price"])
+    except (KeyError, TypeError, ValueError):
+        return _fail("VER-33", name, "The workpaper records no received quantity and unit price.")
+    replies = [
+        c
+        for c in h.cards
+        if c.evidence_type == e.EvidenceCardType.OUTREACH_RESPONSE
+        and (c.value_json or {}).get("direction") == "RESPONSE"
+        and (c.value_json or {}).get("resolved")
+        and c.status == e.EvidenceCardStatus.VERIFIED
+    ]
+    for card in replies:
+        try:
+            said = coerce_money((card.value_json or {}).get("quantity"))
+        except (TypeError, ValueError):
+            continue
+        written = {
+            coerce_money(t.replace(",", ""))
+            for t in re.findall(r"\d[\d,]*", card.source_excerpt or "")
+        }
+        if said != received or received not in written:
+            continue
+        if (
+            h.wp is not None
+            and abs(coerce_money(h.wp.proposed_amount) - received * price) > TOLERANCE
+        ):
+            return _fail(
+                "VER-33",
+                name,
+                f"{received} x {price} is {received * price}, not the recorded amount.",
+                expected=str(received * price),
+                actual=str(h.wp.proposed_amount),
+            )
+        return _pass(
+            "VER-33",
+            name,
+            f"{card.evidence_id} quotes {received} received, and {received} x {price} matches.",
+            expected=str(received),
+        )
+    return _fail(
+        "VER-33",
+        name,
+        f"No resolved owner reply states {received} units received.",
+        expected=str(received),
+    )
+
+
 REGISTRY: dict[str, Check] = {
     "VER-01": ver_01,
     "VER-02": ver_02,
@@ -1149,4 +1487,10 @@ REGISTRY: dict[str, Check] = {
     "VER-25": ver_25,
     "VER-26": ver_26,
     "VER-27": ver_27,
+    "VER-28": ver_28,
+    "VER-29": ver_29,
+    "VER-30": ver_30,
+    "VER-31": ver_31,
+    "VER-32": ver_32,
+    "VER-33": ver_33,
 }

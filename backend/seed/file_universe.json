@@ -23,6 +23,13 @@
       "period": "2026-12"
     },
     {
+      "case_id": "CASE-ASUS-2026-12-02",
+      "vendor_id": "VEN-ASUS",
+      "vendor_name": "ASUS",
+      "title": "ASUS December accrual (goods receipt missing)",
+      "period": "2026-12"
+    },
+    {
       "case_id": "CASE-META-2026-12",
       "vendor_id": "VEN-META",
       "vendor_name": "Meta",
@@ -358,6 +365,319 @@
             "$1,200.00"
           ]
         ]
+      }
+    },
+    {
+      "file_id": "FILE-ASUS-B-01",
+      "case_id": "CASE-ASUS-2026-12-02",
+      "vendor_id": "VEN-ASUS",
+      "name": "slack_export_eng_onboarding.txt",
+      "kind": "slack",
+      "format": "TXT",
+      "path": "files/asus_no_receipt/slack_export_eng_onboarding.txt",
+      "size_label": "3 messages",
+      "available_at": "2026-12-01T08:00:00Z",
+      "preview": {
+        "card": "chat",
+        "title": "Slack export",
+        "subtitle": "#eng-onboarding",
+        "messages": [
+          {
+            "sender": "riley",
+            "time": "10:00",
+            "text": "new engineers start in January, are their laptops sorted?"
+          },
+          {
+            "sender": "taylor",
+            "time": "11:00",
+            "text": "the laptops are late again, I will chase procurement"
+          },
+          {
+            "sender": "sam",
+            "time": "09:00",
+            "text": "we also need monitor arms for the new desks"
+          }
+        ]
+      }
+    },
+    {
+      "file_id": "FILE-ASUS-B-02",
+      "case_id": "CASE-ASUS-2026-12-02",
+      "vendor_id": "VEN-ASUS",
+      "name": "capitalization_policy_memo.docx",
+      "kind": "policy",
+      "format": "DOCX",
+      "path": "files/asus_no_receipt/capitalization_policy_memo.docx",
+      "size_label": "1 page",
+      "available_at": "2026-01-15T09:00:00Z",
+      "preview": {
+        "card": "memo",
+        "title": "Capitalization Policy",
+        "subtitle": "Policy memo",
+        "fields": {
+          "To": "Finance and Procurement",
+          "Date": "Jan 15, 2026",
+          "Subject": "Fixed asset capitalization policy"
+        },
+        "body": "Equipment purchases are capitalized when a single order of like items costs $5,000 or more and the items have a useful life beyond one year."
+      }
+    },
+    {
+      "file_id": "FILE-ASUS-B-03",
+      "case_id": "CASE-ASUS-2026-12-02",
+      "vendor_id": "VEN-ASUS",
+      "name": "fixed_asset_register.xlsx",
+      "kind": "register",
+      "format": "XLSX",
+      "path": "files/asus_no_receipt/fixed_asset_register.xlsx",
+      "size_label": "3 rows",
+      "available_at": "2026-12-01T08:00:00Z",
+      "preview": {
+        "card": "table",
+        "title": "Fixed Asset Register",
+        "subtitle": "Asset listing",
+        "columns": [
+          "TAG",
+          "ASSET",
+          "COST"
+        ],
+        "rows": [
+          [
+            "FA-1001",
+            "Rack server",
+            "$18,400.00"
+          ],
+          [
+            "FA-1002",
+            "Conference room display",
+            "$3,200.00"
+          ],
+          [
+            "FA-1003",
+            "Network switch",
+            "$2,750.00"
+          ]
+        ]
+      }
+    },
+    {
+      "file_id": "FILE-ASUS-B-04",
+      "case_id": "CASE-ASUS-2026-12-02",
+      "vendor_id": "VEN-ASUS",
+      "name": "po_asus_laptops.pdf",
+      "kind": "po",
+      "format": "PDF",
+      "path": "files/asus_no_receipt/po_asus_laptops.pdf",
+      "size_label": "1 page",
+      "available_at": "2026-12-01T08:00:00Z",
+      "preview": {
+        "card": "skeleton",
+        "title": "Purchase Order",
+        "subtitle": "ASUS",
+        "fields": [
+          [
+            "PO number",
+            "PO-2026-1005"
+          ],
+          [
+            "Vendor",
+            "ASUS Computer Distribution Inc."
+          ],
+          [
+            "Buyer",
+            "Northstar Analytics, Inc."
+          ],
+          [
+            "Order date",
+            "December 1, 2026"
+          ]
+        ],
+        "total": [
+          "Approved total",
+          "$40,000.00"
+        ]
+      }
+    },
+    {
+      "file_id": "FILE-ASUS-B-05",
+      "case_id": "CASE-ASUS-2026-12-02",
+      "vendor_id": "VEN-ASUS",
+      "name": "packing_slip_ps_88214.pdf",
+      "kind": "packing",
+      "format": "PDF",
+      "path": "files/asus_no_receipt/packing_slip_ps_88214.pdf",
+      "size_label": "1 page",
+      "available_at": "2026-12-01T08:00:00Z",
+      "preview": {
+        "card": "skeleton",
+        "title": "Packing Slip",
+        "subtitle": "Deskworks Supply",
+        "fields": [
+          [
+            "PO reference",
+            "PO-2026-0412"
+          ],
+          [
+            "Delivered",
+            "12/09/2026"
+          ]
+        ],
+        "total": null
+      }
+    },
+    {
+      "file_id": "FILE-ASUS-B-06",
+      "case_id": "CASE-ASUS-2026-12-02",
+      "vendor_id": "VEN-ASUS",
+      "name": "general_ledger_export_dec.xlsx",
+      "kind": "gl",
+      "format": "XLSX",
+      "path": "files/asus_no_receipt/general_ledger_export_dec.xlsx",
+      "size_label": "28 rows",
+      "available_at": "2026-12-01T08:00:00Z",
+      "preview": {
+        "card": "table",
+        "title": "General Ledger",
+        "subtitle": "Account Activity",
+        "columns": [
+          "DATE",
+          "JE / DESCRIPTION",
+          "AMOUNT"
+        ],
+        "rows": [
+          [
+            "2026-10-01",
+            "GL-OPENAI-2026-09",
+            "$14,600.00"
+          ],
+          [
+            "2026-10-01",
+            "GL-OPENAI-2026-09",
+            "$14,600.00"
+          ],
+          [
+            "2026-10-02",
+            "GL-MINTLIFY-2026-09",
+            "$1,200.00"
+          ],
+          [
+            "2026-10-02",
+            "GL-MINTLIFY-2026-09",
+            "$1,200.00"
+          ]
+        ]
+      }
+    },
+    {
+      "file_id": "FILE-ASUS-B-07",
+      "case_id": "CASE-ASUS-2026-12-02",
+      "vendor_id": "VEN-ASUS",
+      "name": "invoice_a_2025_1188.pdf",
+      "kind": "invoice",
+      "format": "PDF",
+      "path": "files/asus_no_receipt/invoice_a_2025_1188.pdf",
+      "size_label": "1 page",
+      "available_at": "2025-06-12T09:00:00Z",
+      "preview": {
+        "card": "skeleton",
+        "title": "Invoice A-2025-1188",
+        "subtitle": "ASUS Computer Distribution Inc.",
+        "fields": [
+          [
+            "Invoice date",
+            "06/12/2025"
+          ]
+        ],
+        "total": [
+          "Total",
+          "$14,500.00"
+        ]
+      }
+    },
+    {
+      "file_id": "FILE-ASUS-B-08",
+      "case_id": "CASE-ASUS-2026-12-02",
+      "vendor_id": "VEN-ASUS",
+      "name": "vendor_master_asus.pdf",
+      "kind": "vendor",
+      "format": "PDF",
+      "path": "files/asus_no_receipt/vendor_master_asus.pdf",
+      "size_label": "1 page",
+      "available_at": "2026-12-01T08:00:00Z",
+      "preview": {
+        "card": "record",
+        "title": "Vendor Master",
+        "subtitle": "VENDOR RECORD",
+        "fields": [
+          [
+            "Vendor ID",
+            "VEN-ASUS"
+          ],
+          [
+            "Legal name",
+            "ASUS Computer Distribution Inc."
+          ],
+          [
+            "Entity type",
+            "Corporation"
+          ],
+          [
+            "Status",
+            "Active"
+          ],
+          [
+            "Pay terms",
+            "Net 30"
+          ],
+          [
+            "Address",
+            "300 Demo Avenue, Fremont, CA 94538"
+          ]
+        ]
+      }
+    },
+    {
+      "file_id": "FILE-ASUS-B-09",
+      "case_id": "CASE-ASUS-2026-12-02",
+      "vendor_id": "VEN-ASUS",
+      "name": "standing_desk_quote_thread.eml",
+      "kind": "email",
+      "format": "EML",
+      "path": "files/asus_no_receipt/standing_desk_quote_thread.eml",
+      "size_label": "2 messages",
+      "available_at": "2026-12-05T13:00:00Z",
+      "preview": {
+        "card": "email",
+        "title": "Standing desk quote",
+        "subtitle": "ASUS",
+        "fields": {
+          "From": "Deskworks Sales <sales@deskworks.example>",
+          "To": "Taylor Morgan <taylor.morgan@northstar.example>",
+          "Date": "Dec 05, 2026"
+        },
+        "body": "Quote attached: 8 desks at $620 each, delivered and assembled.\n\nDeskworks"
+      }
+    },
+    {
+      "file_id": "FILE-ASUS-B-L1",
+      "case_id": "CASE-ASUS-2026-12-02",
+      "vendor_id": "VEN-ASUS",
+      "name": "reply_asus_20270102.eml",
+      "kind": "email",
+      "format": "EML",
+      "path": "files/asus_no_receipt/reply_asus_20270102.eml",
+      "size_label": "1 message",
+      "available_at": "2027-01-02T14:00:00Z",
+      "preview": {
+        "card": "email",
+        "title": "Re: ASUS December confirmation",
+        "subtitle": "ASUS",
+        "fields": {
+          "From": "Taylor Morgan <taylor.morgan@northstar.example>",
+          "To": "Jordan Patel <jordan.patel@northstar.example>",
+          "Date": "Jan 02, 2027"
+        },
+        "body": "Taylor here. Receiving never filed a report for this order, so I counted the boxes myself: 20 of the 25 laptops arrived on December 18, 2026 and the other 5 are backordered."
       }
     },
     {

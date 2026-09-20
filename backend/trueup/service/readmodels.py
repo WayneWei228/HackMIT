@@ -24,11 +24,12 @@ from trueup.agents.controller_workspace import (
 from trueup.agents.document_support import support_gaps
 from trueup.agents.selection_override import latest_override
 from trueup.close_orchestrator import pending_agent
+from trueup.gateway import llm
 from trueup.ingest.manifest import CaseEntry, FileEntry, FileUniverse
 from trueup.ingest.readers import UnsupportedFile, read_text
 from trueup.learning.rules import CandidateRule
 from trueup.service import models as v
-from trueup.service import outreach_threads, ribbon, runlog, stagechecks, timeline
+from trueup.service import outreach_threads, ribbon, runlog, stagechecks
 from trueup.store import enums as e
 from trueup.store import models as m
 from trueup.store.types import coerce_money
@@ -70,6 +71,8 @@ CHECK_LABELS = {
     "prepaid_amounts": "Prepaid amounts",
     "partial_period_offsets": "Partial-period offsets",
     "prior_close_comparison": "Compare to prior close",
+    "incomplete_data": "Data covers only part of the period",
+    "fallback_method": "Method chosen for the projection",
 }
 # Rows that only the run log shows; the case timeline keeps to the working agents.
 LOG_ONLY_AGENTS = {"verifier", "reviewer", "human_override", "orchestrator", "ingestion"}
@@ -122,6 +125,14 @@ def period_label(period: str) -> str:
 
 def utc_iso(moment: datetime) -> str:
     return moment.isoformat()
+
+
+def display_name(vendor: m.CompanyVendor, case: CaseEntry | None) -> str:
+    """The vendor's name, plus what sets this case apart when the vendor has more than one."""
+    title = case.title if case else ""
+    if title.endswith(")") and " (" in title:
+        return f"{vendor.vendor_name} ({title.rsplit(' (', 1)[1]}"
+    return vendor.vendor_name
 
 
 def initials(name: str) -> str:
@@ -235,41 +246,18 @@ def _vendor(session: Session, vendor_id: str) -> m.CompanyVendor:
 # ---- the close ----------------------------------------------------------------------------------
 
 
-def _clock_counts(session: Session, obligations: list[m.TrueUpObligation]) -> timeline.Counts:
-    posted = {e.AccrualStatus.POSTED_SIMULATED, e.AccrualStatus.TRUE_UP_COMPLETE}
-    graded = disputes = settled = 0
-    for ob in obligations:
-        wp = _workpaper(session, ob)
-        inputs = (wp.calculation_inputs_json or {}) if wp else {}
-        graded += bool(inputs.get("reconciliation"))
-        dispute = inputs.get("dispute")
-        if dispute:
-            disputes += 1
-            settled += dispute.get("status") == "RESOLVED"
-    return timeline.Counts(
-        total=len(obligations),
-        started=sum(not is_pending(ob) for ob in obligations),
-        posted=sum(ob.accrual_status in posted for ob in obligations),
-        graded=graded,
-        disputes=disputes,
-        disputes_settled=settled,
-    )
-
-
 def close_view(
     session: Session,
     *,
     period: str,
-    phase: v.Phase,
     now: datetime,
     universe: FileUniverse,
-    moments: timeline.Moments,
 ) -> v.CloseView:
     people = _config(session, "people") or []
     names = {p["person_id"]: p["name"] for p in people}
     controller = controller_id(session)
     obligations = _period_obligations(session, period)
-    rows = [case_row(session, ob, phase=phase, universe=universe) for ob in obligations]
+    rows = [case_row(session, ob, universe=universe) for ob in obligations]
     pending = session.scalars(
         select(m.TrueUpLearningRule).where(
             m.TrueUpLearningRule.status == e.LearningStatus.REPLAY_PASSED
@@ -278,42 +266,18 @@ def close_view(
     return v.CloseView(
         period=period,
         period_label=period_label(period),
-        phase=phase,
-        clock=utc_iso(now),
         controller_id=controller,
         controller_name=names.get(controller, controller),
         people=[v.Person(person_id=p["person_id"], name=p["name"], role=p["role"]) for p in people],
         cases=rows,
         queue_count=len(review_queue(session, now=now)),
         pending_rules=len(pending),
-        actions=v.CloseActions(
-            can_run_close=phase != "JANUARY" and any(is_pending(ob) for ob in obligations),
-            can_advance_to_january=phase == "CLOSED"
-            and not any(is_pending(ob) for ob in obligations),
-            can_advance_to_vendor_reply=phase == "JANUARY" and _has_open_request(session),
-        ),
-        timeline=timeline.clock_stops(
-            phase=phase, now=now, moments=moments, counts=_clock_counts(session, obligations)
-        ),
+        model=v.ModelHealth(**llm.health()),
+        actions=v.CloseActions(can_run_close=any(is_pending(ob) for ob in obligations)),
     )
 
 
-def _has_open_request(session: Session) -> bool:
-    """An email is out and its reply has not arrived."""
-    return any(
-        (card.value_json or {}).get("direction") == "REQUEST"
-        for card in session.scalars(
-            select(m.TrueUpEvidence).where(
-                m.TrueUpEvidence.evidence_type == e.EvidenceCardType.OUTREACH_RESPONSE,
-                m.TrueUpEvidence.status == e.EvidenceCardStatus.PENDING,
-            )
-        )
-    )
-
-
-def case_row(
-    session: Session, ob: m.TrueUpObligation, *, phase: v.Phase, universe: FileUniverse
-) -> v.CaseRow:
+def case_row(session: Session, ob: m.TrueUpObligation, *, universe: FileUniverse) -> v.CaseRow:
     wp = _workpaper(session, ob)
     vendor = _vendor(session, ob.vendor_id)
     trace = runlog.build_trace(session, ob, universe)
@@ -321,7 +285,7 @@ def case_row(
     return v.CaseRow(
         obligation_id=ob.obligation_id,
         vendor_id=ob.vendor_id,
-        vendor_name=vendor.vendor_name,
+        vendor_name=display_name(vendor, _case_for(universe, ob)),
         initials=initials(vendor.vendor_name),
         item=ITEM_LABELS.get(ob.purchase_type, "Accrual") if classified else "Accrual",
         category=CASE_CATEGORY,
@@ -329,7 +293,7 @@ def case_row(
         amount=money(wp.proposed_amount) if wp is not None else None,
         stage=front_stage(session, ob),
         status=case_status(ob),
-        can_start=phase != "JANUARY" and is_pending(ob),
+        can_start=is_pending(ob),
         current_agent=pending_agent(session, ob),
         stages_completed=runlog.stages_completed(trace.runs, trace.ob),
         log_count=len(trace.entries),
@@ -340,8 +304,13 @@ def case_row(
     )
 
 
-def controller_queue(session: Session, *, now: datetime):
-    return review_queue(session, now=now)
+def controller_queue(session: Session, *, now: datetime, universe: FileUniverse):
+    """The Controller's queue, with a vendor's second case told apart from its first."""
+    items = review_queue(session, now=now)
+    for item in items:
+        ob = session.get(m.TrueUpObligation, item.obligation_id)
+        item.vendor_name = display_name(_vendor(session, item.vendor_id), _case_for(universe, ob))
+    return items
 
 
 # ---- one obligation -----------------------------------------------------------------------------
@@ -355,6 +324,10 @@ def obligation_detail(
     seed_dir: Path,
     now: datetime,
     durations: dict[str, int] | None = None,
+    time_action: v.TimeAction | None = None,
+    other_time_actions: list[v.TimeAction] | None = None,
+    can_rewind: bool = False,
+    other_path: v.TimeAction | None = None,
 ) -> v.ObligationDetail | None:
     ob = session.get(m.TrueUpObligation, obligation_id)
     if ob is None:
@@ -419,6 +392,10 @@ def obligation_detail(
             cards=cards,
             names={p["person_id"]: p["name"] for p in _config(session, "people") or []},
         ),
+        next_time_action=time_action,
+        other_time_actions=other_time_actions or [],
+        can_rewind=can_rewind,
+        other_path=other_path,
     )
 
 
@@ -444,20 +421,59 @@ def escalation_of(session: Session, ob: m.TrueUpObligation) -> v.Escalation | No
     if routed is None:
         return None
     gaps = support_gaps(session, ob)
-    if not gaps:
-        return None
-    lost = [g.label for g in gaps]
     who = {
         "OUTREACH": "Outreach asks the owner for it.",
         "CONTROLLER": "The Controller decides what happens next.",
         "BLOCKED": "The case is blocked for the Controller.",
     }[routed]
+    if not gaps:
+        return _ungrounded_escalation(session, ob, routed, who)
+    lost = [g.label for g in gaps]
     return v.Escalation(
         reason="INSUFFICIENT_INFORMATION",
         missing=lost,
         message=(
             f"The documents still selected no longer support the {' and '.join(lost)}, so the "
             f"agent will not estimate from what it cannot support. {who}"
+        ),
+        routed_to=routed,  # type: ignore[arg-type]
+    )
+
+
+def _ungrounded_escalation(
+    session: Session, ob: m.TrueUpObligation, routed: str, who: str
+) -> v.Escalation | None:
+    """Set when Evidence read the selected documents and no fact stood behind any of them."""
+    runs = list(
+        session.scalars(
+            select(m.TrueUpAgentRun).where(
+                m.TrueUpAgentRun.obligation_id == ob.obligation_id,
+                m.TrueUpAgentRun.agent_name == "evidence",
+                m.TrueUpAgentRun.action == "extract_facts",
+            )
+        )
+    )
+    stands = session.scalars(
+        select(m.TrueUpEvidence.evidence_id).where(
+            m.TrueUpEvidence.obligation_id == ob.obligation_id,
+            m.TrueUpEvidence.source_table == "document",
+            m.TrueUpEvidence.status != e.EvidenceCardStatus.SUPERSEDED,
+        )
+    ).first()
+    if not runs or stands is not None:
+        return None
+    failed = any(run.status == e.AgentRunStatus.FAILED for run in runs)
+    reason = (
+        "the model failed while reading them"
+        if failed
+        else "none of them states a fact the case can use"
+    )
+    return v.Escalation(
+        reason="INSUFFICIENT_INFORMATION",
+        missing=["grounded facts from the selected documents"],
+        message=(
+            f"The Evidence agent read the selected documents and grounded no fact: {reason}. "
+            f"The agent will not estimate from what it cannot support. {who}"
         ),
         routed_to=routed,  # type: ignore[arg-type]
     )
@@ -485,11 +501,11 @@ def _header(
     gl = _account_label(accounts, wp.expense_account if wp else None)
     if gl:
         chips.append(f"GL {gl.split(' - ')[0]}")
-    title = case.title.removeprefix(vendor.vendor_name).strip() if case else ""
+    title = case.title.removeprefix(vendor.vendor_name).split(" (")[0].strip() if case else ""
     return v.Header(
         obligation_id=ob.obligation_id,
         vendor_id=vendor.vendor_id,
-        vendor_name=vendor.vendor_name,
+        vendor_name=display_name(vendor, case),
         initials=initials(vendor.vendor_name),
         title=title or f"{period_label(ob.period)} accrual",
         period=ob.period,
@@ -781,7 +797,7 @@ def _estimation(
     accounts: dict[str, str],
     header: v.Header,
 ) -> v.EstimationView:
-    run = _latest(runs, "estimation", "estimate_accrual")
+    run = _latest(runs, "estimation")
     if wp is None:
         return v.EstimationView(
             available=False,
@@ -812,6 +828,7 @@ def _estimation(
     rules = [_rule_ref(session, r) for r in inputs.get("rules_applied") or []]
     return v.EstimationView(
         available=True,
+        fallback=_fallback_view(inputs),
         outcome=_outcome(run),
         outcome_note=run.decision_summary if run else None,
         method=wp.estimation_method.value,
@@ -856,6 +873,45 @@ def _estimation(
         liability_account=_account_label(accounts, wp.accrual_liability_account),
         cost_center=wp.cost_center,
         entries=_entries(wp, accounts),
+    )
+
+
+FALLBACK_LABELS = {
+    "LINEAR_SCALE_TO_PERIOD": "Linear scaling to the full period",
+    "TRAILING_AVERAGE": "Trailing average of prior periods",
+    "PRIOR_PERIOD_RUN_RATE": "Prior period run rate",
+    "TYPICAL_ORDER_AVERAGE": "Typical quantity on earlier orders",
+    "CONSERVATIVE_ESTIMATE": "Conservative share of the quantity ordered",
+}
+
+
+def _fallback_view(inputs: dict[str, Any]) -> v.FallbackView | None:
+    """What the estimate on incomplete data says about how it was made, or None for a normal one."""
+    fallback = inputs.get("fallback")
+    if inputs.get("basis") != "INCOMPLETE_DATA" or not fallback:
+        return None
+    coverage = fallback.get("coverage") or {}
+    outreach = fallback.get("outreach") or {}
+    return v.FallbackView(
+        method=fallback["method"],
+        method_label=FALLBACK_LABELS.get(fallback["method"], fallback["method"]),
+        definition=fallback.get("definition") or "",
+        chosen_by="LLM" if str(fallback.get("proposed_by")).startswith("llm_") else "CODE",
+        rationale=fallback.get("rationale") or "",
+        rejected=[
+            v.Rejected(
+                method=FALLBACK_LABELS.get(r["method"], r["method"]), reason=r.get("reason", "")
+            )
+            for r in fallback.get("rejected") or []
+        ],
+        coverage=fallback.get("coverage_text")
+        or f"{coverage.get('covered_days')} of {coverage.get('period_days')} days of usage",
+        confidence=str(fallback.get("confidence") or ""),
+        basis_label="Incomplete data",
+        review_note=fallback.get("review") or "",
+        deadline=outreach.get("fallback_deadline"),
+        assumption=fallback.get("assumption"),
+        kind="RECEIPT" if fallback.get("kind") == "RECEIPT" else "USAGE",
     )
 
 
@@ -1006,7 +1062,7 @@ def _final_note(
             "An outreach request is open. The close resumes when the reply arrives.",
         )
     if status == "Close-ready":
-        posted = "The accrual entry is posted to the simulated ledger. Waiting for the invoice."
+        posted = "The accrual entry is posted to the synthetic ledger. Waiting for the invoice."
         if hits:
             return (
                 "Approved by the Controller.",

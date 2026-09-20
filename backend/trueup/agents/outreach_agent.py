@@ -13,6 +13,7 @@ from __future__ import annotations
 import calendar
 import re
 from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from enum import StrEnum
@@ -23,6 +24,8 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from trueup.agents.service_scope import service_evidence_of
+from trueup.estimators.fallback import FallbackPolicy
 from trueup.gateway import llm
 from trueup.store import enums as e
 from trueup.store import models as m
@@ -36,6 +39,7 @@ DEFAULT_DEADLINE_DAYS = 5
 DEADLINE_CONFIG_KEY = "outreach_deadline_days"
 DISPUTE_DEADLINE_DAYS = 30
 DISPUTE_DEADLINE_CONFIG_KEY = "outreach_dispute_deadline_days"
+FALLBACK_CONFIG_KEY = "estimation_fallback"
 SOURCE_TABLE = "outreach"
 AT_OUTREACH = (e.WorkflowStage.AWAITING_OUTREACH, e.NextAction.SEND_OUTREACH)
 _DRAFT_SYSTEM = "You write brief, factual finance emails. You never state money amounts."
@@ -78,7 +82,7 @@ ROLE_LABEL = {
 }
 ASK = {
     Topic.USAGE_CONFIRMATION: "the total usage for the full service period, with its unit",
-    Topic.SERVICE_CONFIRMATION: "whether the goods or services were received, and when",
+    Topic.SERVICE_CONFIRMATION: "whether the goods or services were received, how many, and when",
     Topic.RATE_CONFIRMATION: "the rate we are being charged, and any amendment that changes it",
     Topic.IN_SERVICE_DATE: "the date each item received was placed in service",
     Topic.INVOICE_DISPUTE: "a corrected invoice or a credit memo for the amount that was delivered",
@@ -240,7 +244,14 @@ def send_outreach(
         e.AgentRunStatus.COMPLETED,
         f"Asked {person['name']} for {facts.ask} ({topic.value}).",
         f"Outreach {key} sent; reply due {_long(due_at.date())}.",
-        [{"topic": topic.value, "recipient": person["person_id"], "drafted_by": drafted_by}],
+        [
+            {
+                "topic": topic.value,
+                "recipient": person["person_id"],
+                "recipient_name": person["name"],
+                "drafted_by": drafted_by,
+            }
+        ],
         notes,
         [obligation_id],
         [card.evidence_id],
@@ -320,7 +331,7 @@ def process_reply(
         ),
         value_json=value,
         source_excerpt=reply_text.strip()[:1000],
-        confidence=Decimal("1.00") if resolved else Decimal("0.00"),
+        confidence=_reply_confidence(topic, resolved, quantity),
         status=e.EvidenceCardStatus.VERIFIED if resolved else e.EvidenceCardStatus.PENDING,
         created_by_agent=AGENT_NAME,
         created_at=now,
@@ -364,10 +375,20 @@ def process_reply(
 
 
 def poll_replies(
-    session: Session, *, now: datetime, responder: Responder, parser: Parser | None = None
+    session: Session,
+    *,
+    now: datetime,
+    responder: Responder,
+    parser: Parser | None = None,
+    obligation_id: str | None = None,
 ) -> list[ReplyResult]:
-    """Ask the responder about every open request and process each reply that has arrived."""
+    """Ask the responder about every open request and process each reply that has arrived.
+
+    `obligation_id` limits the poll to that obligation's requests.
+    """
     requests = [c for c in _cards(session) if _is_open_request(c)]
+    if obligation_id is not None:
+        requests = [c for c in requests if c.obligation_id == obligation_id]
     results = []
     for card in sorted(requests, key=lambda c: c.created_at):
         text = responder(card.source_id, now)
@@ -422,6 +443,99 @@ def expire_overdue(session: Session, *, now: datetime) -> list[ExpiredRequest]:
             )
         )
     return expired
+
+
+class TimedOutRequest(BaseModel):
+    obligation_id: str
+    outreach_key: str
+    evidence_id: str
+    sent_at: datetime
+    deadline: datetime
+    routed_stage: e.WorkflowStage
+    next_action: e.NextAction
+    reason: str
+
+
+def fallback_policy(session: Session) -> FallbackPolicy:
+    return FallbackPolicy.from_config(_config(session, FALLBACK_CONFIG_KEY))
+
+
+def fallback_deadline(session: Session, obligation_id: str) -> datetime | None:
+    """When the open request stops being worth waiting for; None without one."""
+    card = _latest_open_request(session, obligation_id)
+    if card is None:
+        return None
+    sent = _utc(datetime.fromisoformat(card.value_json["sent_at"]))
+    return sent + timedelta(hours=fallback_policy(session).wait_hours)
+
+
+def time_out_request(
+    session: Session,
+    obligation_id: str,
+    *,
+    now: datetime,
+    target: tuple[e.WorkflowStage, e.NextAction],
+) -> TimedOutRequest:
+    """Give up waiting: close the open request as unanswered and move the obligation to `target`.
+
+    The wait is the company's `estimation_fallback` policy, counted from when the request was
+    sent, so the estimate that replaces the reply is made before the period's cutoff.
+    """
+    obligation = _at_outreach(session, obligation_id)
+    card = _latest_open_request(session, obligation_id)
+    deadline = fallback_deadline(session, obligation_id)
+    if card is None or deadline is None:
+        raise OutreachError(f"{obligation_id} has no open outreach request to give up on")
+    if _utc(now) < deadline:
+        raise OutreachError(
+            f"{obligation_id} is not overdue: the request may wait until {deadline.isoformat()}"
+        )
+    hours = fallback_policy(session).wait_hours
+    who = card.value_json.get("recipient_name") or "the recipient"
+    reason = (
+        f"No reply from {who} by {_long(deadline.date())}, {hours} hours after the request. "
+        "The reporting period cannot wait longer."
+    )
+    _close(card, "EXPIRED", now)
+    card.value_json = {
+        **card.value_json,
+        "no_response": True,
+        "fallback_deadline": deadline.isoformat(),
+    }
+    session.flush()
+    advance(obligation, *target, AGENT_NAME, at=now)
+    _log(
+        session,
+        obligation,
+        "time_out_request",
+        e.AgentRunStatus.ESCALATED,
+        reason,
+        f"Request {card.evidence_id} closed unanswered; "
+        f"routed to {obligation.workflow_stage.value}.",
+        [
+            {
+                "outreach_key": card.source_id,
+                "sent_at": card.value_json["sent_at"],
+                "fallback_deadline": deadline.isoformat(),
+                "wait_hours": hours,
+                "no_response": True,
+            }
+        ],
+        [reason],
+        [card.evidence_id],
+        [card.evidence_id],
+        now,
+    )
+    return TimedOutRequest(
+        obligation_id=obligation_id,
+        outreach_key=card.source_id,
+        evidence_id=card.evidence_id,
+        sent_at=datetime.fromisoformat(card.value_json["sent_at"]),
+        deadline=deadline,
+        routed_stage=obligation.workflow_stage,
+        next_action=obligation.next_action,
+        reason=reason,
+    )
 
 
 def llm_drafter(facts: DraftFacts) -> Draft:
@@ -513,7 +627,33 @@ def rule_parser(reply: str, topic: Topic, units: list[str]) -> ParsedReply:
                 reason="The reply commits to a corrected invoice amount.",
             )
         return ParsedReply(resolved=False, reason="The reply states no corrected invoice amount.")
+    if topic == Topic.SERVICE_CONFIRMATION:
+        return _rule_receipt_reply(reply)
     return ParsedReply(resolved=False, reason="No language model is available to read this reply.")
+
+
+_ARRIVED = r"(?:arrived|were received|received|were delivered|delivered)"
+_RECEIVED_OF = re.compile(
+    rf"(\d[\d,]*)\s+of\s+the\s+(\d[\d,]*)\s+(?:\w+\s+){{0,2}}?{_ARRIVED}", re.IGNORECASE
+)
+_RECEIVED_N = re.compile(
+    rf"\b(?:received|counted|got)\s+(\d[\d,]*)\b|\b(\d[\d,]*)\s+(?:\w+\s+){{0,2}}?{_ARRIVED}",
+    re.IGNORECASE,
+)
+
+
+def _rule_receipt_reply(reply: str) -> ParsedReply:
+    """Offline reader for a goods-received answer: what arrived, never what was ordered."""
+    hit = _RECEIVED_OF.search(reply) or _RECEIVED_N.search(reply)
+    if hit is None:
+        return ParsedReply(resolved=False, reason="The reply does not say how many were received.")
+    number = next(g for g in hit.groups() if g is not None)
+    return ParsedReply(
+        resolved=True,
+        service_received=True,
+        quantity=Decimal(number.replace(",", "")),
+        reason="The reply states how many units were received.",
+    )
 
 
 # --- helpers -------------------------------------------------------------------------------
@@ -616,7 +756,7 @@ def _draft_facts(
     vendor = session.get(m.CompanyVendor, obligation.vendor_id)
     received = session.scalars(
         select(m.CompanyServiceEvidence.service_end_date).where(
-            m.CompanyServiceEvidence.vendor_id == obligation.vendor_id,
+            service_evidence_of(obligation),
             m.CompanyServiceEvidence.service_start_date <= obligation.service_end_date,
             m.CompanyServiceEvidence.service_end_date >= obligation.service_start_date,
         )
@@ -744,6 +884,31 @@ def _open_request(session: Session, obligation_id: str, key: str) -> m.TrueUpEvi
     return found[-1] if found else None
 
 
+@dataclass(frozen=True)
+class OpenRequest:
+    """An email that has gone out and not been answered."""
+
+    key: str
+    topic: Topic
+    recipient_name: str
+    vendor: bool
+
+
+def open_request(session: Session, obligation_id: str) -> OpenRequest | None:
+    """The case's unanswered email, and whether it went to the vendor or to an owner inside."""
+    card = _latest_open_request(session, obligation_id)
+    if card is None:
+        return None
+    value = card.value_json
+    topic = Topic(value["topic"])
+    return OpenRequest(
+        key=card.source_id,
+        topic=topic,
+        recipient_name=value.get("recipient_name") or "the recipient",
+        vendor=topic == Topic.INVOICE_DISPUTE,
+    )
+
+
 def _latest_open_request(session: Session, obligation_id: str) -> m.TrueUpEvidence | None:
     found = [c for c in _cards(session, obligation_id) if _is_open_request(c)]
     return max(found, key=lambda c: c.evidence_id) if found else None
@@ -861,6 +1026,18 @@ def _requirement_met(
     if topic == Topic.IN_SERVICE_DATE:
         return given is not None
     return True
+
+
+OWNER_COUNT_CONFIDENCE = Decimal("0.80")
+
+
+def _reply_confidence(topic: Topic, resolved: bool, quantity: Decimal | None) -> Decimal:
+    """An owner's own count of goods received is a statement, not a system record."""
+    if not resolved:
+        return Decimal("0.00")
+    if topic == Topic.SERVICE_CONFIRMATION and quantity is not None:
+        return OWNER_COUNT_CONFIDENCE
+    return Decimal("1.00")
 
 
 def _reply_fact(

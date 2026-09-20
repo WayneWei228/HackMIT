@@ -226,13 +226,14 @@ def test_only_evaluation_scripts_read_the_hidden_keys():
 # ---- (d) what the offline pipeline scores today ----------------------------------------------
 #
 # Measured on the first offline run (rule judge, rule extractor, no model): 30 of 55 checks, and
-# 66 of 74 on the five demo vendors. Floors below are those measured values; a fix that raises a
-# number is welcome, one that lowers it is a regression.
+# 66 of 74 on the five demo vendors. After the incomplete-data fallback Terrastack gets an estimate
+# instead of waiting for a reply the offline reader cannot parse: 31 of 55. Floors below are those
+# measured values; a fix that raises a number is welcome, one that lowers it is a regression.
 
 MEASURED_FLOORS = {
     "detection": 3,
     "purchase type": 3,
-    "method": 2,
+    "method": 3,
     "close: accrual": 3,
     "close: stage": 3,
     "close: controller": 1,
@@ -242,7 +243,7 @@ MEASURED_FLOORS = {
     "history diagnosis": 8,
     "learning": 1,
 }
-MEASURED_OVERALL = 30
+MEASURED_OVERALL = 31
 
 
 def test_regression_floor(held_out):
@@ -262,9 +263,10 @@ WHY_EXTRACTOR = (
 )
 WHY_UPSTREAM = "nothing was selected upstream and the extractor is templated on the demo documents"
 WHY_REPLY = (
-    "the offline reply reader wants the quantity directly before the unit; "
-    "'6,900 GPU compute-hours' has 'GPU' in between, so the reply is 'not resolved' and the "
-    "case goes to the Controller with no estimate"
+    "the reply arrives after the company's 48-hour wait, so the case falls back to an estimate on "
+    "incomplete data and waits in the Controller queue, where no Controller is scripted to "
+    "approve it; the offline reply reader could not have read it anyway ('6,900 GPU "
+    "compute-hours' has 'GPU' between the quantity and the unit)"
 )
 
 TERRASTACK, LARKSPUR, CORVID = "Terrastack Compute", "Larkspur Design Studio", "Corvid Security"
@@ -291,7 +293,6 @@ for _vendor, _labels in FACTS.items():
         KNOWN_MISSES.append((_vendor, "facts (end to end)", _label, WHY_UPSTREAM))
         KNOWN_MISSES.append((_vendor, "facts (extractor alone)", _label, WHY_EXTRACTOR))
 KNOWN_MISSES += [
-    (TERRASTACK, "method", None, WHY_REPLY),
     (TERRASTACK, "final: stage", None, WHY_REPLY),
     (TERRASTACK, "final: accrual", None, WHY_REPLY),
     (TERRASTACK, "final: diagnosis", None, WHY_REPLY),

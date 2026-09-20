@@ -229,10 +229,10 @@ def test_notability_prepaid_and_wrong_treatment_are_on_day_one(sim_world):
         D("21600.00"),
     )
     assert entries["GL-NOTABILITY-2026-12"].lines_json[0].account_code == "150100"
-    assert truth(sim_world, "2026-12", "VEN-NOTABILITY").expected_close_status == "BLOCKED"
+    assert truth(sim_world, "2026-12", "VEN-NOTABILITY").expected_close_status == "NEEDS_REVIEW"
 
 
-def test_the_four_close_statuses_are_all_demonstrated(sim_world):
+def test_the_close_statuses_are_all_demonstrated(sim_world):
     by_vendor = {
         t.vendor_id: t.expected_close_status for t in sim_world.truth if t.expected_close_status
     }
@@ -241,7 +241,7 @@ def test_the_four_close_statuses_are_all_demonstrated(sim_world):
         "VEN-OPENAI": "WAITING",
         "VEN-ASUS": "NEEDS_REVIEW",
         "VEN-META": "DONE",
-        "VEN-NOTABILITY": "BLOCKED",
+        "VEN-NOTABILITY": "NEEDS_REVIEW",
     }
 
 
@@ -250,11 +250,24 @@ def test_outreach_fixtures_include_an_insufficient_reply(sim_world):
     assert set(keys) == {
         "OPENAI-2026-12-USAGE_CONFIRMATION",
         "ASUS-2026-12-IN_SERVICE_DATE",
+        "ASUS-2026-12-SERVICE_CONFIRMATION",
         "META-2026-12-INVOICE_DISPUTE",
     }
     weak = keys["ASUS-2026-12-IN_SERVICE_DATE"]
     assert weak.parsed_truth["resolved"] is False
     assert weak.service_evidence_on_response is None
+    owner = keys["ASUS-2026-12-SERVICE_CONFIRMATION"]
+    assert owner.parsed_truth == {
+        "resolved": True,
+        "service_received": True,
+        "quantity": "20",
+        "unit": "EACH",
+    }
+    record = owner.service_evidence_on_response
+    assert record is not None and record.po_id == "PO-ASUS-2026-B"
+    assert record.evidence_type == "MANUAL_CONFIRMATION"
+    assert record.confirmation_status == "OWNER_CONFIRMED"
+    assert record.quantity == 20 and record.created_at == owner.available_at
 
 
 def test_period_layout(sim_world):

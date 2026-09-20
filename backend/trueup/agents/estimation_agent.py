@@ -19,6 +19,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from trueup.agents.document_support import support_gaps
+from trueup.agents.service_scope import service_evidence_of
 from trueup.learning.rules import (
     CandidateRule,
     RuleFeatures,
@@ -35,6 +36,9 @@ AGENT_NAME = "estimation"
 CENT = Decimal("0.01")
 ZERO = Decimal(0)
 CONFIRMED = (e.ConfirmationStatus.SYSTEM_VERIFIED, e.ConfirmationStatus.OWNER_CONFIRMED)
+RECEIPT_EVIDENCE = (e.ServiceEvidenceType.GOODS_RECEIPT, e.ServiceEvidenceType.MANUAL_CONFIRMATION)
+OWNER_CONFIRMED_BASIS = "OWNER_CONFIRMED_QUANTITY"
+OWNER_CONFIRMED_NOTE = "Received quantity confirmed by the owner, no goods receipt on file."
 COUNTED_INVOICE = (
     e.APInvoiceStatus.IN_QUEUE,
     e.APInvoiceStatus.PENDING_REVIEW,
@@ -388,11 +392,7 @@ def _load(session: Session, obligation: m.TrueUpObligation) -> Context:
         contracts=contracts,
         po=session.get(m.CompanyPurchaseOrder, obligation.po_id) if obligation.po_id else None,
         service_rows=list(
-            session.scalars(
-                select(m.CompanyServiceEvidence).where(
-                    m.CompanyServiceEvidence.vendor_id == vendor_id
-                )
-            )
+            session.scalars(select(m.CompanyServiceEvidence).where(service_evidence_of(obligation)))
         ),
         invoices=list(
             session.scalars(
@@ -557,6 +557,7 @@ def _usage(ctx: Context) -> Estimate:
             f"Usage is measured in {row.unit} but the rate is per {contract.rate_unit.value}.",
             "controller",
         )
+    stepped = _unapplied_step_up_rate(contract, escalated)
     return Estimate(
         method=e.EstimationMethod.USAGE_TIMES_RATE,
         amount=_round(row.quantity * rate),
@@ -572,9 +573,39 @@ def _usage(ctx: Context) -> Estimate:
         },
         source_ids=[contract.contract_row_id, row.service_evidence_id]
         + ([ctx.po.po_id] if ctx.po else []),
-        expected_cards={"UNIT_RATE": {rate}},
-        warnings=_stale_po_price(ctx, {rate}),
+        expected_cards={"UNIT_RATE": {rate} | stepped},
+        warnings=_stale_po_price(ctx, {rate}) + _unapplied_step_up(ctx, contract, rate, stepped),
     )
+
+
+def _unapplied_step_up_rate(contract: m.CompanyContract, escalated: bool) -> set[Decimal]:
+    """The contract's stepped rate when no rule applied it; a document may quote it freely."""
+    if escalated or contract.escalator_percent is None or contract.escalator_effective_date is None:
+        return set()
+    return {contract.base_rate * (1 + contract.escalator_percent / 100)}
+
+
+def _unapplied_step_up(
+    ctx: Context, contract: m.CompanyContract, rate: Decimal, stepped: set[Decimal]
+) -> list[str]:
+    """A document quotes the contract's stepped rate but no approved rule applied it.
+
+    That is the escalator the Learning agent later proposes a rule for, so it is recorded on the
+    workpaper for the Controller to see, not raised as a conflict between evidence and tables.
+    """
+    quoted = {
+        Decimal(str(card.value_json["number"]))
+        for card in ctx.cards
+        if (card.value_json or {}).get("key") == "UNIT_RATE"
+        and (card.value_json or {}).get("number") is not None
+    } & stepped
+    if not quoted:
+        return []
+    return [
+        f"The contract states a step-up to {_money(max(quoted))} effective "
+        f"{contract.escalator_effective_date}; no approved rule applies it, so {_money(rate)} "
+        "was used."
+    ]
 
 
 def _receipt(ctx: Context) -> Estimate:
@@ -587,7 +618,7 @@ def _receipt(ctx: Context) -> Estimate:
     rows = [
         r
         for r in ctx.service_rows
-        if r.evidence_type == e.ServiceEvidenceType.GOODS_RECEIPT and r.service_end_date <= ctx.end
+        if r.evidence_type in RECEIPT_EVIDENCE and r.service_end_date <= ctx.end
     ]
     if not rows:
         raise Insufficient(
@@ -605,6 +636,9 @@ def _receipt(ctx: Context) -> Estimate:
     received = sum((r.quantity or ZERO for r in confirmed), ZERO)
     ordered = Decimal(line["quantity_ordered"]) if line.get("quantity_ordered") else None
     conflicts, warnings = [], []
+    owner_only = not any(r.evidence_type == e.ServiceEvidenceType.GOODS_RECEIPT for r in confirmed)
+    if owner_only:
+        warnings.append(OWNER_CONFIRMED_NOTE)
     if ordered is not None and received > ordered:
         conflicts.append(f"Received {_qty(received)} units but only {_qty(ordered)} were ordered.")
     billed = Decimal(line.get("quantity_billed") or 0)
@@ -625,6 +659,7 @@ def _receipt(ctx: Context) -> Estimate:
             "accepted_amount_on_receipts": str(
                 sum((r.accepted_amount or ZERO for r in confirmed), ZERO)
             ),
+            **({"evidence_basis": OWNER_CONFIRMED_BASIS} if owner_only else {}),
         },
         source_ids=[ctx.po.po_id] + [r.service_evidence_id for r in confirmed],
         expected_cards=expected,
@@ -976,3 +1011,25 @@ def _log(
         input_record_ids=source_ids + [c.evidence_id for c in ctx.cards],
         output_record_ids=[output],
     )
+
+
+# ---- what the incomplete-data estimator shares with this agent ----------------------------------
+
+load_context = _load
+contract_in_effect = _contract_in_effect
+round_money = _round
+money_text = _money
+quantity_text = _qty
+coverage_check = _coverage_check
+stale_po_price = _stale_po_price
+
+
+def accounts_for(ctx: Context, method: e.EstimationMethod) -> tuple[str, str]:
+    """The expense and liability accounts an estimate by this method posts to."""
+    credit = _find_account(
+        ctx,
+        "Prepaid Expenses"
+        if method == e.EstimationMethod.PREPAID_AMORTIZATION
+        else "Accrued Expenses",
+    )
+    return _debit_account(ctx, method), credit

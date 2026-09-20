@@ -17,7 +17,6 @@ CaseStatus = Literal[
     "Close-ready",
     "Complete",
 ]
-Phase = Literal["DAY_ONE", "CLOSED", "JANUARY"]
 Decision = Literal["APPROVE", "REJECT", "REQUEST_MORE_EVIDENCE", "DISPUTE_WITH_VENDOR"]
 
 
@@ -56,21 +55,15 @@ class CaseRow(Strict):
 
 class CloseActions(Strict):
     can_run_close: bool
-    can_advance_to_january: bool
-    can_advance_to_vendor_reply: bool = False
 
 
-ClockState = Literal["DONE", "CURRENT", "UPCOMING"]
+class TimeAction(Strict):
+    """The one thing the passing of time can do for a case right now, as a button."""
 
-
-class ClockStop(Strict):
-    """One moment on the demo calendar: the current one is the latest the demo has reached."""
-
-    key: Literal["CLOSE_STARTS", "ACCRUALS_POSTED", "INVOICES_ARRIVE", "VENDORS_REPLY"]
+    kind: Literal["DELIVER_REPLY", "EXPIRE_OUTREACH", "BRING_IN_INVOICE", "DELIVER_VENDOR_REPLY"]
     label: str
-    date_label: str
-    state: ClockState
     detail: str
+    moves_to: str
 
 
 class Person(Strict):
@@ -79,19 +72,27 @@ class Person(Strict):
     role: str
 
 
+class ModelHealth(Strict):
+    """What the language model last did, so a failing key is seen at once and not mid-demo."""
+
+    mode: Literal["live", "offline"]
+    status: Literal["unknown", "ok", "credentials_rejected", "unavailable"]
+    last_error: str | None = None
+    last_ok_at: str | None = None
+    expires_at: str | None = None
+
+
 class CloseView(Strict):
     period: str
     period_label: str
-    phase: Phase
-    clock: str
     controller_id: str
     controller_name: str
     people: list[Person]
     cases: list[CaseRow]
     queue_count: int
     pending_rules: int
+    model: ModelHealth
     actions: CloseActions
-    timeline: list[ClockStop]
 
 
 # ---- one obligation, screen by screen -----------------------------------------------------------
@@ -271,8 +272,32 @@ class InputCard(Strict):
     sub: str | None
 
 
+class Rejected(Strict):
+    method: str
+    reason: str
+
+
+class FallbackView(Strict):
+    """An estimate made on incomplete data because nobody answered the outreach email."""
+
+    method: str
+    method_label: str
+    definition: str
+    chosen_by: Literal["LLM", "CODE"]
+    rationale: str
+    rejected: list[Rejected]
+    coverage: str
+    confidence: str
+    basis_label: str
+    review_note: str
+    deadline: str | None
+    assumption: str | None = None
+    kind: Literal["USAGE", "RECEIPT"] = "USAGE"
+
+
 class EstimationView(StageExtras):
     available: bool
+    fallback: FallbackView | None = None
     outcome: str | None
     outcome_note: str | None
     method: str | None
@@ -409,7 +434,7 @@ class WaitingOn(Strict):
 
 
 class ThreadMessage(Strict):
-    """One simulated email. The field `from_` is served as `from`, a Python keyword."""
+    """One synthetic email. The field `from_` is served as `from`, a Python keyword."""
 
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
@@ -455,6 +480,10 @@ class ObligationDetail(Strict):
     escalation: Escalation | None = None
     outreach_threads: list[OutreachThread] = Field(default_factory=list)
     ribbon: list[RibbonStep] = Field(default_factory=list)
+    next_time_action: TimeAction | None = None
+    other_time_actions: list[TimeAction] = Field(default_factory=list)
+    can_rewind: bool = False
+    other_path: TimeAction | None = None
 
 
 # ---- the run log and the handoffs ----------------------------------------------------------------

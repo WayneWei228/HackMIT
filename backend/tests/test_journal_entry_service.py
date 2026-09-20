@@ -324,7 +324,7 @@ def test_posting_writes_one_marked_gl_row_and_updates_statuses(session):
     assert row.vendor_id == "VEN-MINTLIFY" and row.obligation_id == ob.obligation_id
     assert row.source_workpaper_id == ob.current_workpaper_id
     assert row.reversal_of_gl_entry_id is None
-    assert row.description.startswith("[Simulated TrueUp posting]")
+    assert row.description.startswith("[Synthetic TrueUp posting]")
     assert row.lines_json[0]["debit"] == "1400.00"
     assert ob.accrual_status == e.AccrualStatus.POSTED_SIMULATED
     assert workpaper(session, ob).status == e.WorkpaperStatus.POSTED_SIMULATED
@@ -402,7 +402,7 @@ def test_reversal_posts_only_once_the_clock_passes_its_date(session):
     assert reversal.status == e.GLEntryStatus.POSTED
     assert reversal.period == "2027-01"
     assert reversal.reversal_of_gl_entry_id == f"JE-{ob.obligation_id}-ACC"
-    assert reversal.description.startswith("[Simulated TrueUp posting]")
+    assert reversal.description.startswith("[Synthetic TrueUp posting]")
     accrual = session.get(m.CompanyGLEntry, f"JE-{ob.obligation_id}-ACC")
     assert accrual.status == e.GLEntryStatus.REVERSED
 
@@ -531,7 +531,8 @@ def closed(world):
 
 
 @pytest.mark.parametrize(
-    ("vendor", "amount"), [("VEN-MINTLIFY", "1400.00"), ("VEN-META", "24700.00")]
+    ("vendor", "amount"),
+    [("VEN-MINTLIFY", "1400.00"), ("VEN-META", "24700.00")],
 )
 def test_permit_cases_draft_post_and_reverse_end_to_end(closed, vendor, amount):
     s, obligations = closed
@@ -551,7 +552,7 @@ def test_cases_that_need_a_person_or_evidence_never_draft(closed, vendor):
     ob = obligations[vendor]
     with pytest.raises((NotApprovedError, IllegalTransitionError)):
         draft_entry(s, ob.obligation_id, now=NOW)
-    waiting_for_approval = vendor == "VEN-ASUS"
+    waiting_for_approval = vendor in ("VEN-ASUS", "VEN-NOTABILITY")
     assert ob.accrual_status == (
         e.AccrualStatus.PENDING_APPROVAL if waiting_for_approval else e.AccrualStatus.NOT_STARTED
     )

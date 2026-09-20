@@ -18,7 +18,7 @@ from enum import StrEnum
 from pathlib import Path
 from typing import cast
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -76,9 +76,14 @@ class Fact(BaseModel):
 
 
 class DocumentFacts(BaseModel):
+    """`facts` is required and extra keys are refused, so a reply of the wrong shape is an error
+    and never an empty read."""
+
+    model_config = ConfigDict(extra="forbid")
+
     vendor_name: str | None = None
     service_period: str | None = Field(default=None, description="YYYY-MM")
-    facts: list[Fact] = Field(default_factory=list)
+    facts: list[Fact]
 
 
 class EvidenceCard(BaseModel):
@@ -117,6 +122,8 @@ class EvidenceResult(BaseModel):
     dropped: list[DroppedFact]
     files: list[FileEvidence]
     uncertainties: list[str]
+    model_errors: list[str] = Field(default_factory=list)
+    unread_files: list[str] = Field(default_factory=list)
 
 
 Extractor = Callable[[CaseEntry, FileEntry, str], DocumentFacts]
@@ -149,9 +156,12 @@ def collect_evidence(
     now: dt.datetime,
     seed_dir: Path | str = SEED_DIR,
     extractor: Extractor | None = None,
+    fallback: Extractor | None = None,
     session: Session | None = None,
     obligation_id: str | None = None,
 ) -> EvidenceResult:
+    """Read the selected files. When the model fails on a file and a fallback is given, the
+    fallback reads it instead and the failure is recorded, never reported as a clean run."""
     if extractor is None:
         if not llm.available():
             raise EvidenceError(
@@ -167,6 +177,9 @@ def collect_evidence(
     dropped: list[DroppedFact] = []
     files: list[FileEvidence] = []
     uncertainties: list[str] = []
+    model_errors: list[str] = []
+    fell_back: list[str] = []
+    unread: list[str] = []
     stored = _stored_cards(session, obligation_id)
     seen = {(c.source_id, c.fact) for c in stored}
 
@@ -183,11 +196,19 @@ def collect_evidence(
         try:
             extracted = extractor(case, entry, text)
         except llm.LLMError as exc:
-            uncertainties.append(f"Extraction failed for {entry.name}: {exc}")
-            files.append(
-                FileEvidence(file_id=file_id, name=entry.name, facts_kept=0, facts_dropped=0)
+            model_errors.append(f"{entry.name}: {exc}")
+            if fallback is None:
+                unread.append(entry.name)
+                uncertainties.append(f"Extraction failed for {entry.name}: {exc}")
+                files.append(
+                    FileEvidence(file_id=file_id, name=entry.name, facts_kept=0, facts_dropped=0)
+                )
+                continue
+            fell_back.append(entry.name)
+            uncertainties.append(
+                f"The model failed on {entry.name} ({exc}); the rule-based extractor read it."
             )
-            continue
+            extracted = fallback(case, entry, text)
 
         kept = repeated = 0
         for fact in extracted.facts:
@@ -218,13 +239,20 @@ def collect_evidence(
             )
         )
 
+    name = getattr(extractor, "__name__", "custom")
+    if fell_back and len(fell_back) == len(files):
+        name = f"{getattr(fallback, '__name__', 'fallback')} after a model error"
+    elif fell_back:
+        name = f"{name}, {getattr(fallback, '__name__', 'fallback')} on {len(fell_back)} file(s)"
     result = EvidenceResult(
         case_id=case.case_id,
-        extractor=getattr(extractor, "__name__", "custom"),
+        extractor=name,
         cards=cards,
         dropped=dropped,
         files=files,
         uncertainties=uncertainties,
+        model_errors=model_errors,
+        unread_files=unread,
     )
     persisted = session is not None and obligation_id is not None
     if persisted:
@@ -368,14 +396,17 @@ def _log(
     now: dt.datetime,
 ) -> None:
     kept, gone = len(result.cards), len(result.dropped)
+    trouble = ""
+    if result.model_errors:
+        trouble = f" Model error on {len(result.model_errors)} file(s): {result.model_errors[0]}."
     AgentRunLog(session).append(
         agent_name=AGENT_NAME,
         action="extract_facts",
-        status=AgentRunStatus.COMPLETED,
+        status=AgentRunStatus.FAILED if result.unread_files else AgentRunStatus.COMPLETED,
         decision_summary=(
             f"Extracted {kept} grounded facts from {len(result.files)} selected files "
             f"for {case.vendor_name} {case.period}; dropped {gone} ungrounded. "
-            f"Extractor: {result.extractor}."
+            f"Extractor: {result.extractor}.{trouble}"
         ),
         output_summary=(
             f"{kept} evidence cards ready for Obligation"

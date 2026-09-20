@@ -25,6 +25,7 @@ _ACTION_BY_STATE: dict[State, ActionType] = {
     st.CLASSIFY: ActionType.CLASSIFY_OBLIGATION,
     st.ESTIMATE: ActionType.PROPOSE_ESTIMATE,
     st.POLICY: ActionType.ROUTE_BY_POLICY,
+    st.FALLBACK: ActionType.PROPOSE_INCOMPLETE_ESTIMATE,
     st.OUTREACH: ActionType.PROCESS_REPLY,
     st.CONTROLLER: ActionType.CONTROLLER_DECISION,
     st.BLOCKED: ActionType.CONTROLLER_DECISION,
@@ -35,8 +36,14 @@ _ACTION_BY_STATE: dict[State, ActionType] = {
 }
 
 
-def action_for(frm: State) -> ActionType:
-    return _ACTION_BY_STATE[frm]
+# An edge whose meaning differs from the state it leaves: no reply, not a reply.
+_ACTION_BY_EDGE: dict[tuple[State, State | None], ActionType] = {
+    (st.OUTREACH, st.FALLBACK): ActionType.EXPIRE_OUTREACH,
+}
+
+
+def action_for(frm: State, to: State | None = None) -> ActionType:
+    return _ACTION_BY_EDGE.get((frm, to)) or _ACTION_BY_STATE[frm]
 
 
 def build_proposal(
@@ -63,7 +70,7 @@ def build_proposal(
     confidence: Decimal | None = min((c.confidence for c in live), default=None)
     try:
         proposal = ActionProposal(
-            action_type=action or action_for(frm),
+            action_type=action or action_for(frm, to),
             actor=actor or "unknown",
             obligation_id=ob.obligation_id,
             period=ob.period,

@@ -8,6 +8,7 @@ type, so different vendors show different checks. A check with nothing recorded 
 
 from __future__ import annotations
 
+import re
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from typing import Any
@@ -16,6 +17,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from trueup.agents.selection_override import AGENT_NAME as OVERRIDE_AGENT
+from trueup.agents.service_scope import service_evidence_of
+from trueup.close_orchestrator import selection_waiting
 from trueup.service import models as v
 from trueup.service.runlog import Trace, run_number
 from trueup.store import enums as e
@@ -223,7 +226,16 @@ def _ingestion_checks(trace: Trace, _: Session) -> list[v.StageCheck]:
     return checks
 
 
-def _evidence_checks(trace: Trace, _: Session) -> list[v.StageCheck]:
+_MODEL_FAILURE = ("Extraction failed", "The model failed")
+
+
+def _extractor_of(row: m.TrueUpAgentRun) -> str:
+    """The extractor named in the run summary, which may be followed by a note on model errors."""
+    found = re.search(r"Extractor: (.*?)\.(?: Model error|$)", row.decision_summary)
+    return found.group(1) if found else row.decision_summary.rsplit("Extractor: ", 1)[-1]
+
+
+def _evidence_checks(trace: Trace, session: Session) -> list[v.StageCheck]:
     sel = trace.latest("ingestion", "select_files")
     reads = [
         r
@@ -236,19 +248,45 @@ def _evidence_checks(trace: Trace, _: Session) -> list[v.StageCheck]:
     cards = _live_document_cards(trace)
     files = {c.source_id for c in cards}
     dropped = [u for r in reads for u in r.uncertainties_json or [] if str(u).startswith("Dropped")]
-    extractor = row.decision_summary.rsplit("Extractor: ", 1)[-1].rstrip(".")
+    failures = [
+        str(u)
+        for r in reads
+        for u in r.uncertainties_json or []
+        if str(u).startswith(_MODEL_FAILURE)
+    ]
+    extractor = _extractor_of(row)
+    if cards:
+        grounding = (
+            f"{len(cards)} facts from {len(files)} files by {extractor}; each quote was "
+            f"re-found in its document text. {len(dropped)} dropped as ungrounded."
+        )
+    else:
+        grounding = (
+            f"No fact was grounded from the selected documents (read by {extractor}); "
+            f"{len(dropped)} dropped as ungrounded."
+        )
     checks = [
         _check(
             trace,
             "EVI-GROUND",
             "Every fact is quoted from its source",
-            "FLAG" if dropped else "PASS",
-            f"{len(cards)} facts from {len(files)} files by {extractor}; each quote was "
-            f"re-found in its document text. {len(dropped)} dropped as ungrounded.",
+            "FLAG" if dropped or not cards else "PASS",
+            grounding,
             row,
             [c.evidence_id for c in cards],
         )
     ]
+    if failures:
+        checks.append(
+            _check(
+                trace,
+                "EVI-MODEL",
+                "The model read the documents",
+                "FLAG",
+                f"The model failed on {len(failures)} document(s): {failures[0]}",
+                row,
+            )
+        )
     by_key: dict[str, dict[str, m.TrueUpEvidence]] = {}
     for card in cards:
         if _key(card) in (None, "OTHER", "TREATMENT", "EVIDENCE_GAP"):
@@ -294,10 +332,29 @@ def _evidence_checks(trace: Trace, _: Session) -> list[v.StageCheck]:
                 row,
             )
         )
+    gap = _receipt_gap(trace, session, cards)
+    if gap:
+        checks.append(_check(trace, "EVI-RECEIPT", "Goods receipt on file", "FLAG", gap, row))
     override = _override_check(trace, "EVI-OVR")
     if override and override.status == "FLAG":
         checks.append(override)
     return checks
+
+
+def _receipt_gap(trace: Trace, session: Session, cards: list[m.TrueUpEvidence]) -> str | None:
+    """Said once Evidence has read everything: the order needs a receipt and none was found."""
+    ob = trace.ob
+    po = session.get(m.CompanyPurchaseOrder, ob.po_id) if ob.po_id else None
+    if po is None or not any(line.get("receipt_required") for line in po.line_items_json or []):
+        return None
+    if selection_waiting(session, ob) is not None:
+        return None
+    if any(_key(card) == "RECEIVED_QUANTITY" for card in cards):
+        return None
+    return (
+        "The order requires a goods receipt and none of the selected documents is one, so the "
+        "received quantity is not evidenced. No agent will assume the full order arrived."
+    )
 
 
 def _signals(row: m.TrueUpAgentRun) -> list[dict[str, Any]]:
@@ -381,7 +438,7 @@ def _type_check(trace: Trace, session: Session, row: m.TrueUpAgentRun) -> v.Stag
         usage = list(
             session.scalars(
                 select(m.CompanyServiceEvidence)
-                .where(m.CompanyServiceEvidence.vendor_id == ob.vendor_id)
+                .where(service_evidence_of(ob))
                 .order_by(m.CompanyServiceEvidence.service_end_date)
             )
         )
@@ -485,11 +542,13 @@ _BUILD_LABELS = {
     "prepaid_amounts": "Prepaid amounts",
     "partial_period_offsets": "Partial-period offsets",
     "prior_close_comparison": "Comparison to the prior close",
+    "incomplete_data": "Data covers only part of the period",
+    "fallback_method": "Method chosen for the projection",
 }
 
 
 def _estimation_checks(trace: Trace, _: Session) -> list[v.StageCheck]:
-    row = trace.latest("estimation", "estimate_accrual")
+    row = trace.latest("estimation")
     if row is None:
         return []
     wp = trace.wp

@@ -58,7 +58,6 @@ DEFAULT_RULE_TEXT = {
     "POL-05": "Require a balanced journal entry",
     "POL-06": "Require an active contract or PO, or an approved fallback",
     "POL-07": "Capitalize equipment over the threshold and depreciate it over its life",
-    "POL-08": "Record prepaid services as an asset and expense them over the term",
     "POL-09": "Never accrue more than the approved PO total or budget",
 }
 
@@ -258,8 +257,25 @@ def _result(
     return RuleResult(rule_id=rule_id, name=name, status=status, outcome=outcome, detail=detail)
 
 
+def _incomplete_basis(ctx: Context) -> bool:
+    return (ctx.workpaper.calculation_inputs_json or {}).get("basis") == "INCOMPLETE_DATA"
+
+
 def _pol_01(ctx: Context) -> RuleResult:
     cfg = ctx.config
+    if _incomplete_basis(ctx):
+        detail = (
+            "The estimate rests on incomplete data (INCOMPLETE_DATA); "
+            "it always needs Controller review."
+        )
+        return _result(ctx, "POL-01", "HIT", detail, _D.REQUIRE_CONTROLLER)
+    for warning in (ctx.workpaper.calculation_inputs_json or {}).get("warnings") or []:
+        text = warning if isinstance(warning, str) else " ".join(str(v) for v in warning.values())
+        if "expens" in text.lower():
+            detail = (
+                f"Estimation warned the balance was already expensed; a person must review: {text}"
+            )
+            return _result(ctx, "POL-01", "HIT", detail, _D.REQUIRE_CONTROLLER)
     if ctx.amount >= cfg.mandatory_threshold:
         detail = (
             f"{ctx.amount} is at or above the mandatory review limit of {cfg.mandatory_threshold}."
@@ -284,6 +300,13 @@ def _pol_02(ctx: Context) -> RuleResult:
 
 def _pol_03(ctx: Context) -> RuleResult:
     status = ctx.obligation.evidence_status
+    incomplete = (e.EvidenceStatus.MISSING_USAGE, e.EvidenceStatus.MISSING_SERVICE_CONFIRMATION)
+    if status in incomplete and _incomplete_basis(ctx):
+        detail = (
+            "The usage or goods-receipt evidence is still incomplete; outreach got no reply and "
+            "the estimate is marked INCOMPLETE_DATA for the Controller."
+        )
+        return _result(ctx, "POL-03", "NOTE", detail)
     if status != e.EvidenceStatus.SUFFICIENT:
         return _result(
             ctx, "POL-03", "HIT", f"Evidence status is {status.value}.", _D.REQUIRE_OUTREACH
@@ -343,28 +366,6 @@ def _pol_07(ctx: Context) -> RuleResult:
     return _result(ctx, "POL-07", "PASS", "No capitalization candidate.")
 
 
-def _pol_08(ctx: Context) -> RuleResult:
-    if ctx.obligation.purchase_type != e.PurchaseType.PREPAID:
-        return _result(ctx, "POL-08", "PASS", "Not a prepaid purchase.")
-    for warning in (ctx.workpaper.calculation_inputs_json or {}).get("warnings") or []:
-        text = warning if isinstance(warning, str) else " ".join(str(v) for v in warning.values())
-        if "expens" in text.lower():
-            return _result(ctx, "POL-08", "HIT", f"Estimation warned: {text}", _D.BLOCK)
-    for entry in ctx.gl_entries:
-        if entry.status != e.GLEntryStatus.POSTED or entry.period > ctx.obligation.period:
-            continue
-        for line in entry.lines_json or []:
-            debit = coerce_money(line.get("debit", 0))
-            expense = ctx.config.account_types.get(line.get("account_code")) == "EXPENSE"
-            if expense and debit > ctx.amount:
-                detail = (
-                    f"GL entry {entry.gl_entry_id} expenses {debit} at once, above the "
-                    f"{ctx.amount} amortization for the month."
-                )
-                return _result(ctx, "POL-08", "HIT", detail, _D.BLOCK)
-    return _result(ctx, "POL-08", "PASS", "No prepaid balance was expensed at once.")
-
-
 def _pol_09(ctx: Context) -> RuleResult:
     if ctx.po is not None and ctx.amount > coerce_money(ctx.po.approved_total):
         detail = f"{ctx.amount} exceeds the approved PO total of {ctx.po.approved_total}."
@@ -380,6 +381,5 @@ _RULES: tuple[Rule, ...] = (
     _pol_05,
     _pol_06,
     _pol_07,
-    _pol_08,
     _pol_09,
 )

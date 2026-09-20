@@ -22,7 +22,7 @@ from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from trueup.agents import estimation_agent, policy_agent
+from trueup.agents import estimation_agent, fallback_estimation, policy_agent
 from trueup.gateway import llm
 from trueup.store import enums as e
 from trueup.store import models as m
@@ -232,12 +232,30 @@ def _checklist(
         ReviewVerdict.ESCALATE,
     )
 
+    if fallback_estimation.is_incomplete(wp):
+        fallback = (wp.calculation_inputs_json or {}).get("fallback") or {}
+        coverage = fallback.get("coverage") or {}
+        basis = (
+            f"It projects {coverage.get('covered_days')} of {coverage.get('period_days')} days "
+            f"of usage ({fallback.get('method')})"
+            if coverage
+            else f"It estimates the quantity received ({fallback.get('method')}) with no goods "
+            "receipt on file"
+        )
+        add(
+            "The estimate rests on complete data",
+            False,
+            f"{basis} because the owner did not reply; the Controller "
+            "decides whether to accept an estimate on incomplete data.",
+            ReviewVerdict.ESCALATE,
+        )
+
     adjusted = (wp.calculation_inputs_json or {}).get("controller_adjustment")
     if adjusted:
         add("The estimate reproduces", True, "The Controller adjusted this amount; not recomputed.")
     else:
         try:
-            fresh = estimation_agent.compute(session, ob).estimate.amount
+            fresh = fallback_estimation.reproduce(session, ob, wp)
             same = abs(fresh - amount) <= TOLERANCE
             add(
                 "The estimate reproduces",
@@ -247,7 +265,7 @@ def _checklist(
                 else f"Recomputing from the sources gives {fresh}, not the recorded {amount}.",
                 ReviewVerdict.ESCALATE,
             )
-        except estimation_agent.Insufficient as exc:
+        except (estimation_agent.Insufficient, fallback_estimation.NotApplicable) as exc:
             add(
                 "The estimate reproduces",
                 False,

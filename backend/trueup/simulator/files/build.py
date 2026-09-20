@@ -7,7 +7,7 @@ from pathlib import Path
 
 from trueup.ingest.manifest import CaseEntry, FileEntry, FileUniverse
 from trueup.simulator.files import render
-from trueup.simulator.files.cases import BUILDERS, late_specs
+from trueup.simulator.files.cases import CASES, late_specs
 from trueup.simulator.files.common import CLOSE, Cast, Ctx, Spec
 from trueup.simulator.files.doc import Chat, Doc, Sheet, Thread
 from trueup.simulator.files.models import RelevanceEntry, RelevanceTruth
@@ -49,26 +49,28 @@ def build_universe(
     cases: list[CaseEntry] = []
     files: list[FileEntry] = []
     truth: dict[str, RelevanceEntry] = {}
-    for name, builder in BUILDERS.items():
+    for build in CASES:
+        name = build.vendor
         vendor = view.vendor(name)
-        ctx = Ctx(world, view, cast, random.Random(f"{seed}:{name}"), vendor)
-        case_id = f"CASE-{name.upper()}-{PERIOD}"
+        ctx = Ctx(world, view, cast, random.Random(f"{seed}:{build.seed_key or name}"), vendor)
+        case_id = f"CASE-{name.upper()}-{PERIOD}{build.case_suffix}"
+        title = f"{name} December accrual" + (f" ({build.label})" if build.label else "")
         cases.append(
             CaseEntry(
                 case_id=case_id,
                 vendor_id=vendor.vendor_id,
                 vendor_name=name,
-                title=f"{name} December accrual",
+                title=title,
                 period=PERIOD,
             )
         )
-        universe = builder(ctx)
+        universe = build.builder(ctx)
         ctx.rng.shuffle(universe)
-        late = late_specs(ctx)
-        numbered = [(f"FILE-{name.upper()}-{i:02d}", s) for i, s in enumerate(universe, 1)]
-        numbered += [(f"FILE-{name.upper()}-L{i}", s) for i, s in enumerate(late, 1)]
+        late = late_specs(ctx, invoices=build.late_invoices, reply_keys=build.reply_keys)
+        numbered = [(f"FILE-{build.file_prefix}-{i:02d}", s) for i, s in enumerate(universe, 1)]
+        numbered += [(f"FILE-{build.file_prefix}-L{i}", s) for i, s in enumerate(late, 1)]
         for file_id, spec in numbered:
-            relative = f"files/{slug(name)}/{spec.filename}"
+            relative = f"files/{build.folder or slug(name)}/{spec.filename}"
             size = _render(spec, out_dir / relative, file_id)
             files.append(
                 FileEntry(

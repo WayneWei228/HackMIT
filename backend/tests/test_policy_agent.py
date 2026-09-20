@@ -114,7 +114,7 @@ DEMO = [
         ["POL-01", "POL-07"],
     ),
     ("VEN-META", P.MILESTONE_BASED, "24700.00", M.MILESTONE_ACCEPTED_AMOUNT, D.PERMIT, []),
-    ("VEN-NOTABILITY", P.PREPAID, "1800.00", M.FIXED_CONTRACT_RATE, D.BLOCK, ["POL-08"]),
+    ("VEN-NOTABILITY", P.PREPAID, "1800.00", M.FIXED_CONTRACT_RATE, D.PERMIT, []),
 ]
 
 
@@ -262,14 +262,18 @@ def test_pol_07_is_a_note_not_a_block_and_needs_the_threshold(session):
     assert result.hits[0].status == "NOTE" and result.hits[0].outcome is None
 
 
-def test_pol_08_uses_the_planted_gl_entry_and_the_estimation_warning(session):
-    # The planted manual entry expenses the full $21,600 at once.
-    ob = ready(session, "VEN-NOTABILITY", purchase_type=P.PREPAID, amount="1800.00")
+def test_a_prepaid_service_expensed_at_once_goes_to_the_controller_not_a_block(session):
+    ob = ready(
+        session,
+        "VEN-NOTABILITY",
+        purchase_type=P.PREPAID,
+        amount="1800.00",
+        inputs={"warnings": ["The full 21600.00 was expensed in December by GL-NOTABILITY."]},
+    )
     result = enforce(session, ob.obligation_id, now=NOW)
-    assert result.hit_ids == ["POL-08"]
-    assert "GL-NOTABILITY-2026-12-MANUAL" in result.hits[0].detail
+    assert result.decision == D.REQUIRE_CONTROLLER and result.hit_ids == ["POL-01"]
+    assert "expensed" in result.hits[0].detail
 
-    # A prepaid vendor with clean GL history is blocked by the estimation warning alone.
     warned = ready(
         session,
         "VEN-MINTLIFY",
@@ -277,8 +281,7 @@ def test_pol_08_uses_the_planted_gl_entry_and_the_estimation_warning(session):
         amount="1800.00",
         inputs={"warnings": ["The full prepaid amount was expensed in one month."]},
     )
-    result = enforce(session, warned.obligation_id, now=NOW)
-    assert result.decision == D.BLOCK and result.hit_ids == ["POL-08"]
+    assert enforce(session, warned.obligation_id, now=NOW).decision == D.REQUIRE_CONTROLLER
 
     clean = ready(session, "VEN-META", purchase_type=P.PREPAID, amount="1800.00")
     assert enforce(session, clean.obligation_id, now=NOW).hit_ids == []
@@ -402,7 +405,7 @@ def test_an_unseen_vendor_with_the_same_structure_gets_the_same_decision(session
         vendor_name="Zeta Machines",
     )
     po = session.scalars(
-        select(m.CompanyPurchaseOrder).where(m.CompanyPurchaseOrder.vendor_id == "VEN-ASUS")
+        select(m.CompanyPurchaseOrder).where(m.CompanyPurchaseOrder.po_id == "PO-ASUS-2026")
     ).one()
     clone(session, po, po_id="PO-ZETA", po_number="ZETA-1", vendor_id="VEN-ZETA")
     ob = ready(session, "VEN-ZETA", purchase_type=P.RECEIPT_BASED, amount="32000.00")
@@ -441,7 +444,7 @@ def test_one_run_log_entry_with_the_rule_results_and_no_floats(session):
     assert run.obligation_id == ob.obligation_id and run.workpaper_id == result.workpaper_id
     assert run.output_record_ids_json == [result.workpaper_id]
     assert ob.po_id in run.input_record_ids_json
-    assert len(run.facts_used_json) == 9
+    assert len(run.facts_used_json) == 8
     assert {f["rule_id"] for f in run.facts_used_json if f["status"] != "PASS"} == {
         "POL-01",
         "POL-07",
@@ -450,7 +453,7 @@ def test_one_run_log_entry_with_the_rule_results_and_no_floats(session):
 
 
 def test_block_is_logged_as_blocked(session):
-    ob = ready(session, "VEN-NOTABILITY", purchase_type=P.PREPAID, amount="1800.00")
+    ob = ready(session, "VEN-META", purchase_type=P.MILESTONE_BASED, amount="30000.01")
     enforce(session, ob.obligation_id, now=NOW)
     assert runs(session)[0].status == e.AgentRunStatus.BLOCKED
 
@@ -483,7 +486,7 @@ def closed(world):
         ("VEN-MINTLIFY", D.PERMIT, "1400.00"),
         ("VEN-ASUS", D.REQUIRE_CONTROLLER, "32000.00"),
         ("VEN-META", D.PERMIT, "24700.00"),
-        ("VEN-NOTABILITY", D.BLOCK, "1800.00"),
+        ("VEN-NOTABILITY", D.REQUIRE_CONTROLLER, "1800.00"),
     ],
 )
 def test_real_estimates_flow_into_the_expected_policy_decision(closed, vendor, decision, amount):

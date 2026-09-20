@@ -1,6 +1,6 @@
 """Audit the December close: python scripts/run_auditor.py.
 
-Builds the five demo cases through the real agents, audits the result, then plants three defects
+Builds the six demo cases through the real agents, audits the result, then plants three defects
 and shows the Auditor catch each one. Offline: no model and no keys.
 """
 
@@ -211,16 +211,16 @@ def main() -> None:
         notability = report.for_obligation("OBL-NOTABILITY-2026-12")
         results.append(
             (
-                "the clean close has five obligations and no critical finding",
-                len(report.obligations) == 5 and report.passed,
+                "the close has six obligations and one critical finding: Notability's double count",
+                len(report.obligations) == 6 and report.counts["CRITICAL"] == 1,
             )
         )
         results.append(
             (
-                "Notability's one-time expense already in the seed is an open AUD-03 warning",
+                "Notability's one-time expense in the seed is a critical AUD-03 double count",
                 any(
                     f.check_id == "AUD-03"
-                    and f.severity == Severity.WARNING
+                    and f.severity == Severity.CRITICAL
                     and "GL-NOTABILITY-2026-12-MANUAL" in f.message
                     for f in notability.findings
                 ),

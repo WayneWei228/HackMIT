@@ -38,7 +38,7 @@ from sqlalchemy.orm import Session
 from trueup.agents import policy_agent, reconciliation_agent
 from trueup.agents.controller_workspace import ControllerWorkspaceError, controller_id
 from trueup.agents.detection_agent import CONTRACT_STATUSES_IN_FORCE, PO_STATUSES_TO_ACCRUE
-from trueup.agents.estimation_agent import compute
+from trueup.agents.fallback_estimation import reproduce
 from trueup.agents.ingestion import SEED_DIR, load_universe
 from trueup.agents.learning_agent import HISTORY_PREFIX
 from trueup.gateway import llm
@@ -724,7 +724,7 @@ def _recomputation_control(world: _World, case: _Case, rec: _Recorder) -> None:
 
     rules = world.rules_active_at(wp.created_at)
     try:
-        fresh = compute(world.session, ob, rules=rules).estimate.amount
+        fresh = reproduce(world.session, ob, wp, rules=rules)
     except Exception as exc:  # any failure to re-derive is itself a finding
         rec.warning(
             "AUD-02",
@@ -804,27 +804,75 @@ def _inputs_match_sources(world: _World, case: _Case, rec: _Recorder) -> None:
     try:
         if method == e.EstimationMethod.USAGE_TIMES_RATE:
             confirmed = [r for r in usage if r.evidence_type == e.ServiceEvidenceType.SYSTEM_USAGE]
-            pairs.append(
-                (
-                    "quantity",
-                    _dec(i["quantity"]),
-                    sum((r.quantity or 0 for r in confirmed), Decimal(0)),
+            if i.get("basis") == "INCOMPLETE_DATA":
+                # The recorded quantity is a projection; what must match the rows is what it
+                # was projected from: the partial usage, or the prior periods.
+                params = (i.get("fallback") or {}).get("parameters") or {}
+                if "covered_units" in params:
+                    cited = [r for r in confirmed if r.service_evidence_id == params["source_id"]]
+                    pairs.append(
+                        (
+                            "covered_units",
+                            _dec(params["covered_units"]),
+                            sum((r.quantity or 0 for r in cited), Decimal(0)),
+                        )
+                    )
+                else:
+                    used = [
+                        r
+                        for r in confirmed
+                        if r.service_evidence_id in (params.get("history_sources") or [])
+                    ]
+                    pairs.append(
+                        (
+                            "history_units",
+                            _dec(params["history_units"]),
+                            sum((r.quantity or 0 for r in used), Decimal(0)),
+                        )
+                    )
+            else:
+                pairs.append(
+                    (
+                        "quantity",
+                        _dec(i["quantity"]),
+                        sum((r.quantity or 0 for r in confirmed), Decimal(0)),
+                    )
                 )
-            )
             if contract is not None and contract.base_rate is not None:
                 rate = contract.base_rate
                 if i.get("step_up_applied") and contract.escalator_percent is not None:
                     rate = rate * (1 + contract.escalator_percent / 100)
                 pairs.append(("unit_rate", _dec(i["unit_rate"]), rate))
         elif method == e.EstimationMethod.RECEIVED_QUANTITY_TIMES_PRICE:
-            got = [r for r in usage if r.evidence_type == e.ServiceEvidenceType.GOODS_RECEIPT]
-            pairs.append(
-                (
-                    "received_quantity",
-                    _dec(i["received_quantity"]),
-                    sum((r.quantity or 0 for r in got), Decimal(0)),
+            got = [
+                r
+                for r in usage
+                if r.evidence_type
+                in (e.ServiceEvidenceType.GOODS_RECEIPT, e.ServiceEvidenceType.MANUAL_CONFIRMATION)
+            ]
+            if i.get("basis") == "INCOMPLETE_DATA":
+                # The recorded quantity is an estimate; what must match the rows is the earlier
+                # receipts it was averaged from.
+                params = (i.get("fallback") or {}).get("parameters") or {}
+                if params.get("history_orders"):
+                    pairs.append(
+                        (
+                            "history_units",
+                            sum(
+                                (_dec(v) or Decimal(0) for v in params["history_orders"].values()),
+                                Decimal(0),
+                            ),
+                            sum((r.quantity or 0 for r in got), Decimal(0)),
+                        )
+                    )
+            else:
+                pairs.append(
+                    (
+                        "received_quantity",
+                        _dec(i["received_quantity"]),
+                        sum((r.quantity or 0 for r in got), Decimal(0)),
+                    )
                 )
-            )
         elif method == e.EstimationMethod.MILESTONE_ACCEPTED_AMOUNT:
             got = [
                 r for r in usage if r.evidence_type == e.ServiceEvidenceType.MILESTONE_ACCEPTANCE

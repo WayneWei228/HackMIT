@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 
@@ -566,49 +568,85 @@ def _receipt_evidence(ctx: Ctx) -> ServiceEvidenceRecord:
 
 
 def asus(ctx: Ctx) -> list[Spec]:
-    vid = ctx.vendor.vendor_id
-    po = ctx.view.pos(vid)[0]
+    return _asus_files(ctx, "PO-ASUS-2026", receipt_on_file=True)
+
+
+def asus_no_receipt(ctx: Ctx) -> list[Spec]:
+    """The same ASUS files for the second order, with the goods receipt missing from the folder."""
+    return _asus_files(ctx, "PO-ASUS-2026-B", receipt_on_file=False)
+
+
+def _asus_files(ctx: Ctx, po_id: str, *, receipt_on_file: bool) -> list[Spec]:
+    po = next(p for p in ctx.view.pos(ctx.vendor.vendor_id) if p.po_id == po_id)
     line = po.line_items_json[0]
     ordered = line.quantity_ordered or Decimal(0)
-    receipt = _receipt_evidence(ctx)
-    received = receipt.quantity or Decimal(0)
-    accepted = receipt.accepted_amount or received * line.unit_price
     cap = ctx.view.config("capitalization_policy")
     life = line.useful_life_months or cap["useful_life_months"]
 
     po_doc, po_rows = _po_doc(
         ctx, po, "Deliver to HQ receiving. Partial shipments are accepted and billed as received."
     )
-    goods = Doc(
-        "Goods Receipt",
-        ctx.name,
-        (
-            KeyValues(
-                (
-                    ("Receipt", receipt.service_evidence_id),
-                    ("PO number", po.po_number),
-                    ("Vendor", ctx.legal),
-                    ("Received on", long_date(receipt.service_end_date)),
-                    ("Location", "HQ receiving"),
-                )
-            ),
-            Table(
-                ("Line", "Description", "Ordered", "Received", "Backordered"),
-                (
+
+    def goods_receipt() -> list[Spec]:
+        if not receipt_on_file:
+            return []
+        receipt = _receipt_evidence(ctx)
+        received = receipt.quantity or Decimal(0)
+        accepted = receipt.accepted_amount or received * line.unit_price
+        goods = Doc(
+            "Goods Receipt",
+            ctx.name,
+            (
+                KeyValues(
                     (
-                        line.po_line_id,
-                        line.line_description,
-                        f"{ordered:,.0f}",
-                        f"{received:,.0f}",
-                        f"{ordered - received:,.0f}",
+                        ("Receipt", receipt.service_evidence_id),
+                        ("PO number", po.po_number),
+                        ("Vendor", ctx.legal),
+                        ("Received on", long_date(receipt.service_end_date)),
+                        ("Location", "HQ receiving"),
+                    )
+                ),
+                Table(
+                    ("Line", "Description", "Ordered", "Received", "Backordered"),
+                    (
+                        (
+                            line.po_line_id,
+                            line.line_description,
+                            f"{ordered:,.0f}",
+                            f"{received:,.0f}",
+                            f"{ordered - received:,.0f}",
+                        ),
                     ),
                 ),
+                Para(
+                    f"Accepted value of goods received: {usd2(accepted)}. "
+                    "Remaining units are on backorder."
+                ),
             ),
-            Para(
-                f"Accepted value of goods received: {usd2(accepted)}. Remaining units are on backorder."
-            ),
-        ),
-    )
+        )
+        return [
+            make_spec(
+                "receipt",
+                "PDF",
+                f"goods_receipt_{receipt.service_evidence_id.lower()}.pdf",
+                "Goods Receipt",
+                ctx.name,
+                goods,
+                previews.skeleton(
+                    "Goods Receipt",
+                    ctx.name,
+                    [
+                        ("PO number", po.po_number),
+                        ("Ordered", f"{ordered:,.0f}"),
+                        ("Received", f"{received:,.0f}"),
+                    ],
+                ),
+                "SUPPORTS_AMOUNT",
+                "Shows how many units were actually received by year end.",
+                receipt.created_at,
+            )
+        ]
+
     policy = memo_doc(
         "Capitalization Policy",
         (
@@ -685,26 +723,7 @@ def asus(ctx: Ctx) -> list[Spec]:
             "Sets the ordered quantity and the agreed unit price.",
             DAY_ONE,
         ),
-        make_spec(
-            "receipt",
-            "PDF",
-            f"goods_receipt_{receipt.service_evidence_id.lower()}.pdf",
-            "Goods Receipt",
-            ctx.name,
-            goods,
-            previews.skeleton(
-                "Goods Receipt",
-                ctx.name,
-                [
-                    ("PO number", po.po_number),
-                    ("Ordered", f"{ordered:,.0f}"),
-                    ("Received", f"{received:,.0f}"),
-                ],
-            ),
-            "SUPPORTS_AMOUNT",
-            "Shows how many units were actually received by year end.",
-            receipt.created_at,
-        ),
+        *goods_receipt(),
         make_spec(
             "policy",
             "DOCX",
@@ -1225,11 +1244,15 @@ def notability(ctx: Ctx) -> list[Spec]:
     ]
 
 
-def late_specs(ctx: Ctx) -> list[Spec]:
+def late_specs(
+    ctx: Ctx, *, invoices: bool = True, reply_keys: tuple[str, ...] | None = None
+) -> list[Spec]:
     """Files that arrive after the close: the December invoice and any outreach replies."""
     specs: list[Spec] = []
     vid = ctx.vendor.vendor_id
     for event in sorted(ctx.world.events, key=lambda e: (e.available_at, e.event_id)):
+        if not invoices:
+            break
         if event.table != "company_ap_invoices" or event.operation != "INSERT":
             continue
         if event.available_at <= CLOSE or event.record.get("vendor_id") != vid:
@@ -1247,6 +1270,8 @@ def late_specs(ctx: Ctx) -> list[Spec]:
         )
     for reply in ctx.world.outreach:
         if ctx.name.upper() not in reply.outreach_key.upper():
+            continue
+        if reply_keys is not None and reply.outreach_key not in reply_keys:
             continue
         sender = _reply_sender(ctx, reply.recipient_role)
         ap = ctx.cast.person("AP-001")
@@ -1289,10 +1314,36 @@ def _reply_sender(ctx: Ctx, role: str):
     return ctx.cast.owner(ctx.vendor.vendor_id, key)
 
 
-BUILDERS = {
-    "Mintlify": mintlify,
-    "OpenAI": openai,
-    "ASUS": asus,
-    "Meta": meta,
-    "Notability": notability,
-}
+@dataclass(frozen=True)
+class CaseBuild:
+    """One case folder. A vendor may have more than one case in the same period."""
+
+    vendor: str
+    builder: Callable[[Ctx], list[Spec]]
+    file_prefix: str
+    case_suffix: str = ""
+    folder: str = ""
+    label: str = ""
+    seed_key: str = ""
+    late_invoices: bool = True
+    reply_keys: tuple[str, ...] | None = None
+
+
+CASES = (
+    CaseBuild("Mintlify", mintlify, "MINTLIFY"),
+    CaseBuild("OpenAI", openai, "OPENAI"),
+    CaseBuild("ASUS", asus, "ASUS", reply_keys=("ASUS-2026-12-IN_SERVICE_DATE",)),
+    CaseBuild(
+        "ASUS",
+        asus_no_receipt,
+        "ASUS-B",
+        case_suffix="-02",
+        folder="asus_no_receipt",
+        label="goods receipt missing",
+        seed_key="ASUS-B",
+        late_invoices=False,
+        reply_keys=("ASUS-2026-12-SERVICE_CONFIRMATION",),
+    ),
+    CaseBuild("Meta", meta, "META"),
+    CaseBuild("Notability", notability, "NOTABILITY"),
+)

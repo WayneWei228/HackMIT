@@ -46,8 +46,9 @@ def main() -> None:
             print(f"     may: {allowed}")
         results.append(
             (
-                "queue is Notability then ASUS",
-                [i.obligation_id for i in queue] == [NOTABILITY, ASUS],
+                "queue is ASUS then Notability, and neither is blocked",
+                [i.obligation_id for i in queue] == [ASUS, NOTABILITY]
+                and not any(i.blocked for i in queue),
             )
         )
 
@@ -92,34 +93,19 @@ def main() -> None:
             )
         )
 
-        try:
-            cw.decide(
-                session,
-                NOTABILITY,
-                e.ControllerDecision.APPROVE,
-                now=NOW,
-                decided_by=controller,
-                notes="Approve it.",
-            )
-            refused = False
-        except cw.DecisionNotAllowedError as exc:
-            refused = True
-            print(f"\nNotability approve refused: {exc}")
-        results.append(("Notability approve is refused", refused))
-
-        asked = cw.decide(
+        approved = cw.decide(
             session,
             NOTABILITY,
-            e.ControllerDecision.REQUEST_MORE_EVIDENCE,
+            e.ControllerDecision.APPROVE,
             now=NOW,
             decided_by=controller,
-            notes="Show the GL entry that expensed the full annual fee.",
+            notes="The GL entry that expensed the annual fee is reviewed.",
         )
-        print(f"Notability more evidence -> {asked.routed_stage.value}/{asked.next_action.value}")
+        print(f"\nNotability approve -> {approved.routed_stage.value}/{approved.next_action.value}")
         results.append(
             (
-                "Notability request more evidence goes to GATHER_EVIDENCE",
-                asked.routed_stage == e.WorkflowStage.GATHERING_EVIDENCE,
+                "Notability can be approved and goes to draft the entry",
+                approved.routed_stage == e.WorkflowStage.READY_TO_DRAFT,
             )
         )
         remaining = [i.obligation_id for i in cw.review_queue(session, now=NOW)]

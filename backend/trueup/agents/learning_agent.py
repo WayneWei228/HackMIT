@@ -618,7 +618,11 @@ def record_outcome(session: Session, obligation_id: str, *, now: datetime) -> li
             continue
         rule = CandidateRule.model_validate(row.candidate_rule_json)
         lifecycle = rule.lifecycle or RuleLifecycle()
-        if abs(variance) <= TOLERANCE:
+        if inputs.get("basis") == "INCOMPLETE_DATA":
+            # The variance is the cost of extrapolating incomplete data, so it says nothing
+            # about the rule that set the rate.
+            outcome = "NOT_ATTRIBUTABLE"
+        elif abs(variance) <= TOLERANCE:
             outcome = "CONFIRMED"
             lifecycle.uses += 1
             if lifecycle.uses >= CONFIRMATIONS_TO_CONFIRM:

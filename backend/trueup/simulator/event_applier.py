@@ -52,13 +52,21 @@ class Released:
         return Counter(e.table for e in self.events)
 
 
-def apply_due_events(session: Session, schedule: EventSchedule, now: datetime) -> Released:
-    """Apply every unapplied event released by `now`, then remember their ids in the clock row."""
+def apply_due_events(
+    session: Session, schedule: EventSchedule, now: datetime, vendor_id: str | None = None
+) -> Released:
+    """Apply every unapplied event released by `now`, then remember their ids in the clock row.
+
+    With `vendor_id` only that vendor's events are applied, and `now` is that vendor's own moment,
+    so it may be earlier than the shared clock.
+    """
     clock = SimClock(session)
-    if now > clock.now():
+    if vendor_id is None and now > clock.now():
         raise EventApplyError("cannot apply events later than the simulation clock")
     released = Released()
     for event in schedule.due(now, clock.applied_event_ids()):
+        if vendor_id is not None and event_vendor(session, event) != vendor_id:
+            continue
         row = _apply(session, event)
         released.events.append(event)
         trigger = _trigger(event, row)
@@ -66,6 +74,14 @@ def apply_due_events(session: Session, schedule: EventSchedule, now: datetime) -
             released.triggers.append(trigger)
     clock.mark_applied(released.event_ids)
     return released
+
+
+def event_vendor(session: Session, event: ScenarioEvent) -> str | None:
+    """The vendor an event is about: named in an inserted record or on the row it updates."""
+    if event.operation == "INSERT":
+        return event.record.get("vendor_id")
+    row = session.get(ORM_MODELS[event.table], event.key[PRIMARY_KEYS[event.table]])
+    return getattr(row, "vendor_id", None)
 
 
 def _apply(session: Session, event: ScenarioEvent):

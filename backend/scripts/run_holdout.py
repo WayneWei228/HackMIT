@@ -148,7 +148,8 @@ def demo_cases() -> dict[str, dict[str, Any]]:
         ),
         "CASE-NOTABILITY-2026-12": case(
             "Notability", "PREPAID", "PREPAID_AMORTIZATION",
-            {"stage": "BLOCKED"}, {"stage": "BLOCKED"}, {},
+            {"accrual": "1800.00", "stage": "AWAITING_CONTROLLER"},
+            {"stage": "AWAITING_CONTROLLER"}, {},
         ),
     }  # fmt: skip
 

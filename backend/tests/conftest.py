@@ -2,6 +2,7 @@ import pytest
 
 from trueup.datagen import generator
 from trueup.db import get_engine, init_db
+from trueup.gateway import llm
 
 
 @pytest.fixture(autouse=True)
@@ -11,6 +12,7 @@ def no_external_keys(monkeypatch):
     monkeypatch.delenv("MODEL_ID", raising=False)
     monkeypatch.delenv("TYPESAFE_API_KEY", raising=False)
     monkeypatch.delenv("NEATLOGS_API_KEY", raising=False)
+    llm._health.update(status="unknown", last_error=None, last_ok_at=None)
 
 
 @pytest.fixture

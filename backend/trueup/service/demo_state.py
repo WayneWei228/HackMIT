@@ -18,7 +18,7 @@ from __future__ import annotations
 from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
 from threading import RLock
@@ -27,15 +27,16 @@ from typing import Any, Literal
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from trueup.agents import ingestion
+from trueup.agents import ingestion, outreach_agent
 from trueup.agents.controller_workspace import ControllerWorkspaceError, controller_id
-from trueup.agents.ingestion import FileCard, FileDecision, Judge
+from trueup.agents.ingestion import Judge
 from trueup.agents.learning_agent import LearningError, approve_rule, reject_rule, revoke_rule
 from trueup.close_orchestrator import CloseRun, CloseSettings, FileOverride, StepOutcome
 from trueup.gateway import llm
-from trueup.ingest.manifest import CaseEntry, FileUniverse
+from trueup.ingest.manifest import FileUniverse
+from trueup.service import models as v
 from trueup.service.readmodels import is_pending
-from trueup.service.timeline import Moments
+from trueup.service.runlog import iso
 from trueup.simulator.simulator import Simulator
 from trueup.store import enums as e
 from trueup.store import models as m
@@ -43,54 +44,33 @@ from trueup.store.workflow import IllegalTransitionError
 
 PERIOD = "2026-12"
 CLOSE_AT = datetime(2026, 12, 31, 23, 59, tzinfo=UTC)
-REPLIES_AT = datetime(2027, 1, 5, 12, 0, tzinfo=UTC)
 JANUARY_AT = datetime(2027, 1, 31, 12, 0, tzinfo=UTC)
 # The vendor's scripted reply arrives on 2 February and its corrected invoice on 3 February.
 VENDOR_REPLY_MOMENTS = (
     datetime(2027, 2, 2, 12, 0, tzinfo=UTC),
     datetime(2027, 2, 3, 12, 0, tzinfo=UTC),
 )
-MOMENTS = Moments(
-    close=CLOSE_AT,
-    owner_replies=REPLIES_AT,
-    invoices=JANUARY_AT,
-    vendor_reply=VENDOR_REPLY_MOMENTS[-1],
-)
 SEED_DIR = Path(__file__).resolve().parents[2] / "seed"
 DEMO_USER = "demo user"
 
-Phase = Literal["DAY_ONE", "CLOSED", "JANUARY"]
-
 _S = e.WorkflowStage
-# States where a case waits for someone or something outside the loop, or is finished.
-_AT_REST = frozenset(
-    {
-        _S.AWAITING_OUTREACH,
-        _S.AWAITING_CONTROLLER,
-        _S.BLOCKED,
-        _S.AWAITING_ACTUAL_INVOICE,
-        _S.RECONCILING,
-        _S.CLOSED,
-        _S.CLOSED_NO_ACCRUAL,
-    }
-)
 
 
 @dataclass(frozen=True)
 class Event:
     """One thing that happened to the demo. Replaying the events rebuilds the same state."""
 
-    kind: Literal["advance", "decision", "rule", "january", "vendor_reply"]
+    kind: Literal["advance", "decision", "rule", "reply", "no_reply", "invoice", "vendor_reply"]
     obligation_id: str | None = None
     args: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
 class DemoState:
-    """The simulator plus the phase the demo has reached. One instance per server process."""
+    """The simulator plus the moment each case has reached. One instance per server process."""
 
     sim: Simulator
-    phase: Phase = "DAY_ONE"
+    moments: dict[str, datetime] = field(default_factory=dict)
     judge: Judge | None = None
     events: list[Event] = field(default_factory=list)
     overrides: dict[str, FileOverride] = field(default_factory=dict)
@@ -117,26 +97,10 @@ def settings(state: DemoState) -> CloseSettings:
     """Offline by default; with a model configured it reads the files and the rules back it up."""
     judge = state.judge
     if judge is None and llm.available():
-        judge = _ModelOrRules()
+        judge = ingestion.ModelOrRulesJudge()
     return CloseSettings(
         universe=universe(), seed_dir=SEED_DIR, judge=judge, file_overrides=dict(state.overrides)
     )
-
-
-class _ModelOrRules:
-    """The model reads the files and the rules back it up; `__name__` records which one ran."""
-
-    def __init__(self) -> None:
-        self.__name__ = "llm_judge"
-
-    def __call__(self, case: CaseEntry, cards: list[FileCard]) -> list[FileDecision]:
-        try:
-            decisions = ingestion.llm_judge(case, cards)
-        except llm.LLMError:
-            self.__name__ = "rule_judge after a model error"
-            return ingestion.rule_judge(case, cards)
-        self.__name__ = "llm_judge"
-        return decisions
 
 
 def run_for(state: DemoState, session: Session) -> CloseRun:
@@ -184,8 +148,12 @@ def reset() -> DemoState:
         return _state
 
 
-class CloseMovedOnError(RuntimeError):
-    """A case cannot be started once January's invoices are in."""
+class NoReplyWaitingError(RuntimeError):
+    """The case has no email waiting on an owner, so there is no reply to deliver."""
+
+
+class NoInvoiceDueError(RuntimeError):
+    """The case has no January invoice waiting to be brought in."""
 
 
 class UnknownFileError(ValueError):
@@ -202,21 +170,15 @@ def advance_case(state: DemoState, obligation_id: str) -> StepOutcome:
             ob = session.get(m.TrueUpObligation, obligation_id)
             if ob is None:
                 raise LookupError(f"No obligation {obligation_id}.")
-            if state.phase == "JANUARY" and is_pending(ob):
-                raise CloseMovedOnError(
-                    "January's invoices are already in; the close has moved on."
-                )
             floor = _last_run(session)
             outcome = run_for(state, session).step_obligation(
-                obligation_id, now=_aware(state.sim.now())
+                obligation_id, now=now_of(state, obligation_id)
             )
             if outcome.ran:
                 for run_id in _runs_after(session, floor):
                     state.durations[run_id] = outcome.duration_ms
         if outcome.ran:
             state.events.append(Event("advance", obligation_id))
-            if state.phase == "DAY_ONE":
-                state.phase = "CLOSED"
         return outcome
 
 
@@ -243,10 +205,6 @@ def start_case(state: DemoState, obligation_id: str) -> bool:
                 raise LookupError(f"No obligation {obligation_id}.")
             if not is_pending(ob):
                 return False
-            if state.phase == "JANUARY":
-                raise CloseMovedOnError(
-                    "January's invoices are already in; the close has moved on."
-                )
         for _ in range(60):
             if advance_case(state, obligation_id).done:
                 break
@@ -256,8 +214,6 @@ def start_case(state: DemoState, obligation_id: str) -> bool:
 def run_close(state: DemoState) -> list[str]:
     """Start every Pending obligation, in the order Detection opened them."""
     with _lock:
-        if state.phase == "JANUARY":
-            raise CloseMovedOnError("January's invoices are already in; the close has moved on.")
         with state.session() as session:
             pending = [
                 ob.obligation_id
@@ -271,64 +227,242 @@ def run_close(state: DemoState) -> list[str]:
         return [oid for oid in pending if start_case(state, oid)]
 
 
-def pending_cases(state: DemoState) -> list[str]:
+def now_of(state: DemoState, obligation_id: str) -> datetime:
+    """The moment this case has reached. Each case keeps its own; none waits for another."""
+    return state.moments.get(obligation_id, CLOSE_AT)
+
+
+def _reach(state: DemoState, obligation_id: str, moment: datetime) -> None:
+    state.moments[obligation_id] = moment
+    state.sim.move_clock_to(moment)
+
+
+def _open_request(state: DemoState, obligation_id: str) -> outreach_agent.OpenRequest | None:
     with state.session() as session:
-        return [
-            ob.obligation_id
-            for ob in session.scalars(select(m.TrueUpObligation)).all()
-            if is_pending(ob)
-        ]
+        if session.get(m.TrueUpObligation, obligation_id) is None:
+            raise LookupError(f"No obligation {obligation_id}.")
+        return outreach_agent.open_request(session, obligation_id)
 
 
-def advance_to_january(state: DemoState) -> list[str]:
-    """Deliver the owners' replies, then let the January invoices grade the December accruals."""
+def deliver_reply(state: DemoState, obligation_id: str) -> bool:
+    """Deliver the owner's reply to this case's email, at the moment the owner wrote it.
+
+    Only this case moves. It is left ready to resume, and the presenter steps it on through the
+    normal advance flow.
+    """
     with _lock:
-        if state.phase != "CLOSED":
-            return []
-        touched: list[str] = []
-        for moment in (REPLIES_AT, JANUARY_AT):
-            state.sim.advance_to(moment)
-            with state.session() as session:
-                run = run_for(state, session)
-                settled = _settled(session)
-                run.post_reversals(now=moment)
-                run.collect_replies(now=moment)
-                run.settle(now=moment, obligation_ids=settled)
-                touched += [s.obligation_id for s in run.steps if s.obligation_id]
-        state.phase = "JANUARY"
-        state.events.append(Event("january"))
-        return list(dict.fromkeys(touched))
+        request = _open_request(state, obligation_id)
+        if request is None or request.vendor:
+            raise NoReplyWaitingError("No email is waiting on an owner for this case.")
+        arrives = state.sim.outreach_available_at(request.key)
+        _reach(state, obligation_id, max(now_of(state, obligation_id), arrives or CLOSE_AT))
+        with state.session() as session:
+            moved = run_for(state, session).collect_replies(
+                now=now_of(state, obligation_id), obligation_id=obligation_id
+            )
+        if moved:
+            state.events.append(Event("reply", obligation_id))
+        return bool(moved)
 
 
-def advance_to_vendor_reply(state: DemoState) -> list[str]:
-    """Deliver the vendors' replies, then let their corrected invoices grade the cases again."""
+def expire_outreach(state: DemoState, obligation_id: str) -> bool:
+    """Let the wait for the owner's reply run out, then carry this case on without the reply.
+
+    Only this case moves, to the moment the company's deadline passes. A usage case is left
+    ready to be estimated on the incomplete data; any other case goes to the Controller.
+    """
     with _lock:
-        if state.phase != "JANUARY":
-            return []
-        touched: list[str] = []
+        request = _open_request(state, obligation_id)
+        if request is None or request.vendor:
+            raise NoReplyWaitingError("No email is waiting on an owner for this case.")
+        with state.session() as session:
+            deadline = outreach_agent.fallback_deadline(session, obligation_id)
+        if deadline is None:
+            raise NoReplyWaitingError("This case's email has no deadline to run out.")
+        _reach(state, obligation_id, max(now_of(state, obligation_id), deadline))
+        with state.session() as session:
+            run_for(state, session).expire_outreach(obligation_id, now=now_of(state, obligation_id))
+        state.events.append(Event("no_reply", obligation_id))
+        return True
+
+
+def can_rewind(state: DemoState, obligation_id: str) -> bool:
+    """A case that took a branch at its outreach email can go back and take the other one."""
+    return any(ev.obligation_id == obligation_id and ev.kind in _BRANCHES for ev in state.events)
+
+
+def rewind_case(state: DemoState, obligation_id: str) -> DemoState:
+    """Put one case back to waiting on its email, keeping every other case as it was.
+
+    The world is rebuilt from day one and every event replayed, except this case's branch (the
+    reply or the missed deadline) and everything the case did after it. Other cases, the rule
+    decisions and the file selections are untouched, so the presenter can take the other path.
+    """
+    global _state
+    with _lock:
+        with state.session() as session:
+            if session.get(m.TrueUpObligation, obligation_id) is None:
+                raise LookupError(f"No obligation {obligation_id}.")
+        if not can_rewind(state, obligation_id):
+            raise NoReplyWaitingError("This case has not taken a path at its email yet.")
+        fresh = load_demo_close(judge=state.judge, overrides=dict(state.overrides))
+        cut = False
+        for event in state.events:
+            if event.obligation_id == obligation_id:
+                cut = cut or event.kind in _BRANCHES
+                if cut:
+                    continue
+            try:
+                _apply(fresh, event)
+            except _REPLAY_ERRORS as exc:
+                fresh.dropped.append(f"{event.kind} {event.obligation_id or ''}: {exc}".strip())
+        _state = fresh
+        return fresh
+
+
+def invoice_is_due(state: DemoState, session: Session, ob: m.TrueUpObligation) -> bool:
+    """A posted accrual whose January invoice has not been brought in yet."""
+    return (
+        ob.accrual_status == e.AccrualStatus.POSTED_SIMULATED
+        and now_of(state, ob.obligation_id) < JANUARY_AT
+        and state.sim.has_events_for(ob.vendor_id, JANUARY_AT)
+    )
+
+
+def bring_in_invoice(state: DemoState, obligation_id: str) -> bool:
+    """Let this vendor's January invoice arrive and grade this case's December accrual."""
+    with _lock:
+        with state.session() as session:
+            ob = session.get(m.TrueUpObligation, obligation_id)
+            if ob is None:
+                raise LookupError(f"No obligation {obligation_id}.")
+            if not invoice_is_due(state, session, ob):
+                raise NoInvoiceDueError("This case has no January invoice to bring in yet.")
+            vendor_id = ob.vendor_id
+        _reach(state, obligation_id, JANUARY_AT)
+        state.sim.apply_events_for(vendor_id, JANUARY_AT)
+        with state.session() as session:
+            run = run_for(state, session)
+            run.post_reversals(now=JANUARY_AT, obligation_ids=[obligation_id])
+            run.settle(now=JANUARY_AT, obligation_ids=[obligation_id])
+        state.events.append(Event("invoice", obligation_id))
+        return True
+
+
+def deliver_vendor_reply(state: DemoState, obligation_id: str) -> bool:
+    """Deliver the vendor's answer to the dispute, then its corrected invoice, for this case."""
+    with _lock:
+        request = _open_request(state, obligation_id)
+        if request is None or not request.vendor:
+            raise NoReplyWaitingError("No email is waiting on the vendor for this case.")
+        with state.session() as session:
+            vendor_id = session.get(m.TrueUpObligation, obligation_id).vendor_id
         for moment in VENDOR_REPLY_MOMENTS:
-            if _aware(state.sim.now()) >= moment:
+            if now_of(state, obligation_id) >= moment:
                 continue
-            state.sim.advance_to(moment)
+            _reach(state, obligation_id, moment)
+            state.sim.apply_events_for(vendor_id, moment)
             with state.session() as session:
                 run = run_for(state, session)
-                settled = _settled(session)
-                run.collect_replies(now=moment)
-                run.settle(now=moment, obligation_ids=settled)
-                touched += [s.obligation_id for s in run.steps if s.obligation_id]
-        state.events.append(Event("vendor_reply"))
-        return list(dict.fromkeys(touched))
+                run.collect_replies(now=moment, obligation_id=obligation_id)
+                run.settle(now=moment, obligation_ids=[obligation_id])
+        state.events.append(Event("vendor_reply", obligation_id))
+        return True
 
 
-def _settled(session: Session) -> set[str]:
-    """Cases at rest. A case still mid-flight is not carried on by the passing of time."""
-    return {
-        ob.obligation_id
-        for ob in session.scalars(
-            select(m.TrueUpObligation).where(m.TrueUpObligation.period == PERIOD)
-        )
-        if ob.workflow_stage in _AT_REST
-    }
+NO_REPLY_LABEL = "No reply in time - the agents estimate on the data they have"
+
+
+def _no_reply_action(deadline: datetime, hours: int, now: datetime) -> v.TimeAction:
+    clock = deadline.strftime("%b %-d, %-I:%M %p")
+    return v.TimeAction(
+        kind="EXPIRE_OUTREACH",
+        label=NO_REPLY_LABEL,
+        detail=(
+            f"Nobody answers within {hours} hours (deadline {clock}), so the agents stop waiting "
+            "and go on with the data they have. The reply may still arrive later, after the close."
+        ),
+        moves_to=iso(max(now, deadline)),
+    )
+
+
+def other_path(state: DemoState, obligation_id: str) -> v.TimeAction | None:
+    """The scenario this case did not take at its email, so one click can take it instead."""
+    taken = [
+        ev.kind for ev in state.events if ev.obligation_id == obligation_id and ev.kind in _BRANCHES
+    ]
+    if not taken:
+        return None
+    with state.session() as session:
+        cards = [
+            c
+            for c in session.scalars(
+                select(m.TrueUpEvidence).where(
+                    m.TrueUpEvidence.obligation_id == obligation_id,
+                    m.TrueUpEvidence.evidence_type == e.EvidenceCardType.OUTREACH_RESPONSE,
+                )
+            )
+            if (c.value_json or {}).get("direction") == "REQUEST"
+        ]
+        if not cards:
+            return None
+        card = max(cards, key=lambda c: c.evidence_id)
+        who = card.value_json.get("recipient_name") or "the recipient"
+        hours = outreach_agent.fallback_policy(session).wait_hours
+        sent = datetime.fromisoformat(card.value_json["sent_at"])
+        deadline = _aware(sent) + timedelta(hours=hours)
+        arrives = state.sim.outreach_available_at(card.source_id)
+    if taken[-1] == "reply":
+        return _no_reply_action(deadline, hours, CLOSE_AT)
+    return v.TimeAction(
+        kind="DELIVER_REPLY",
+        label=f"Synthetic reply from {who}",
+        detail="The owner answers the email and this case picks up where it paused.",
+        moves_to=iso(arrives or CLOSE_AT),
+    )
+
+
+def time_actions(state: DemoState, obligation_id: str) -> list[v.TimeAction]:
+    """What the passing of time can do for this case now. The first is the usual next step."""
+    with state.session() as session:
+        ob = session.get(m.TrueUpObligation, obligation_id)
+        if ob is None:
+            return []
+        request = outreach_agent.open_request(session, obligation_id)
+        if request is not None:
+            if request.vendor:
+                return [
+                    v.TimeAction(
+                        kind="DELIVER_VENDOR_REPLY",
+                        label=f"Synthetic reply from {request.recipient_name}",
+                        detail="The vendor answers the dispute and sends a corrected invoice.",
+                        moves_to=iso(VENDOR_REPLY_MOMENTS[-1]),
+                    )
+                ]
+            arrives = state.sim.outreach_available_at(request.key)
+            deadline = outreach_agent.fallback_deadline(session, obligation_id)
+            hours = outreach_agent.fallback_policy(session).wait_hours
+            actions = [
+                v.TimeAction(
+                    kind="DELIVER_REPLY",
+                    label=f"Synthetic reply from {request.recipient_name}",
+                    detail="The owner answers the email and this case picks up where it paused.",
+                    moves_to=iso(max(now_of(state, obligation_id), arrives or CLOSE_AT)),
+                )
+            ]
+            if deadline is not None:
+                actions.append(_no_reply_action(deadline, hours, now_of(state, obligation_id)))
+            return actions
+        if invoice_is_due(state, session, ob):
+            return [
+                v.TimeAction(
+                    kind="BRING_IN_INVOICE",
+                    label="Bring in the January invoice",
+                    detail="The vendor's invoice arrives and grades this accrual.",
+                    moves_to=iso(JANUARY_AT),
+                )
+            ]
+    return []
 
 
 # ---- decisions --------------------------------------------------------------------------------
@@ -346,7 +480,7 @@ def controller_decision(
     """Record the Controller's decision, then let the orchestrator carry the case on."""
     with _lock:
         with state.session() as session:
-            now = _aware(state.sim.now())
+            now = now_of(state, obligation_id)
             run = run_for(state, session)
             result = run.apply_controller_decision(
                 obligation_id,
@@ -433,6 +567,18 @@ def set_selection(state: DemoState, obligation_id: str, excluded: list[str]) -> 
         return fresh
 
 
+_BRANCHES = ("reply", "no_reply")
+_REPLAY_ERRORS = (
+    ControllerWorkspaceError,
+    IllegalTransitionError,
+    LearningError,
+    LookupError,
+    NoInvoiceDueError,
+    NoReplyWaitingError,
+    outreach_agent.OutreachError,
+)
+
+
 def _replay(fresh: DemoState, events: list[Event], changed: str) -> None:
     cut = False
     for event in events:
@@ -440,13 +586,7 @@ def _replay(fresh: DemoState, events: list[Event], changed: str) -> None:
             continue
         try:
             _apply(fresh, event)
-        except (
-            ControllerWorkspaceError,
-            IllegalTransitionError,
-            LearningError,
-            LookupError,
-            CloseMovedOnError,
-        ) as exc:
+        except _REPLAY_ERRORS as exc:
             fresh.dropped.append(f"{event.kind} {event.obligation_id or ''}: {exc}".strip())
             continue
         if (
@@ -481,10 +621,18 @@ def _apply(state: DemoState, event: Event) -> None:
             decided_by=args["decided_by"],
             notes=args["notes"],
         )
-    elif event.kind == "vendor_reply":
-        advance_to_vendor_reply(state)
+    elif event.kind == "reply":
+        assert event.obligation_id is not None
+        deliver_reply(state, event.obligation_id)
+    elif event.kind == "no_reply":
+        assert event.obligation_id is not None
+        expire_outreach(state, event.obligation_id)
+    elif event.kind == "invoice":
+        assert event.obligation_id is not None
+        bring_in_invoice(state, event.obligation_id)
     else:
-        advance_to_january(state)
+        assert event.obligation_id is not None
+        deliver_vendor_reply(state, event.obligation_id)
 
 
 def _ingestion_ran(state: DemoState, obligation_id: str) -> bool:

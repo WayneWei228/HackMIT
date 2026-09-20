@@ -83,7 +83,7 @@ def ingest(
     files = [f for f in universe.visible_at(now) if f.case_id == case_id]
     cards, unreadable = _read_cards(files, Path(seed_dir))
 
-    judge = judge or (llm_judge if llm.available() else rule_judge)
+    judge = judge or (ModelOrRulesJudge() if llm.available() else rule_judge)
     judged = {d.file_id: d for d in judge(case, cards)}
     unjudged = [f.file_id for f in files if f.file_id not in judged]
     decisions = [
@@ -98,8 +98,36 @@ def ingest(
         judge=getattr(judge, "__name__", "custom"),
     )
     if session is not None:
-        _log(session, case, result, files, unreadable + unjudged, now, obligation_id)
+        _log(
+            session,
+            case,
+            result,
+            files,
+            unreadable + unjudged,
+            now,
+            obligation_id,
+            model_error=getattr(judge, "last_error", None),
+        )
     return result
+
+
+class ModelOrRulesJudge:
+    """The model reads the files; if it fails the keyword rules choose and the error is kept."""
+
+    def __init__(self) -> None:
+        self.__name__ = "llm_judge"
+        self.last_error: str | None = None
+
+    def __call__(self, case: CaseEntry, cards: list[FileCard]) -> list[FileDecision]:
+        try:
+            decisions = llm_judge(case, cards)
+        except llm.LLMError as exc:
+            self.__name__ = "rule_judge after a model error"
+            self.last_error = str(exc)
+            return rule_judge(case, cards)
+        self.__name__ = "llm_judge"
+        self.last_error = None
+        return decisions
 
 
 def llm_judge(case: CaseEntry, cards: list[FileCard]) -> list[FileDecision]:
@@ -170,8 +198,12 @@ def _log(
     uncertain: list[str],
     now: datetime,
     obligation_id: str | None = None,
+    model_error: str | None = None,
 ) -> None:
     names = {f.file_id: f.name for f in files}
+    notes = [f"No usable decision or text for {i}" for i in uncertain]
+    if model_error:
+        notes.append(f"The model failed ({model_error}); the keyword rules chose the files.")
     AgentRunLog(session).append(
         agent_name=AGENT_NAME,
         action="select_files",
@@ -184,7 +216,7 @@ def _log(
         at=now,
         obligation_id=obligation_id,
         facts_used=[d.model_dump() for d in result.decisions],
-        uncertainties=[f"No usable decision or text for {i}" for i in uncertain] or None,
+        uncertainties=notes or None,
         input_record_ids=[f.file_id for f in files],
         output_record_ids=result.selected,
     )

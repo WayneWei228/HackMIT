@@ -10,6 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+from trueup.agents import fallback_estimation  # noqa: E402
 from trueup.agents.classification_agent import classify  # noqa: E402
 from trueup.agents.estimation_agent import EstimationResult, estimate  # noqa: E402
 from trueup.close_orchestrator import walk_to  # noqa: E402
@@ -84,7 +85,37 @@ def main() -> None:
         hits += show(
             "VEN-OPENAI", estimate(session, obligation.obligation_id, now=NOW), Decimal("18600.00")
         )
-    print(f"\n{hits}/{len(EXPECTED) + 1} expected estimates matched")
+
+    print("\nOpenAI when the owner never replies (a fresh close; the wait has passed):")
+    silent = Simulator.initialize()
+    silent.advance_to(CLOSE)
+    with silent.session() as session:
+        obligation = walk_to(session, "VEN-OPENAI", PERIOD, now=NOW)
+        classify(session, obligation.obligation_id, now=NOW)
+        estimate(session, obligation.obligation_id, now=NOW)
+        print("  (starting from a taught state: the escalator rule is already active)")
+        activate_escalator_rule(session, now=NOW)
+        advance(
+            obligation,
+            e.WorkflowStage.ESTIMATING,
+            e.NextAction.ESTIMATE_INCOMPLETE,
+            "outreach",
+            at=NOW,
+        )
+        result = fallback_estimation.estimate_incomplete(session, obligation.obligation_id, now=NOW)
+        workpaper = session.get(m.TrueUpWorkpaper, result.workpaper_id)
+        baseline = fallback_estimation.reproduce(session, obligation, workpaper, rules=[])
+        for label, amount, expected in (
+            ("projected on incomplete data", result.amount, Decimal("18795.79")),
+            ("the same projection with no rule", baseline, Decimal("15036.63")),
+        ):
+            hit = amount == expected
+            hits += hit
+            print(
+                f"  {label:36} {result.method.value} -> {amount}  "
+                f"[{'hit' if hit else f'MISS, expected {expected}'}]"
+            )
+    print(f"\n{hits}/{len(EXPECTED) + 3} expected estimates matched")
 
 
 if __name__ == "__main__":

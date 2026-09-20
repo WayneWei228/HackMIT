@@ -680,6 +680,71 @@ def _asus(w: _World) -> None:
     )
 
 
+def _asus_no_receipt(w: _World) -> None:
+    """A second ASUS order with no goods receipt on file: the received quantity is not evidenced."""
+    w.pos.append(
+        fx.purchase_order(
+            po_id="PO-ASUS-2026-B",
+            po_number="PO-2026-1005",
+            vendor_id="VEN-ASUS",
+            contract_id=None,
+            service_start_date=None,
+            service_end_date=None,
+            order_type="STANDARD",
+            cost_center=CC_OPS,
+            po_owner_id="OPS-001",
+            approved_total=fx.money(40000),
+            gl_account="150200",
+            description="25 laptops for the second engineering cohort",
+            line_items_json=[
+                fx.po_line(
+                    po_line_id="PO-2026-1005-001",
+                    item_category="MATERIAL",
+                    gl_account_code="150200",
+                    quantity_ordered=fx.qty(25),
+                    unit_price=fx.money(1600),
+                    line_description="ASUS ExpertBook laptop, 16 GB, 512 GB",
+                    receipt_required=True,
+                    useful_life_months=36,
+                )
+            ],
+        )
+    )
+    reply_at = fx.utc(2027, 1, 2, 14)
+    w.outreach.append(
+        OutreachResponse(
+            outreach_key="ASUS-2026-12-SERVICE_CONFIRMATION",
+            available_at=reply_at,
+            recipient_role="SERVICE_OWNER",
+            response_text=(
+                "Taylor here. Receiving never filed a report for this order, so I counted the "
+                "boxes myself: 20 of the 25 laptops arrived on December 18, 2026 and the other "
+                "5 are backordered."
+            ),
+            parsed_truth={
+                "resolved": True,
+                "service_received": True,
+                "quantity": "20",
+                "unit": "EACH",
+            },
+            service_evidence_on_response=fx.service_evidence(
+                service_evidence_id="USE-ASUS-2026-12-B-OWNER",
+                vendor_id="VEN-ASUS",
+                po_id="PO-ASUS-2026-B",
+                service_start_date=date(2026, 12, 18),
+                service_end_date=date(2026, 12, 18),
+                evidence_type="MANUAL_CONFIRMATION",
+                quantity=fx.qty(20),
+                unit="EACH",
+                source_system="MANUAL",
+                confirmed_by_person_id="OPS-001",
+                confirmation_status="OWNER_CONFIRMED",
+                created_at=reply_at,
+            ),
+        )
+    )
+
+
 def _meta(w: _World) -> None:
     w.pos.append(
         fx.purchase_order(
@@ -866,7 +931,7 @@ def _notability(w: _World) -> None:
         received,
         None,
         fx.money(1800),
-        "BLOCKED",
+        "NEEDS_REVIEW",
     )
 
 
@@ -909,6 +974,12 @@ def _config(w: _World) -> None:
             "mandatory_review_above_usd": "100000",
             "de_minimis_threshold_usd": "5000",
         },
+        "estimation_fallback": {
+            "outreach_wait_hours": 48,
+            "min_covered_fraction": "0.25",
+            "history_periods": 3,
+            "conservative_received_fraction": "0.50",
+        },
         "policy_rules": [
             {"rule_id": "POL-01", "text": "Never auto-post a case that requires Controller review"},
             {"rule_id": "POL-02", "text": "Never accrue when a matching AP invoice exists"},
@@ -925,10 +996,6 @@ def _config(w: _World) -> None:
             {
                 "rule_id": "POL-07",
                 "text": "Capitalize equipment over the threshold and depreciate it over its life",
-            },
-            {
-                "rule_id": "POL-08",
-                "text": "Record prepaid services as an asset and expense them over the term",
             },
         ],
         "allowed_gl_accounts": [
@@ -956,6 +1023,7 @@ def generate(seed: int = DEFAULT_SEED) -> GeneratedWorld:
     _mintlify(w)
     _openai(w)
     _asus(w)
+    _asus_no_receipt(w)
     _meta(w)
     _notability(w)
     _config(w)

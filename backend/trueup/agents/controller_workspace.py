@@ -744,6 +744,15 @@ def _reason(
     if workpaper is not None and hits and workpaper.policy_decision != _D.NOT_RUN:
         detail = "; ".join(f"{h.rule_id}: {h.detail.rstrip('.')}" for h in hits)
         return f"Policy {workpaper.policy_decision.value}. {detail}."
+    if (
+        workpaper is None
+        and obligation.purchase_type == e.PurchaseType.RECEIPT_BASED
+        and obligation.evidence_status == e.EvidenceStatus.MISSING_SERVICE_CONFIRMATION
+    ):
+        return (
+            "Received quantity not evidenced: no goods receipt is on file for this order "
+            "and the owner has not confirmed what arrived."
+        )
     notes = _agent_notes(session, obligation.obligation_id)
     if notes:
         last = notes[-1]
@@ -804,7 +813,20 @@ def _recommendation(
             if reasons
             else f"Approve if you accept the proposed {workpaper.proposed_amount} estimate."
         )
-        return f"{core} {notes}".strip()
+        inputs = workpaper.calculation_inputs_json or {}
+        owner = (
+            "Received quantity confirmed by the owner, no goods receipt on file."
+            if inputs.get("evidence_basis") == "OWNER_CONFIRMED_QUANTITY"
+            else ""
+        )
+        return f"{core} {owner} {notes}".replace("  ", " ").strip()
+    if decision == _D.NOT_RUN:
+        conflicts = " ".join((workpaper.calculation_inputs_json or {}).get("conflicts") or [])
+        why = f" The evidence conflicts: {conflicts}" if conflicts else ""
+        return (
+            "Policy has not run on this estimate yet, because it came to you before the policy "
+            f"checks.{why} Approval opens once that is settled: request more evidence or reject."
+        )
     return (
         f"Policy decision is {decision.value}, so approval is not available. "
         "Request more evidence or reject."

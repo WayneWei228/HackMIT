@@ -80,6 +80,86 @@
       "in_universe": true,
       "reason": "Ledger rows belong mostly to other vendors and contain no ASUS receipt."
     },
+    "FILE-ASUS-B-01": {
+      "file_id": "FILE-ASUS-B-01",
+      "case_id": "CASE-ASUS-2026-12-02",
+      "relevant": false,
+      "role": "HARD_NEGATIVE",
+      "in_universe": true,
+      "reason": "Mentions laptops and delays but gives no quantities, prices or dates."
+    },
+    "FILE-ASUS-B-02": {
+      "file_id": "FILE-ASUS-B-02",
+      "case_id": "CASE-ASUS-2026-12-02",
+      "relevant": true,
+      "role": "SUPPORTS_DISCREPANCY",
+      "in_universe": true,
+      "reason": "Explains that only received units are capitalized and how they depreciate."
+    },
+    "FILE-ASUS-B-03": {
+      "file_id": "FILE-ASUS-B-03",
+      "case_id": "CASE-ASUS-2026-12-02",
+      "relevant": false,
+      "role": "NOISE",
+      "in_universe": true,
+      "reason": "Existing assets only; the new laptops are not on the register yet."
+    },
+    "FILE-ASUS-B-04": {
+      "file_id": "FILE-ASUS-B-04",
+      "case_id": "CASE-ASUS-2026-12-02",
+      "relevant": true,
+      "role": "SUPPORTS_AMOUNT",
+      "in_universe": true,
+      "reason": "Sets the ordered quantity and the agreed unit price."
+    },
+    "FILE-ASUS-B-05": {
+      "file_id": "FILE-ASUS-B-05",
+      "case_id": "CASE-ASUS-2026-12-02",
+      "relevant": false,
+      "role": "HARD_NEGATIVE",
+      "in_universe": true,
+      "reason": "A delivery record for a different order from a different supplier."
+    },
+    "FILE-ASUS-B-06": {
+      "file_id": "FILE-ASUS-B-06",
+      "case_id": "CASE-ASUS-2026-12-02",
+      "relevant": false,
+      "role": "HARD_NEGATIVE",
+      "in_universe": true,
+      "reason": "Ledger rows belong mostly to other vendors and contain no ASUS receipt."
+    },
+    "FILE-ASUS-B-07": {
+      "file_id": "FILE-ASUS-B-07",
+      "case_id": "CASE-ASUS-2026-12-02",
+      "relevant": false,
+      "role": "HARD_NEGATIVE",
+      "in_universe": true,
+      "reason": "A prior-year invoice for an earlier order at a different price."
+    },
+    "FILE-ASUS-B-08": {
+      "file_id": "FILE-ASUS-B-08",
+      "case_id": "CASE-ASUS-2026-12-02",
+      "relevant": false,
+      "role": "NOISE",
+      "in_universe": true,
+      "reason": "Static vendor identity and payment terms carry no amount or period evidence."
+    },
+    "FILE-ASUS-B-09": {
+      "file_id": "FILE-ASUS-B-09",
+      "case_id": "CASE-ASUS-2026-12-02",
+      "relevant": false,
+      "role": "NOISE",
+      "in_universe": true,
+      "reason": "A quote thread about desks from a different supplier."
+    },
+    "FILE-ASUS-B-L1": {
+      "file_id": "FILE-ASUS-B-L1",
+      "case_id": "CASE-ASUS-2026-12-02",
+      "relevant": true,
+      "role": "LATE_ARRIVAL",
+      "in_universe": false,
+      "reason": "An outreach reply that arrives after the close."
+    },
     "FILE-ASUS-L1": {
       "file_id": "FILE-ASUS-L1",
       "case_id": "CASE-ASUS-2026-12",

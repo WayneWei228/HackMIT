@@ -8,6 +8,8 @@ rules (only the configured controller decides, a policy BLOCK is never approved)
 from __future__ import annotations
 
 import importlib
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
@@ -16,6 +18,7 @@ from typing import Any
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
+from trueup.agents import outreach_agent
 from trueup.agents.controller_workspace import (
     ControllerWorkspaceError,
     NotControllerError,
@@ -24,8 +27,8 @@ from trueup.agents.controller_workspace import (
 from trueup.agents.ingestion import load_universe
 from trueup.agents.learning_agent import LearningError
 from trueup.service import demo_state as demo
+from trueup.service import model_probe, outreach_threads, runlog
 from trueup.service import models as v
-from trueup.service import outreach_threads, runlog
 from trueup.service import readmodels as rm
 from trueup.store import models as m
 from trueup.store.workflow import IllegalTransitionError
@@ -46,8 +49,19 @@ def _conflict(exc: Exception) -> HTTPException:
     return HTTPException(status_code=409, detail=str(exc))
 
 
+@asynccontextmanager
+async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
+    model_probe.start()
+    yield
+    model_probe.stop()
+
+
 def create_app() -> FastAPI:
-    app = FastAPI(title="TrueUp API", description="Synthetic data. All systems are simulated.")
+    app = FastAPI(
+        title="TrueUp API",
+        description="Synthetic data. Every system is synthetic.",
+        lifespan=_lifespan,
+    )
     app.add_middleware(
         CORSMiddleware, allow_origins=ORIGINS, allow_methods=["*"], allow_headers=["*"]
     )
@@ -55,7 +69,7 @@ def create_app() -> FastAPI:
 
     @app.get("/api/health")
     def health() -> dict[str, str]:
-        return {"status": "ok", "phase": demo.current().phase}
+        return {"status": "ok"}
 
     @app.get("/api/close", response_model=v.CloseView)
     def close() -> v.CloseView:
@@ -65,20 +79,15 @@ def create_app() -> FastAPI:
                 return rm.close_view(
                     session,
                     period=demo.PERIOD,
-                    phase=state.phase,
                     now=_aware(state.sim.now()),
                     universe=universe,
-                    moments=demo.MOMENTS,
                 )
 
     @app.post("/api/close/run", response_model=v.ActionResult)
     def run_close() -> v.ActionResult:
         with demo.locked():
             state = demo.current()
-            try:
-                started = demo.run_close(state)
-            except demo.CloseMovedOnError as exc:
-                raise HTTPException(status_code=409, detail=str(exc)) from exc
+            started = demo.run_close(state)
         message = f"Started {len(started)} pending cases." if started else "No pending cases."
         return v.ActionResult(ok=True, message=message, obligation_ids=started)
 
@@ -90,49 +99,57 @@ def create_app() -> FastAPI:
                 started = demo.start_case(state, obligation_id)
             except LookupError as exc:
                 raise HTTPException(status_code=404, detail=str(exc)) from exc
-            except demo.CloseMovedOnError as exc:
-                raise HTTPException(status_code=409, detail=str(exc)) from exc
             with state.session() as session:
                 case = rm.case_row(
-                    session,
-                    session.get(m.TrueUpObligation, obligation_id),
-                    phase=state.phase,
-                    universe=universe,
+                    session, session.get(m.TrueUpObligation, obligation_id), universe=universe
                 )
         message = "Started." if started else "Already started."
         return v.StartResult(ok=True, message=message, started=started, case=case)
 
-    @app.post("/api/close/advance-to-january", response_model=v.ActionResult)
-    def advance_to_january() -> v.ActionResult:
+    def time_move(name: str, obligation_id: str, message: str) -> v.ActionResult:
+        move = getattr(demo, name)
         with demo.locked():
-            state = demo.current()
-            if state.phase != "CLOSED":
-                raise HTTPException(status_code=409, detail="Run the December close first.")
-            if demo.pending_cases(state):
-                raise HTTPException(
-                    status_code=409,
-                    detail="Start every case first; a case not started by January is locked out.",
-                )
-            touched = demo.advance_to_january(state)
-        return v.ActionResult(
-            ok=True,
-            message="January invoices graded the December accruals.",
-            obligation_ids=touched,
+            try:
+                move(demo.current(), obligation_id)
+            except LookupError as exc:
+                raise HTTPException(status_code=404, detail=str(exc)) from exc
+            except (
+                demo.NoReplyWaitingError,
+                demo.NoInvoiceDueError,
+                outreach_agent.OutreachError,
+            ) as exc:
+                raise HTTPException(status_code=409, detail=str(exc)) from exc
+        return v.ActionResult(ok=True, message=message, obligation_ids=[obligation_id])
+
+    @app.post("/api/obligations/{obligation_id}/deliver-reply", response_model=v.ActionResult)
+    def deliver_reply(obligation_id: str) -> v.ActionResult:
+        return time_move("deliver_reply", obligation_id, "The owner's reply arrived.")
+
+    @app.post("/api/obligations/{obligation_id}/expire-outreach", response_model=v.ActionResult)
+    def expire_outreach(obligation_id: str) -> v.ActionResult:
+        return time_move(
+            "expire_outreach", obligation_id, "No reply came by the deadline. Time moved on."
         )
 
-    @app.post("/api/close/advance-to-vendor-reply", response_model=v.ActionResult)
-    def advance_to_vendor_reply() -> v.ActionResult:
-        with demo.locked():
-            state = demo.current()
-            if state.phase != "JANUARY":
-                raise HTTPException(status_code=409, detail="Advance to January first.")
-            touched = demo.advance_to_vendor_reply(state)
-        message = (
-            "The vendors' replies and corrected invoices arrived."
-            if touched
-            else "No vendor reply was due."
+    @app.post("/api/obligations/{obligation_id}/rewind-outreach", response_model=v.ActionResult)
+    def rewind_outreach(obligation_id: str) -> v.ActionResult:
+        return time_move("rewind_case", obligation_id, "Rewound to the email. Take the other path.")
+
+    @app.post("/api/obligations/{obligation_id}/bring-in-invoice", response_model=v.ActionResult)
+    def bring_in_invoice(obligation_id: str) -> v.ActionResult:
+        return time_move(
+            "bring_in_invoice", obligation_id, "The January invoice arrived and graded the accrual."
         )
-        return v.ActionResult(ok=True, message=message, obligation_ids=touched)
+
+    @app.post(
+        "/api/obligations/{obligation_id}/deliver-vendor-reply", response_model=v.ActionResult
+    )
+    def deliver_vendor_reply(obligation_id: str) -> v.ActionResult:
+        return time_move(
+            "deliver_vendor_reply",
+            obligation_id,
+            "The vendor's reply and corrected invoice arrived.",
+        )
 
     @app.post("/api/reset", response_model=v.ActionResult)
     def reset() -> v.ActionResult:
@@ -141,14 +158,19 @@ def create_app() -> FastAPI:
         return v.ActionResult(ok=True, message="Demo reset to day one.", obligation_ids=[])
 
     def detail_of(state: demo.DemoState, obligation_id: str) -> v.ObligationDetail:
+        actions = demo.time_actions(state, obligation_id)
         with state.session() as session:
             detail = rm.obligation_detail(
                 session,
                 obligation_id,
                 universe=universe,
                 seed_dir=SEED_DIR,
-                now=_aware(state.sim.now()),
+                now=demo.now_of(state, obligation_id),
                 durations=state.durations,
+                time_action=(actions[0] if actions else None),
+                other_time_actions=actions[1:],
+                can_rewind=demo.can_rewind(state, obligation_id),
+                other_path=demo.other_path(state, obligation_id),
             )
         if detail is None:
             raise HTTPException(status_code=404, detail=f"No obligation {obligation_id}.")
@@ -184,7 +206,7 @@ def create_app() -> FastAPI:
                     session,
                     ob,
                     runlog.case_runs(session, obligation_id),
-                    now=_aware(state.sim.now()),
+                    now=demo.now_of(state, obligation_id),
                 )
 
     @app.get("/api/obligations/{obligation_id}/handoffs", response_model=v.HandoffsView)
@@ -245,7 +267,9 @@ def create_app() -> FastAPI:
         with demo.locked():
             state = demo.current()
             with state.session() as session:
-                return rm.controller_queue(session, now=_aware(state.sim.now()))
+                return rm.controller_queue(
+                    session, now=_aware(state.sim.now()), universe=demo.universe()
+                )
 
     @app.post("/api/controller/{obligation_id}/decision", response_model=v.ActionResult)
     def decide(obligation_id: str, body: v.DecisionRequest) -> v.ActionResult:
@@ -328,7 +352,7 @@ def _register_audit(app: FastAPI) -> None:
                 try:
                     report = audit(
                         session,
-                        now=_aware(state.sim.now()),
+                        now=demo.now_of(state, obligation_id),
                         obligation_ids=[obligation_id],
                         persist=False,
                     )

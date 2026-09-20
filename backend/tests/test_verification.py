@@ -310,7 +310,14 @@ def test_an_amount_over_the_threshold_recorded_as_permit_is_reviewed(at_policy):
     assert "VER-10" in failed(result) and result.verdict == Verdict.REVIEW
 
 
+def make_unsupported(session, oid):
+    ob = session.get(m.TrueUpObligation, oid)
+    ob.contract_id = ob.po_id = ob.non_po_group_key = None
+    session.flush()
+
+
 def test_a_block_recorded_as_permit_is_blocked(at_policy):
+    make_unsupported(at_policy, NOTABILITY)
     result = gate(at_policy, NOTABILITY, st.POLICY, st.DRAFT, "policy")
     assert "VER-10" in failed(result) and result.verdict == Verdict.BLOCK
 
@@ -409,6 +416,7 @@ def test_only_the_configured_controller_can_approve_into_drafting(at_policy):
 
 
 def test_a_policy_block_can_never_be_approved(at_policy):
+    make_unsupported(at_policy, NOTABILITY)
     enforce_policy(at_policy, NOTABILITY)
     result = gate(
         at_policy,
@@ -744,7 +752,7 @@ def test_the_auditor_sees_the_chain_and_catches_a_move_the_verifier_never_saw(de
 def test_every_property_holds_on_the_real_graph():
     report = verify_workflow_graph()
     assert report.holds, [(p.key, p.counterexample) for p in report.properties if not p.holds]
-    assert report.edges == 38 and report.states == 15
+    assert report.edges == 41 and report.states == 16
     assert {p.key for p in report.properties} == {
         "completeness",
         "policy_before_posting",

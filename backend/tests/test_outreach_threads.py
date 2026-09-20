@@ -15,6 +15,7 @@ from decimal import Decimal
 import pytest
 from fastapi.testclient import TestClient
 
+from tests import service_flow as flow
 from trueup.agents import controller_workspace
 from trueup.agents import outreach_agent as outreach
 from trueup.agents.outreach_agent import DisputeFacts, Draft, DraftFacts, Topic, check_draft
@@ -41,9 +42,7 @@ def api():
 
 @pytest.fixture
 def january(api):
-    assert api.post("/api/close/run").status_code == 200
-    assert api.post("/api/close/advance-to-january").status_code == 200
-    return api
+    return flow.january(api)
 
 
 def threads(api, obligation_id):
@@ -118,7 +117,7 @@ def test_openai_thread_is_sent_with_a_due_date_then_answered_with_a_parsed_quant
     assert out["run_id"] is not None and out["evidence_id"].endswith("-REQ-01")
     assert "$" not in out["body"]
 
-    api.post("/api/close/advance-to-january")
+    assert api.post(f"/api/obligations/{OPENAI}/deliver-reply").status_code == 200
     answered = threads(api, OPENAI)[0]
     assert answered["status"] == "REPLIED" and answered["waiting_on"] is None
     assert [m["direction"] for m in answered["messages"]] == ["OUT", "IN"]
@@ -214,8 +213,8 @@ def test_the_dispute_email_names_the_invoice_and_cites_only_reconciliation_figur
 
 def test_the_vendor_answers_a_corrected_invoice_arrives_and_the_case_closes_at_zero(january):
     dispute(january)
-    assert january.get("/api/close").json()["actions"]["can_advance_to_vendor_reply"] is True
-    assert january.post("/api/close/advance-to-vendor-reply").status_code == 200
+    assert flow.next_action(january, META)["kind"] == "DELIVER_VENDOR_REPLY"
+    assert january.post(f"/api/obligations/{META}/deliver-vendor-reply").status_code == 200
 
     (thread,) = threads(january, META)
     assert thread["status"] == "REPLIED"
@@ -234,15 +233,15 @@ def test_the_vendor_answers_a_corrected_invoice_arrives_and_the_case_closes_at_z
     assert rec["resolved_dispute"]["original_root_cause"] == "SOURCE_DATA_ERROR"
     assert rec["resolved_dispute"]["original_amount"] == "30000.00"
     assert rec["invoice_ids"] == ["INV-META-CORR-2026-12"]
-    assert january.get("/api/close").json()["actions"]["can_advance_to_vendor_reply"] is False
+    assert flow.next_action(january, META) is None
 
 
 def test_no_reply_before_the_clock_reaches_it_and_no_second_dispute_email(january):
     dispute(january)
     (thread,) = threads(january, META)
     assert thread["status"] == "SENT" and len(thread["messages"]) == 1
-    january.post("/api/close/advance-to-vendor-reply")
-    january.post("/api/close/advance-to-vendor-reply")
+    assert january.post(f"/api/obligations/{META}/deliver-vendor-reply").status_code == 200
+    assert january.post(f"/api/obligations/{META}/deliver-vendor-reply").status_code == 409
     (again,) = threads(january, META)
     assert [m["direction"] for m in again["messages"]] == ["OUT", "IN"]
 
@@ -413,3 +412,138 @@ def test_the_new_code_never_reads_a_hidden_answer_key():
         source = inspect.getsource(module)
         for forbidden in ("relevance_truth", "historical_truth", "simulator.files"):
             assert forbidden not in source, (module.__name__, forbidden)
+
+
+# ---- the run log tells the truth about how the email was written and what estimation did ------
+
+
+def _log(api, obligation_id):
+    return api.get(f"/api/obligations/{obligation_id}/log").json()["entries"]
+
+
+def test_the_outreach_run_is_llm_only_when_the_model_wrote_or_read_the_email():
+    from types import SimpleNamespace
+
+    from trueup.service import runlog
+
+    def row(facts):
+        return SimpleNamespace(
+            agent_name="outreach", facts_used_json=facts, decision_summary="", output_summary=""
+        )
+
+    assert runlog._method(row([{"drafted_by": "llm"}])) == "LLM"
+    assert runlog._method(row([{"parsed_by": "llm"}])) == "LLM"
+    assert runlog._method(row([{"drafted_by": "template"}])) == "CODE"
+    assert runlog._method(row([{"parsed_by": "rule"}])) == "CODE"
+    assert runlog._method(row(None)) == "CODE"
+
+
+def test_a_stage_that_produced_no_estimate_says_so_in_the_log(api):
+    api.post("/api/close/run")
+    openai = [e for e in _log(api, OPENAI) if e["agent"] == "estimation"]
+    assert [e["title"] for e in openai] == ["Estimation did not produce an estimate"]
+    assert openai[0]["summary"].startswith("No estimate for VEN-OPENAI")
+    mintlify = [e for e in _log(api, MINTLIFY) if e["agent"] == "estimation"]
+    assert [e["title"] for e in mintlify] == ["Estimation computed the accrual"]
+
+
+# ---- time is per case: OpenAI's story runs alone ----------------------------------------------
+
+
+RULE = "LRN-000002"
+OTHERS = ("Meta", "Mintlify", "Notability", "ASUS")
+
+
+def test_openai_runs_alone_from_email_to_graded_and_strands_no_other_case(api):
+    assert api.post(f"/api/obligations/{OPENAI}/start").status_code == 200
+    assert threads(api, OPENAI)[0]["status"] == "SENT"
+    assert flow.next_action(api, OPENAI)["kind"] == "DELIVER_REPLY"
+
+    assert api.post(f"/api/obligations/{OPENAI}/deliver-reply").status_code == 200
+    thread = threads(api, OPENAI)[0]
+    assert thread["status"] == "REPLIED" and thread["parsed"]["resolved"] is True
+    reply = thread["messages"][1]
+    assert reply["at"] == "2027-01-02T10:00:00Z" and "930,000 API calls" in reply["body"]
+    flow.rest(api, OPENAI)
+    assert flow.cases(api)["OpenAI"]["status"] == "Close-ready"
+    assert flow.next_action(api, OPENAI)["kind"] == "BRING_IN_INVOICE"
+
+    assert api.post(f"/api/obligations/{OPENAI}/bring-in-invoice").status_code == 200
+    flow.rest(api, OPENAI)
+    graded = flow.cases(api)
+    assert graded["OpenAI"]["status"] == "Complete"
+    for name in OTHERS:
+        assert graded[name]["status"] == "Pending" and graded[name]["can_start"] is True
+
+    assert api.post("/api/close/run").status_code == 200
+    started = flow.cases(api)
+    assert all(started[name]["status"] != "Pending" for name in OTHERS)
+    assert started["OpenAI"]["status"] == "Complete"
+
+
+def test_starting_and_advancing_one_case_never_touches_another(api):
+    before = {n: (c["status"], c["stage"], c["workflow_stage"]) for n, c in flow.cases(api).items()}
+    api.post(f"/api/obligations/{OPENAI}/start")
+    flow.take(api, OPENAI)
+    after = flow.cases(api)
+    for name in OTHERS:
+        assert (after[name]["status"], after[name]["stage"], after[name]["workflow_stage"]) == (
+            before[name]
+        )
+    api.post(f"/api/obligations/{MINTLIFY}/start")
+    assert flow.take(api, MINTLIFY) == "BRING_IN_INVOICE"
+    assert flow.cases(api)["Mintlify"]["status"] == "Complete"
+    assert flow.cases(api)["OpenAI"]["status"] == "Close-ready"
+    for name in ("Meta", "Notability", "ASUS"):
+        assert flow.cases(api)[name]["status"] == "Pending"
+
+
+def test_the_reply_changes_openais_number_only_when_the_learned_rule_was_approved(api):
+    for approve in (False, True):
+        assert api.post("/api/reset").status_code == 200
+        if approve:
+            assert api.post(f"/api/learning/{RULE}/approve").status_code == 200
+        api.post(f"/api/obligations/{OPENAI}/start")
+        assert api.post(f"/api/obligations/{OPENAI}/deliver-reply").status_code == 200
+        flow.rest(api, OPENAI)
+        expected = "18600.00" if approve else "14880.00"
+        assert flow.cases(api)["OpenAI"]["amount"] == expected
+
+
+def test_each_time_action_refuses_when_it_does_not_apply_to_the_case(api):
+    assert api.post(f"/api/obligations/{MINTLIFY}/deliver-reply").status_code == 409
+    assert api.post(f"/api/obligations/{MINTLIFY}/bring-in-invoice").status_code == 409
+    assert api.post(f"/api/obligations/{MINTLIFY}/deliver-vendor-reply").status_code == 409
+    for action in ("deliver-reply", "bring-in-invoice", "deliver-vendor-reply"):
+        assert api.post(f"/api/obligations/OBL-NOPE-2026-12/{action}").status_code == 404
+    api.post(f"/api/obligations/{OPENAI}/start")
+    assert api.post(f"/api/obligations/{OPENAI}/bring-in-invoice").status_code == 409
+    assert api.post(f"/api/obligations/{OPENAI}/deliver-reply").status_code == 200
+    assert api.post(f"/api/obligations/{OPENAI}/deliver-reply").status_code == 409
+    flow.rest(api, OPENAI)
+    assert api.post(f"/api/obligations/{OPENAI}/bring-in-invoice").status_code == 200
+    assert api.post(f"/api/obligations/{OPENAI}/bring-in-invoice").status_code == 409
+
+
+def test_a_delivered_reply_survives_the_world_being_rebuilt(api):
+    api.post(f"/api/obligations/{OPENAI}/start")
+    api.post(f"/api/obligations/{OPENAI}/deliver-reply")
+    before = threads(api, OPENAI)
+    offered = api.get(f"/api/obligations/{MINTLIFY}").json()["ingestion"]["offered"]
+    rebuilt = api.put(
+        f"/api/obligations/{MINTLIFY}/ingestion-selection",
+        json={"excluded_file_ids": [offered[0]["file_id"]]},
+    )
+    assert rebuilt.status_code == 200, rebuilt.text
+    after = threads(api, OPENAI)
+    assert after[0]["status"] == before[0]["status"] == "REPLIED"
+    assert after[0]["messages"] == before[0]["messages"]
+
+
+def test_the_log_names_who_the_email_went_to_and_whose_reply_was_read(api):
+    api.post(f"/api/obligations/{OPENAI}/start")
+    sent = [e for e in _log(api, OPENAI) if e["agent"] == "outreach"]
+    assert [e["title"] for e in sent] == ["Outreach sent an email to Riley Kim"]
+    api.post(f"/api/obligations/{OPENAI}/deliver-reply")
+    titles = [e["title"] for e in _log(api, OPENAI) if e["agent"] == "outreach"]
+    assert titles == ["Outreach sent an email to Riley Kim", "Outreach read Riley Kim's reply"]

@@ -108,13 +108,36 @@ class Simulator:
             SimClock(session).advance_days(days)
         return self.apply_due_events()
 
+    def move_clock_to(self, moment: datetime) -> None:
+        """Note how far the furthest case has got; no event is released by this."""
+        with self.session() as session:
+            clock = SimClock(session)
+            if moment > clock.now():
+                clock.advance_to(moment)
+
+    def has_events_for(self, vendor_id: str, up_to: datetime) -> bool:
+        """Whether this vendor has scheduled events due by `up_to` that have not happened yet."""
+        with self.session() as session:
+            applied = SimClock(session).applied_event_ids()
+            return any(
+                event_applier.event_vendor(session, event) == vendor_id
+                for event in self._schedule.due(up_to, applied)
+            )
+
+    def apply_events_for(self, vendor_id: str, up_to: datetime) -> Released:
+        """Release one vendor's events due by `up_to`, leaving every other vendor's untouched."""
+        with self.session() as session:
+            return event_applier.apply_due_events(session, self._schedule, up_to, vendor_id)
+
     def apply_due_events(self) -> Released:
         with self.session() as session:
             now = SimClock(session).now()
             return event_applier.apply_due_events(session, self._schedule, now)
 
-    def reply_to_outreach(self, outreach_key: str, session: Session | None = None) -> str | None:
-        """The owner's free-text reply, once the clock reaches it; nothing before that.
+    def reply_to_outreach(
+        self, outreach_key: str, session: Session | None = None, at: datetime | None = None
+    ) -> str | None:
+        """The owner's free-text reply, once the clock (or `at`, a case's own moment) reaches it.
 
         The first delivery also records the confirmation in the company's own service-evidence
         table, exactly once. The hidden parsed truth is never returned. Pass `session` when the
@@ -124,13 +147,20 @@ class Simulator:
         if fixture is None:
             return None
         if session is not None:
-            return self._deliver(session, fixture)
+            return self._deliver(session, fixture, at)
         with self.session() as own:
-            return self._deliver(own, fixture)
+            return self._deliver(own, fixture, at)
+
+    def outreach_available_at(self, outreach_key: str) -> datetime | None:
+        """When the scripted reply to this request is ready, or None when none is scripted."""
+        fixture = self._outreach.get(outreach_key)
+        return None if fixture is None else fixture.available_at
 
     @staticmethod
-    def _deliver(session: Session, fixture: OutreachResponse) -> str | None:
-        if SimClock(session).now() < fixture.available_at:
+    def _deliver(
+        session: Session, fixture: OutreachResponse, at: datetime | None = None
+    ) -> str | None:
+        if (at or SimClock(session).now()) < fixture.available_at:
             return None
         record = fixture.service_evidence_on_response
         if record is not None:

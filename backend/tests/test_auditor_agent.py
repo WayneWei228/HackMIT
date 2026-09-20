@@ -30,11 +30,12 @@ spec.loader.exec_module(script)
 
 PERIOD = "2026-12"
 ASUS = "OBL-ASUS-2026-12"
+ASUS_NO_RECEIPT = "OBL-ASUS-2026-12-02"
 META = "OBL-META-2026-12"
 MINTLIFY = "OBL-MINTLIFY-2026-12"
 NOTABILITY = "OBL-NOTABILITY-2026-12"
 OPENAI = "OBL-OPENAI-2026-12"
-LIVE = [ASUS, META, MINTLIFY, NOTABILITY, OPENAI]
+LIVE = [ASUS, ASUS_NO_RECEIPT, META, MINTLIFY, NOTABILITY, OPENAI]
 DEC_31 = datetime(2026, 12, 31, 23, 0, tzinfo=UTC)
 
 
@@ -95,9 +96,11 @@ def snapshot(session):
 # --- the clean close ---------------------------------------------------------------------------
 
 
-def test_a_clean_close_has_no_critical_finding(session):
+def test_the_only_critical_finding_is_notabilitys_double_count(session):
     report = run_audit(session)
-    assert report.counts["CRITICAL"] == 0 and report.passed
+    assert report.counts["CRITICAL"] == 1 and not report.passed
+    (critical,) = [f for f in report.findings if f.severity == Severity.CRITICAL]
+    assert (critical.check_id, critical.obligation_id) == ("AUD-03", NOTABILITY)
     assert sorted(o.obligation_id for o in report.obligations) == LIVE
 
 
@@ -107,7 +110,7 @@ def test_the_only_open_item_is_notabilitys_seeded_one_time_expense(session):
     assert (finding.check_id, finding.obligation_id, finding.severity) == (
         "AUD-03",
         NOTABILITY,
-        Severity.WARNING,
+        Severity.CRITICAL,
     )
     assert "GL-NOTABILITY-2026-12-MANUAL" in finding.message
     assert (finding.expected, finding.actual) == ("1800.00", "21600.00")
@@ -117,17 +120,20 @@ def test_every_control_reports_pass_fail_per_obligation(session):
     report = run_audit(session)
     for audited in report.obligations:
         assert [c.check_id for c in audited.controls] == list(CHECKS)
-        assert all(c.status != "FAIL" for c in audited.controls)
+        assert all(
+            c.status != "FAIL" or (audited.obligation_id, c.check_id) == (NOTABILITY, "AUD-03")
+            for c in audited.controls
+        )
     asus = report.for_obligation(ASUS)
     assert [c.status.value for c in asus.controls] == ["PASS"] * (len(CHECKS) - 1) + [
         "NOT_APPLICABLE"
     ]
     notability = {c.check_id: c.status.value for c in report.for_obligation(NOTABILITY).controls}
-    assert notability["AUD-03"] == "NOTE" and notability["AUD-07"] == "NOT_APPLICABLE"
+    assert notability["AUD-03"] == "FAIL" and notability["AUD-07"] == "NOT_APPLICABLE"
     assert {c.check_id for c in report.global_controls} == {"AUD-08", "AUD-09"}
 
 
-def test_the_audit_reads_five_live_obligations_and_no_history(session):
+def test_the_audit_reads_six_live_obligations_and_no_history(session):
     report = audit(session, now=script.JANUARY, persist=False)
     assert sorted(o.obligation_id for o in report.obligations) == LIVE
     one = audit(session, now=script.JANUARY, obligation_ids=[ASUS], persist=False)
@@ -142,7 +148,7 @@ def test_the_audit_changes_nothing_and_appends_one_run_row(session):
     assert len(added) == len(runs) + 1
     row = added[-1]
     assert (row.agent_name, row.action, row.obligation_id) == ("auditor", "audit_close", None)
-    assert row.run_id == report.run_id and row.status == e.AgentRunStatus.COMPLETED
+    assert row.run_id == report.run_id and row.status == e.AgentRunStatus.ESCALATED
     assert json.loads(json.dumps(row.facts_used_json[0]))["counts"] == report.counts
 
 
@@ -413,7 +419,10 @@ def test_aud04_catches_an_above_threshold_accrual_whose_approval_was_erased(sess
 
 
 def test_aud04_catches_an_approval_of_something_policy_blocked(session):
+    ob = session.get(m.TrueUpObligation, NOTABILITY)
+    ob.contract_id = ob.po_id = ob.non_po_group_key = None
     wp = workpaper(session, NOTABILITY)
+    wp.policy_decision = e.PolicyDecision.BLOCK
     wp.controller_decision = e.ControllerDecision.APPROVE
     wp.status = e.WorkpaperStatus.APPROVED
     session.flush()
@@ -691,7 +700,7 @@ def test_aud09_warns_about_an_obligation_that_was_detected_and_never_started(ses
 def test_the_summary_is_a_template_with_no_model(session):
     report = run_audit(session)
     assert report.summary_source == "template"
-    assert "5 obligations" in report.summary and "No critical findings" in report.summary
+    assert "6 obligations" in report.summary and "1 critical finding" in report.summary
 
 
 def test_the_summary_names_the_failing_controls(session):

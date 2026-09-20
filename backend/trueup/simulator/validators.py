@@ -487,7 +487,7 @@ def validate_scenario_coverage(world: GeneratedWorld) -> list[str]:
         "case above the Controller threshold",
     )
     statuses = {t.expected_close_status for t in truth if t.expected_close_status}
-    need(statuses >= {"DONE", "WAITING", "BLOCKED", "NEEDS_REVIEW"}, "all four close statuses")
+    need(statuses >= {"DONE", "WAITING", "NEEDS_REVIEW"}, "the close statuses")
     need(len(historical) >= 3 and bool(meta["live_periods"]), "period cycles")
 
     at_close = _typed(snapshot(world, close_cutoff(first_live)), problems)

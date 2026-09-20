@@ -160,9 +160,9 @@ def test_coverage_catches_a_history_with_no_escalator_miss(corrupt):
 
 def test_coverage_catches_a_demo_that_misses_a_close_status(corrupt):
     for t in corrupt.truth:
-        if t.expected_close_status == "BLOCKED":
+        if t.expected_close_status == "NEEDS_REVIEW":
             t.expected_close_status = None
-    assert "all four close statuses" in problems(validators.validate_scenario_coverage, corrupt)
+    assert "the close statuses" in problems(validators.validate_scenario_coverage, corrupt)
 
 
 def test_clean_world_has_no_violations(sim_world):

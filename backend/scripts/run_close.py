@@ -9,6 +9,7 @@ The Controller is a script; the orchestrator approves nothing itself. No languag
 
 from __future__ import annotations
 
+import dataclasses
 import sys
 from collections import defaultdict
 from datetime import UTC, datetime
@@ -20,6 +21,7 @@ sys.path.insert(0, str(ROOT))
 
 from sqlalchemy import func, select  # noqa: E402
 
+from trueup.agents import fallback_estimation  # noqa: E402
 from trueup.agents.controller_workspace import controller_id  # noqa: E402
 from trueup.close_orchestrator import CloseReport, Step, run_month_end_close  # noqa: E402
 from trueup.demo_controller import ScriptedController  # noqa: E402
@@ -85,6 +87,90 @@ def snapshot(session) -> dict:
         for ob in session.scalars(select(m.TrueUpObligation))
     }
     return {"counts": counts, "states": states}
+
+
+def openai_road(*, reply: bool, taught: bool):
+    """One close where OpenAI's owner does or does not reply and the escalator rule is or is not
+    approved on day one. Without a reply the company's wait passes and the fallback estimates."""
+    sim = Simulator.initialize()
+    if not reply:
+        sim.reply_to_outreach = lambda *args, **kwargs: None
+    with sim.session() as session:
+        controller = ScriptedController(
+            controller_id(session), approve_vendors=["VEN-OPENAI"], approve_rules=taught
+        )
+        run_month_end_close(session, PERIOD, now=CLOSE, simulator=sim, controller=controller)
+        report = run_month_end_close(
+            session, PERIOD, now=CLOSE, simulator=sim, controller=controller, through=JANUARY
+        )
+        return report.outcome(OPENAI)
+
+
+ASUS_B = f"OBL-ASUS-{PERIOD}-02"
+ASUS_ROADS = {
+    (True, True): ("32000.00", "OWNER_CONFIRMED_QUANTITY"),
+    (False, True): ("32000.00", "TYPICAL_ORDER_AVERAGE"),
+    (False, False): ("19200.00", "CONSERVATIVE_ESTIMATE"),
+}
+
+
+def asus_road(*, reply: bool, history: bool):
+    """The receipt-less ASUS order: the owner replies, or no reply comes and the estimate uses
+    the vendor's earlier receipts (or, with none on record, the policy's conservative share)."""
+    sim = Simulator.initialize()
+    if not reply:
+        sim.reply_to_outreach = lambda *args, **kwargs: None
+    original = fallback_estimation.receipt_facts
+    if not history:
+        fallback_estimation.receipt_facts = lambda *a, **k: dataclasses.replace(
+            original(*a, **k), history=()
+        )
+    try:
+        with sim.session() as session:
+            controller = ScriptedController(controller_id(session), approve_vendors=["VEN-ASUS"])
+            run_month_end_close(session, PERIOD, now=CLOSE, simulator=sim, controller=controller)
+            report = run_month_end_close(
+                session, PERIOD, now=CLOSE, simulator=sim, controller=controller, through=JANUARY
+            )
+            ob = session.get(m.TrueUpObligation, ASUS_B)
+            inputs = session.get(m.TrueUpWorkpaper, ob.current_workpaper_id).calculation_inputs_json
+            return report.outcome(ASUS_B), inputs
+    finally:
+        fallback_estimation.receipt_facts = original
+
+
+def asus_road_ok(result, reply: bool, history: bool) -> bool:
+    outcome, inputs = result
+    accrued, marker = ASUS_ROADS[(reply, history)]
+    found = inputs.get("evidence_basis") if reply else inputs["fallback"]["method"]
+    return (
+        outcome.accrued == Decimal(accrued)
+        and found == marker
+        and "25" != inputs["received_quantity"]
+    )
+
+
+ROADS = {
+    (True, False): ("14880.00", "18600.00", "MISSED_ESCALATOR"),
+    (False, True): ("18795.79", "18600.00", "INCOMPLETE_DATA_EXTRAPOLATION"),
+    (False, False): ("15036.63", "18600.00", "INCOMPLETE_DATA_EXTRAPOLATION"),
+}
+
+
+def road_label(reply: bool, taught: bool) -> str:
+    accrued, _, cause_ = ROADS[(reply, taught)]
+    how = "the owner replies" if reply else "no reply comes and the projection is used"
+    rule = "the rule is approved" if taught else "the rule is not approved"
+    return f"OpenAI: {how}, {rule}: accrues {accrued}, graded {cause_}"
+
+
+def road_ok(outcome, reply: bool, taught: bool) -> bool:
+    accrued, invoice, cause_ = ROADS[(reply, taught)]
+    return (
+        outcome.accrued == Decimal(accrued)
+        and outcome.invoice == Decimal(invoice)
+        and (outcome.root_cause or outcome.resolved_root_cause) == cause_
+    )
 
 
 def main() -> None:
@@ -194,23 +280,59 @@ def main() -> None:
             and META not in actuals.controller_queue,
         )
         check(
-            "Notability is Blocked by POL-08 and nothing is accrued",
-            note.workflow_stage == e.WorkflowStage.BLOCKED
-            and note.policy_decision == e.PolicyDecision.BLOCK
-            and note.accrual_status == e.AccrualStatus.NOT_STARTED
+            "Notability proposes 1800.00 and waits for the Controller, who can approve it",
+            note.policy_decision == e.PolicyDecision.REQUIRE_CONTROLLER
+            and note.workflow_stage == e.WorkflowStage.AWAITING_CONTROLLER
+            and note.accrual_status == e.AccrualStatus.PENDING_APPROVAL
             and NOTABILITY in actuals.controller_queue,
         )
+        no_receipt_close = at_close.outcome(ASUS_B)
+        no_receipt = actuals.outcome(ASUS_B)
         check(
-            "the orchestrator approved nothing: two Controller decisions, one rule approval",
-            len(decisions) == 2 and len(rule_approvals) == 1,
+            "ASUS with the goods receipt missing waits for its owner at close, then accrues "
+            "32000.00 on the owner's confirmed count and never on the 25 ordered",
+            no_receipt_close.accrued is None
+            and no_receipt_close.workflow_stage == e.WorkflowStage.AWAITING_OUTREACH
+            and no_receipt.accrued == Decimal("32000.00")
+            and no_receipt.workflow_stage == e.WorkflowStage.AWAITING_ACTUAL_INVOICE,
         )
         check(
-            "four accruals were reversed on 1 January and the rule is confirmed once",
-            reversals == 4 and rule is not None and rule.uses == 1,
+            "the orchestrator approved nothing: three Controller decisions, one rule approval",
+            len(decisions) == 3 and len(rule_approvals) == 1,
+        )
+        check(
+            "five accruals were reversed and the rule is confirmed once",
+            reversals == 5 and rule is not None and rule.uses == 1,
         )
         check(
             "running the close again changes nothing",
             before == after and not actuals.errors and not at_close.errors,
+        )
+
+    print("\nOPENAI'S THREE OTHER ROADS (fresh closes, only OpenAI decided by the Controller)")
+    for reply, taught in ((True, False), (False, True), (False, False)):
+        outcome = openai_road(reply=reply, taught=taught)
+        print(
+            f"  reply={str(reply):5} rule={str(taught):5} accrued {outcome.accrued} "
+            f"invoiced {outcome.invoice} variance {outcome.variance} "
+            f"{outcome.root_cause or outcome.resolved_root_cause or '-'}"
+        )
+        results.append((road_label(reply, taught), road_ok(outcome, reply, taught)))
+
+    print("\nASUS WITH THE GOODS RECEIPT MISSING (fresh closes, the Controller approves ASUS)")
+    for reply, history in ASUS_ROADS:
+        result = asus_road(reply=reply, history=history)
+        how = "the owner replies" if reply else "no reply comes"
+        past = (
+            "" if reply else (", earlier receipts on record" if history else ", no earlier receipt")
+        )
+        accrued, marker = ASUS_ROADS[(reply, history)]
+        print(f"  {how}{past}: accrued {result[0].accrued} by {marker}")
+        results.append(
+            (
+                f"ASUS receipt-less: {how}{past}: accrues {accrued} by {marker}",
+                asus_road_ok(result, reply, history),
+            )
         )
 
     print("\nEXPECTED")

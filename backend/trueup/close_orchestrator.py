@@ -33,6 +33,7 @@ from trueup.agents import (
     estimation_agent,
     evidence_agent,
     evidence_rules,
+    fallback_estimation,
     ingestion,
     invoice_lookup_agent,
     journal_entry_service,
@@ -67,6 +68,7 @@ GATHER: State = (_S.GATHERING_EVIDENCE, _A.GATHER_EVIDENCE)
 CLASSIFY: State = (_S.CLASSIFYING, _A.CLASSIFY)
 ESTIMATE: State = (_S.ESTIMATING, _A.ESTIMATE)
 POLICY: State = (_S.ESTIMATING, _A.VERIFY_POLICY)
+FALLBACK: State = (_S.ESTIMATING, _A.ESTIMATE_INCOMPLETE)
 OUTREACH: State = (_S.AWAITING_OUTREACH, _A.SEND_OUTREACH)
 CONTROLLER: State = (_S.AWAITING_CONTROLLER, _A.CONTROLLER_REVIEW)
 BLOCKED: State = (_S.BLOCKED, _A.CONTROLLER_REVIEW)
@@ -138,6 +140,8 @@ class CloseSettings:
     review_narrator: reviewer_agent.Narrator | None = None
     verify: bool = True
     file_overrides: Mapping[str, FileOverride] = field(default_factory=dict)
+    fallback_on_timeout: bool = True
+    fallback_proposer: Any | None = None
 
 
 NO_EVIDENCE = CloseSettings(gather_evidence=False)
@@ -146,6 +150,11 @@ NO_EVIDENCE = CloseSettings(gather_evidence=False)
 def default_extractor() -> Extractor:
     """The language model when one is configured, otherwise the offline regex baseline."""
     return evidence_agent.llm_extractor if llm.available() else evidence_rules.rule_extractor
+
+
+def default_fallback() -> Extractor | None:
+    """What reads a document when the model fails on it; there is none when no model is set."""
+    return evidence_rules.rule_extractor if llm.available() else None
 
 
 # ---- what the orchestrator reports --------------------------------------------------------------
@@ -338,6 +347,7 @@ _AGENT_OF_STATE: dict[State, str] = {
     SEARCH: invoice_lookup_agent.AGENT_NAME,
     CLASSIFY: classification_agent.AGENT_NAME,
     ESTIMATE: estimation_agent.AGENT_NAME,
+    FALLBACK: fallback_estimation.AGENT_NAME,
     POLICY: policy_agent.AGENT_NAME,
     DRAFT: journal_entry_service.AGENT_NAME,
     RECONCILE: reconciliation_agent.AGENT_NAME,
@@ -586,17 +596,23 @@ class CloseRun:
         return result.opened
 
     @_gated
-    def collect_replies(self, *, now: datetime) -> int:
-        """Poll the simulator for outreach replies and escalate requests past their deadline."""
+    def collect_replies(self, *, now: datetime, obligation_id: str | None = None) -> int:
+        """Poll the simulator for outreach replies and escalate requests past their deadline.
+
+        With `obligation_id` only that case's reply is collected and no deadline is enforced.
+        """
         if self.sim is None:
             return 0
         now = _aware(now)
         moved = 0
 
         def responder(key: str, _at: datetime) -> str | None:
-            return self.sim.reply_to_outreach(key, self.session)
+            when = now if obligation_id else None
+            return self.sim.reply_to_outreach(key, self.session, at=when)
 
-        for reply in outreach_agent.poll_replies(self.session, now=now, responder=responder):
+        for reply in outreach_agent.poll_replies(
+            self.session, now=now, responder=responder, obligation_id=obligation_id
+        ):
             self._record(
                 reply.obligation_id,
                 outreach_agent.AGENT_NAME,
@@ -607,7 +623,11 @@ class CloseRun:
                 "resolved" if reply.resolved else "not resolved",
             )
             moved += 1
-        for expired in outreach_agent.expire_overdue(self.session, now=now):
+        if obligation_id is None and self.settings.fallback_on_timeout:
+            moved += self._fallback_overdue(now)
+        for expired in (
+            [] if obligation_id else outreach_agent.expire_overdue(self.session, now=now)
+        ):
             self._record(
                 expired.obligation_id,
                 outreach_agent.AGENT_NAME,
@@ -620,8 +640,55 @@ class CloseRun:
             moved += 1
         return moved
 
-    def post_reversals(self, *, now: datetime) -> int:
-        result = journal_entry_service.post_due_reversals(self.session, now=_aware(now))
+    @_gated
+    def expire_outreach(
+        self, obligation_id: str, *, now: datetime
+    ) -> outreach_agent.TimedOutRequest:
+        """Stop waiting for a reply the company's deadline has passed on, and carry on without it.
+
+        A usage obligation moves to the incomplete-data estimate; anything else goes to the
+        Controller. Raises when the request is not yet overdue or nothing is waiting.
+        """
+        now = _aware(now)
+        ob = self._obligation(obligation_id)
+        before = _state(ob)
+        reason = fallback_estimation.not_eligible_reason(self.session, ob)
+        timed = outreach_agent.time_out_request(
+            self.session, obligation_id, now=now, target=CONTROLLER if reason else FALLBACK
+        )
+        note = timed.reason if reason is None else f"{timed.reason} No projection: {reason}"
+        self._record(
+            obligation_id,
+            outreach_agent.AGENT_NAME,
+            "time_out_request",
+            before,
+            _state(ob),
+            now,
+            note,
+        )
+        return timed
+
+    def _fallback_overdue(self, now: datetime) -> int:
+        """Time out every open request past the company's wait whose obligation can be projected."""
+        moved = 0
+        for ob in self._obligations(None):
+            if _state(ob) != OUTREACH:
+                continue
+            deadline = outreach_agent.fallback_deadline(self.session, ob.obligation_id)
+            if deadline is None or now < deadline:
+                continue
+            if fallback_estimation.not_eligible_reason(self.session, ob) is not None:
+                continue
+            self.expire_outreach(ob.obligation_id, now=now)
+            moved += 1
+        return moved
+
+    def post_reversals(
+        self, *, now: datetime, obligation_ids: Collection[str] | None = None
+    ) -> int:
+        result = journal_entry_service.post_due_reversals(
+            self.session, now=_aware(now), obligation_ids=obligation_ids
+        )
         for posted in result.posted:
             self._record(
                 posted.obligation_id,
@@ -673,6 +740,7 @@ class CloseRun:
             CLASSIFY: self._classify,
             ESTIMATE: self._estimate,
             POLICY: self._policy,
+            FALLBACK: self._fallback,
             OUTREACH: self._outreach,
             CONTROLLER: self._controller_review,
             BLOCKED: self._controller_review,
@@ -785,6 +853,7 @@ class CloseRun:
                 now=now,
                 seed_dir=self.settings.seed_dir,
                 extractor=self.settings.extractor or default_extractor(),
+                fallback=None if self.settings.extractor else default_fallback(),
                 session=self.session,
                 obligation_id=ob.obligation_id,
             )
@@ -829,6 +898,28 @@ class CloseRun:
         note = result.outcome if result.amount is None else f"{result.outcome} {result.amount}"
         self._record(
             ob.obligation_id, estimation_agent.AGENT_NAME, "estimate", before, _state(ob), now, note
+        )
+        return True
+
+    def _fallback(self, ob: m.TrueUpObligation, now: datetime) -> bool:
+        before = _state(ob)
+        result = fallback_estimation.estimate_incomplete(
+            self.session, ob.obligation_id, now=now, proposer=self.settings.fallback_proposer
+        )
+        if result.amount is None:
+            note = "no projection: " + "; ".join(result.uncertainties)
+        else:
+            note = (
+                f"{result.method.value} {result.amount} on incomplete data ({result.proposed_by})"
+            )
+        self._record(
+            ob.obligation_id,
+            estimation_agent.AGENT_NAME,
+            "estimate_incomplete",
+            before,
+            _state(ob),
+            now,
+            note,
         )
         return True
 
@@ -1201,13 +1292,10 @@ class CloseRun:
         return report
 
     def _case_for(self, ob: m.TrueUpObligation) -> CaseEntry | None:
-        return next(
-            (
-                c
-                for c in self._universe_or_load().cases
-                if c.vendor_id == ob.vendor_id and c.period == ob.period
-            ),
-            None,
+        cases = self._universe_or_load().cases
+        own = f"CASE-{ob.obligation_id.removeprefix('OBL-')}"
+        return next((c for c in cases if c.case_id == own), None) or next(
+            (c for c in cases if c.vendor_id == ob.vendor_id and c.period == ob.period), None
         )
 
     def _universe_or_load(self) -> FileUniverse:

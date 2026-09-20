@@ -78,7 +78,10 @@ def clone_vendor(session, source_id, new_id, name):
             vendor_id=new_id,
         )
     for po in session.scalars(
-        select(m.CompanyPurchaseOrder).where(m.CompanyPurchaseOrder.vendor_id == source_id)
+        select(m.CompanyPurchaseOrder)
+        .where(m.CompanyPurchaseOrder.vendor_id == source_id)
+        .order_by(m.CompanyPurchaseOrder.po_id)
+        .limit(1)
     ):
         clone(
             session,
@@ -540,3 +543,49 @@ def test_usage_rate_is_pure_and_takes_hypothetical_rules():
     decision = usage_rate(contract, obligation, [(LEARNING_ID, rule)])
     assert decision.rate == Decimal("0.02000")
     assert decision.step_up_applied is True
+
+
+def openai_rate_cards(session, obligation, *rates):
+    for index, rate in enumerate(rates, start=1):
+        session.add(card(obligation.obligation_id, "UNIT_RATE", rate, evidence_id=f"EVD-T-{index}"))
+    session.flush()
+
+
+def test_a_document_quoting_the_contract_step_up_is_not_a_rate_conflict(session):
+    complete_openai_usage(session)
+    obligation = ready(session, "VEN-OPENAI")
+    openai_rate_cards(session, obligation, "0.02", "0.02")
+    result = estimate(session, obligation.obligation_id, now=NOW)
+    assert result.outcome == "ESTIMATED" and not result.conflicts
+    assert result.amount == Decimal("14880.00")
+    assert (obligation.workflow_stage, obligation.next_action) == (
+        e.WorkflowStage.ESTIMATING,
+        e.NextAction.VERIFY_POLICY,
+    )
+    assert obligation.evidence_status == e.EvidenceStatus.SUFFICIENT
+    inputs = wp_for(session, obligation).calculation_inputs_json
+    assert inputs["step_up_applied"] is False and inputs["conflicts"] == []
+    [note] = [w for w in inputs["warnings"] if "step-up" in str(w)]
+    assert "0.02" in str(note) and "0.016" in str(note) and "no approved rule" in str(note)
+
+
+def test_the_same_quoted_step_up_is_used_once_an_active_rule_applies_it(session):
+    complete_openai_usage(session)
+    activate_escalator_rule(session, now=NOW)
+    obligation = ready(session, "VEN-OPENAI")
+    openai_rate_cards(session, obligation, "0.02", "0.02")
+    result = estimate(session, obligation.obligation_id, now=NOW)
+    assert result.outcome == "ESTIMATED" and not result.conflicts
+    assert result.amount == Decimal("18600.00")
+    inputs = wp_for(session, obligation).calculation_inputs_json
+    assert not [w for w in inputs["warnings"] if "step-up" in str(w)]
+
+
+def test_a_rate_the_contract_never_states_is_still_a_conflict(session):
+    complete_openai_usage(session)
+    obligation = ready(session, "VEN-OPENAI")
+    openai_rate_cards(session, obligation, "0.05")
+    result = estimate(session, obligation.obligation_id, now=NOW)
+    assert result.outcome == "NEEDS_CONTROLLER"
+    assert "0.05" in result.conflicts[0]
+    assert obligation.evidence_status == e.EvidenceStatus.CONFLICTING

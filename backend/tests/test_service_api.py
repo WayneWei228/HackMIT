@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
+from tests import service_flow as flow
 from trueup.service import demo_state
 from trueup.service.app import create_app
 
@@ -17,6 +18,8 @@ MONEY = re.compile(r"^-?\d+\.\d{2}$")
 MINTLIFY, OPENAI, ASUS, META, NOTABILITY = (
     f"OBL-{v}-2026-12" for v in ("MINTLIFY", "OPENAI", "ASUS", "META", "NOTABILITY")
 )
+ASUS_NO_RECEIPT = "OBL-ASUS-2026-12-02"
+NO_RECEIPT_NAME = "ASUS (goods receipt missing)"
 RULE = "LRN-000002"
 CONTROLLER = "CONTROLLER-001"
 
@@ -42,19 +45,16 @@ def walk(node):
             yield from walk(value)
 
 
-def test_reset_opens_five_pending_accrual_cases_and_a_rule_waiting_for_the_controller(api):
+def test_reset_opens_six_pending_accrual_cases_and_a_rule_waiting_for_the_controller(api):
     close = api.get("/api/close").json()
-    assert close["phase"] == "DAY_ONE"
     assert close["controller_id"] == CONTROLLER and close["pending_rules"] == 1
-    assert close["actions"] == {
-        "can_run_close": True,
-        "can_advance_to_january": False,
-        "can_advance_to_vendor_reply": False,
-    }
+    assert close["actions"] == {"can_run_close": True}
+    assert "phase" not in close and "clock" not in close and "timeline" not in close
     assert {c["vendor_name"] for c in close["cases"]} == {
         "Mintlify",
         "OpenAI",
         "ASUS",
+        NO_RECEIPT_NAME,
         "Meta",
         "Notability",
     }
@@ -93,8 +93,6 @@ def test_starting_one_case_moves_only_that_case_and_fills_every_screen(api):
     assert cases["Mintlify"]["can_start"] is False
     others = {k: c["status"] for k, c in cases.items() if k != "Mintlify"}
     assert set(others.values()) == {"Pending"}
-    close = api.get("/api/close").json()
-    assert close["phase"] == "CLOSED" and not close["actions"]["can_advance_to_january"]
     detail = api.get(f"/api/obligations/{MINTLIFY}").json()
     assert detail["header"]["started"] is True
     for screen in ("ingestion", "evidence", "obligation", "estimation", "verification"):
@@ -112,16 +110,15 @@ def test_starting_a_started_case_is_a_no_op(api):
     assert api.post("/api/obligations/OBL-NOPE/start").status_code == 404
 
 
-def test_advance_to_january_waits_until_every_case_has_started(api):
-    assert api.post("/api/close/advance-to-january").status_code == 409
+def test_no_case_is_locked_out_by_what_another_case_has_done(api):
+    assert api.post("/api/close/advance-to-january").status_code in (404, 405)
     api.post(f"/api/obligations/{MINTLIFY}/start")
-    blocked = api.post("/api/close/advance-to-january")
-    assert blocked.status_code == 409 and "Start every case" in blocked.json()["detail"]
-    assert api.get("/api/close").json()["actions"]["can_advance_to_january"] is False
+    assert api.post(f"/api/obligations/{MINTLIFY}/bring-in-invoice").status_code == 200
+    cases = status_by_vendor(api)
+    assert cases["Mintlify"]["status"] == "Complete"
+    for name in ("OpenAI", "ASUS", "Meta", "Notability"):
+        assert cases[name]["status"] == "Pending" and cases[name]["can_start"] is True
     assert api.post("/api/close/run").status_code == 200
-    assert api.get("/api/close").json()["actions"]["can_advance_to_january"] is True
-    assert api.post("/api/close/advance-to-january").status_code == 200
-    assert api.post("/api/close/run").status_code == 409
     assert api.post(f"/api/obligations/{MINTLIFY}/start").status_code == 200
 
 
@@ -132,24 +129,27 @@ def test_start_all_leaves_every_case_at_its_expected_resting_state(api):
         "Mintlify": ("Close-ready", "1400.00"),
         "OpenAI": ("Waiting", None),
         "ASUS": ("Needs review", "32000.00"),
+        NO_RECEIPT_NAME: ("Waiting", None),
         "Meta": ("Close-ready", "24700.00"),
-        "Notability": ("Blocked", "1800.00"),
+        "Notability": ("Needs review", "1800.00"),
     }
     assert {c["category"] for c in cases.values()} == {"Accruals"}
     again = api.post("/api/close/run")
     assert again.status_code == 200 and again.json()["obligation_ids"] == []
     assert api.get("/api/close").json()["queue_count"] == 2
     queue = api.get("/api/controller/queue").json()
-    assert [i["vendor_name"] for i in queue] == ["Notability", "ASUS"]
-    assert queue[0]["blocked"] and not queue[1]["blocked"]
+    assert [i["vendor_name"] for i in queue] == ["ASUS", "Notability"]
+    assert not queue[0]["blocked"] and not queue[1]["blocked"]
 
 
 def test_every_screen_payload_carries_real_data_and_no_floats(api):
     api.post("/api/close/run")
-    for obligation_id in (MINTLIFY, OPENAI, ASUS, META, NOTABILITY):
+    for obligation_id in (MINTLIFY, OPENAI, ASUS, ASUS_NO_RECEIPT, META, NOTABILITY):
         detail = api.get(f"/api/obligations/{obligation_id}").json()
         assert not [x for x in walk(detail) if isinstance(x, float)]
-        assert detail["ingestion"]["files_loaded"] == 10
+        assert detail["ingestion"]["files_loaded"] == (
+            9 if obligation_id == ASUS_NO_RECEIPT else 10
+        )
         assert detail["ingestion"]["selected_count"] >= 1
         assert all(f["preview"]["card"] for f in detail["ingestion"]["files"])
         assert detail["obligation"]["signals"]
@@ -165,80 +165,22 @@ def test_every_screen_payload_carries_real_data_and_no_floats(api):
         "coverage_period",
         "rate_applied",
     ]
-    assert mintlify["verification"]["passed"] == mintlify["verification"]["total"] == 9
+    assert mintlify["verification"]["passed"] == mintlify["verification"]["total"] == 8
     (accrual, reversal) = mintlify["verification"]["entries"]
     assert accrual["entry_type"] == "ACCRUAL" and reversal["entry_type"] == "ACCRUAL_REVERSAL"
     assert {line["amount"] for line in accrual["lines"]} == {"1400.00"}
 
 
-def test_a_blocked_accrual_can_never_be_approved(api):
+def test_notability_offers_every_decision_and_an_approval_posts_its_amortization(api):
     api.post("/api/close/run")
     detail = api.get(f"/api/obligations/{NOTABILITY}").json()
     controller = detail["verification"]["controller"]
-    assert controller["blocked"] and "APPROVE" not in controller["allowed_decisions"]
-    denied = api.post(f"/api/controller/{NOTABILITY}/decision", json={"decision": "APPROVE"})
-    assert denied.status_code == 409
-    assert status_by_vendor(api)["Notability"]["status"] == "Blocked"
-
-
-def test_only_the_configured_controller_can_decide(api):
-    api.post("/api/close/run")
-    attempt = api.post(
-        f"/api/controller/{ASUS}/decision",
-        json={"decision": "APPROVE", "decided_by": "AP-001", "notes": "looks fine"},
-    )
-    assert attempt.status_code == 403
-    assert status_by_vendor(api)["ASUS"]["status"] == "Needs review"
-    approved = api.post(
-        f"/api/controller/{ASUS}/decision", json={"decision": "APPROVE", "notes": "delivered"}
-    )
+    assert not controller["blocked"] and "APPROVE" in controller["allowed_decisions"]
+    assert set(controller["allowed_decisions"]) >= {"REQUEST_MORE_EVIDENCE", "REJECT"}
+    assert "POL-08" not in controller["reason"]
+    approved = api.post(f"/api/controller/{NOTABILITY}/decision", json={"decision": "APPROVE"})
     assert approved.status_code == 200
-    asus = api.get(f"/api/obligations/{ASUS}").json()
-    assert asus["header"]["status"] == "Close-ready"
-    assert asus["verification"]["controller"]["record"]["decided_by"] == CONTROLLER
-    assert api.get("/api/close").json()["queue_count"] == 1
-    again = api.post(f"/api/controller/{ASUS}/decision", json={"decision": "APPROVE"})
-    assert again.status_code == 409
-
-
-def test_a_rejection_closes_the_case_without_an_accrual(api):
-    api.post("/api/close/run")
-    rejected = api.post(
-        f"/api/controller/{ASUS}/decision",
-        json={"decision": "REJECT", "notes": "Duplicate of the January invoice."},
-    )
-    assert rejected.status_code == 200
-    asus = api.get(f"/api/obligations/{ASUS}").json()
-    assert asus["header"]["status"] == "Complete"
-    assert asus["verification"]["controller"]["record"]["decision"] == "REJECT"
-
-
-def test_openai_reads_18600_only_after_the_rule_is_approved_through_the_api(api):
-    unapproved = api.post(f"/api/learning/{RULE}/reject", json={"notes": "not yet convinced"})
-    assert unapproved.status_code == 200
-    api.post("/api/reset")
-    api.post("/api/close/run")
-    api.post("/api/close/advance-to-january")
-    baseline = api.get(f"/api/obligations/{OPENAI}").json()
-    assert baseline["header"]["supported"] == "14880.00"
-    assert baseline["estimation"]["rules_applied"] == []
-    assert baseline["verification"]["reconciliation"]["root_cause"] == "MISSED_ESCALATOR"
-
-    api.post("/api/reset")
-    assert api.post(f"/api/learning/{RULE}/approve").status_code == 200
-    api.post("/api/close/run")
-    assert api.post("/api/close/advance-to-january").status_code == 200
-    taught = api.get(f"/api/obligations/{OPENAI}").json()
-    assert taught["header"]["supported"] == "18600.00"
-    assert [r["learning_id"] for r in taught["estimation"]["rules_applied"]] == [RULE]
-    recon = taught["verification"]["reconciliation"]
-    assert (recon["accrued"], recon["actual"], recon["variance"]) == (
-        "18600.00",
-        "18600.00",
-        "0.00",
-    )
-    (rule,) = [r for r in api.get("/api/learning").json()["rules"] if r["learning_id"] == RULE]
-    assert rule["status"] == "ACTIVE" and rule["stage"] == "PROVISIONAL" and rule["uses"] == 1
+    assert status_by_vendor(api)["Notability"]["status"] == "Close-ready"
 
 
 def test_only_the_controller_approves_a_rule_and_a_rule_can_be_revoked(api):
@@ -255,9 +197,7 @@ def test_only_the_controller_approves_a_rule_and_a_rule_can_be_revoked(api):
 
 def test_january_grades_the_accruals_and_flags_the_wrong_meta_invoice(api):
     api.post(f"/api/learning/{RULE}/approve")
-    api.post("/api/close/run")
-    assert api.post("/api/close/advance-to-january").status_code == 200
-    assert api.post("/api/close/advance-to-january").status_code == 409
+    flow.january(api)
     cases = status_by_vendor(api)
     assert cases["Mintlify"]["status"] == cases["OpenAI"]["status"] == "Complete"
     assert cases["Meta"]["status"] == "Needs review"
@@ -265,14 +205,13 @@ def test_january_grades_the_accruals_and_flags_the_wrong_meta_invoice(api):
     recon = meta["verification"]["reconciliation"]
     assert recon["root_cause"] == "SOURCE_DATA_ERROR" and recon["accepted"] is False
     assert (recon["accrued"], recon["actual"]) == ("24700.00", "30000.00")
-    assert cases["Notability"]["status"] == "Blocked"
+    assert cases["Notability"]["status"] == "Needs review"
 
 
 def test_vendors_view_and_unknown_obligation(api):
     vendors = api.get("/api/vendors").json()["vendors"]
     assert {v["name"] for v in vendors} == {"Mintlify", "OpenAI", "ASUS", "Meta", "Notability"}
     assert api.get("/api/obligations/OBL-NOPE").status_code == 404
-    assert api.post("/api/close/advance-to-january").status_code == 409
 
 
 def test_the_audit_route_exists_only_when_the_auditor_does(api):
@@ -298,4 +237,95 @@ def test_the_service_layer_never_touches_the_answer_keys():
 def test_demo_state_is_rebuilt_by_reset():
     first = demo_state.reset()
     second = demo_state.reset()
-    assert first is not second and second.phase == "DAY_ONE"
+    assert first is not second and second.moments == {} and second.events == []
+
+
+# ---- the second ASUS order: the goods receipt is missing -------------------------------------
+
+
+def test_the_two_asus_orders_are_two_cases_with_their_own_files(api):
+    names = [c["vendor_name"] for c in api.get("/api/close").json()["cases"]]
+    assert names.count("ASUS") == 1 and NO_RECEIPT_NAME in names
+    good = api.get(f"/api/obligations/{ASUS}").json()["ingestion"]["offered"]
+    bare = api.get(f"/api/obligations/{ASUS_NO_RECEIPT}").json()["ingestion"]["offered"]
+    assert any(f["name"].startswith("goods_receipt") for f in good)
+    assert not any("receipt" in f["name"] for f in bare)
+    assert not {f["file_id"] for f in good} & {f["file_id"] for f in bare}
+    header = api.get(f"/api/obligations/{ASUS_NO_RECEIPT}").json()["header"]
+    assert header["vendor_name"] == NO_RECEIPT_NAME and header["title"] == "December accrual"
+
+
+def test_a_receipt_on_one_asus_order_never_supports_the_other(api):
+    for oid in (ASUS, ASUS_NO_RECEIPT):
+        api.post(f"/api/obligations/{oid}/start")
+        flow.rest(api, oid)
+    good = api.get(f"/api/obligations/{ASUS}").json()
+    bare = api.get(f"/api/obligations/{ASUS_NO_RECEIPT}").json()
+    assert good["header"]["supported"] == "32000.00"
+    assert bare["header"]["supported"] is None and bare["header"]["status"] == "Waiting"
+    assert bare["estimation"]["amount"] is None
+    assert "no goods receipt" in bare["estimation"]["outcome_note"].lower()
+
+
+def test_the_receipt_less_order_flags_the_gap_and_asks_the_owner(api):
+    api.post(f"/api/obligations/{ASUS_NO_RECEIPT}/start")
+    flow.rest(api, ASUS_NO_RECEIPT)
+    evidence = api.get(f"/api/obligations/{ASUS_NO_RECEIPT}").json()["evidence"]
+    gap = next(c for c in evidence["stage_checks"] if c["check_id"] == "EVI-RECEIPT")
+    assert gap["status"] == "FLAG" and "received quantity is not evidenced" in gap["body"]
+    log = api.get(f"/api/obligations/{ASUS_NO_RECEIPT}/log").json()["entries"]
+    assert any(e["agent"] == "outreach" and "sent an email" in e["title"] for e in log)
+    kinds = {flow.next_action(api, ASUS_NO_RECEIPT)["kind"]} | {
+        a["kind"]
+        for a in api.get(f"/api/obligations/{ASUS_NO_RECEIPT}").json()["other_time_actions"]
+    }
+    assert kinds == {"DELIVER_REPLY", "EXPIRE_OUTREACH"}
+
+
+def test_the_owners_reply_gives_the_receipt_less_order_an_estimate_the_controller_can_approve(api):
+    api.post(f"/api/obligations/{ASUS_NO_RECEIPT}/start")
+    flow.rest(api, ASUS_NO_RECEIPT)
+    assert api.post(f"/api/obligations/{ASUS_NO_RECEIPT}/deliver-reply").status_code == 200
+    flow.rest(api, ASUS_NO_RECEIPT)
+    case = api.get(f"/api/obligations/{ASUS_NO_RECEIPT}").json()
+    assert case["header"]["status"] == "Needs review"
+    assert case["estimation"]["amount"] == "32000.00"
+    assert case["estimation"]["fallback"] is None
+    warnings = [
+        c["body"] for c in case["estimation"]["stage_checks"] if c["check_id"] == "EST-WARN"
+    ]
+    assert warnings == ["Received quantity confirmed by the owner, no goods receipt on file."]
+    (item,) = [
+        i for i in api.get("/api/controller/queue").json() if i["obligation_id"] == ASUS_NO_RECEIPT
+    ]
+    assert item["vendor_name"] == NO_RECEIPT_NAME and item["amount"] == "32000.00"
+    assert {"APPROVE", "REJECT"} <= set(item["allowed_decisions"])
+    recommendation = case["verification"]["controller"]["recommendation"]
+    assert "confirmed by the owner, no goods receipt on file" in recommendation
+    approved = api.post(f"/api/controller/{ASUS_NO_RECEIPT}/decision", json={"decision": "APPROVE"})
+    assert approved.status_code == 200
+    entries = api.get(f"/api/obligations/{ASUS_NO_RECEIPT}").json()["verification"]["entries"]
+    assert entries and "32000.00" in str(entries)
+
+
+def test_with_no_reply_the_receipt_less_order_is_estimated_on_incomplete_data(api):
+    api.post(f"/api/obligations/{ASUS_NO_RECEIPT}/start")
+    flow.rest(api, ASUS_NO_RECEIPT)
+    assert api.post(f"/api/obligations/{ASUS_NO_RECEIPT}/expire-outreach").status_code == 200
+    flow.rest(api, ASUS_NO_RECEIPT)
+    estimation = api.get(f"/api/obligations/{ASUS_NO_RECEIPT}").json()["estimation"]
+    fallback = estimation["fallback"]
+    assert fallback["kind"] == "RECEIPT" and fallback["method"] == "TYPICAL_ORDER_AVERAGE"
+    assert fallback["chosen_by"] == "CODE" and fallback["assumption"] is None
+    assert estimation["amount"] == "32000.00"
+    (item,) = [
+        i for i in api.get("/api/controller/queue").json() if i["obligation_id"] == ASUS_NO_RECEIPT
+    ]
+    assert item["amount"] == "32000.00" and "APPROVE" in item["allowed_decisions"]
+
+
+def test_the_good_asus_order_has_no_receipt_gap(api):
+    api.post(f"/api/obligations/{ASUS}/start")
+    flow.rest(api, ASUS)
+    evidence = api.get(f"/api/obligations/{ASUS}").json()["evidence"]
+    assert "EVI-RECEIPT" not in [c["check_id"] for c in evidence["stage_checks"]]

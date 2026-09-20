@@ -21,7 +21,8 @@ from trueup.store import models as m
 MINTLIFY, OPENAI, ASUS, META, NOTABILITY = (
     f"OBL-{v}-2026-12" for v in ("MINTLIFY", "OPENAI", "ASUS", "META", "NOTABILITY")
 )
-CASES = (MINTLIFY, OPENAI, ASUS, META, NOTABILITY)
+ASUS_NO_RECEIPT = "OBL-ASUS-2026-12-02"
+CASES = (MINTLIFY, OPENAI, ASUS, ASUS_NO_RECEIPT, META, NOTABILITY)
 RULE = "LRN-000002"
 # Kinds of document that carry the facts an estimate stands on. Nothing here names a vendor.
 FACT_KINDS = {"agreement", "usage", "po", "receipt", "delivery", "order", "prior", "gl", "invoice"}
@@ -166,11 +167,11 @@ def test_a_resting_status_needs_the_stage_that_produces_it(api):
         seen.setdefault(step["case"]["header"]["status"], []).append(ran)
         if step["done"]:
             break
-    assert list(seen) == ["Running", "Blocked"]
-    assert seen["Blocked"][0] == "policy" and "policy" not in seen["Running"]
+    assert list(seen) == ["Running", "Needs review"]
+    assert seen["Needs review"][0] == "policy" and "policy" not in seen["Running"]
     case = api.get(f"/api/obligations/{NOTABILITY}").json()
     fired = [c["check_id"] for c in case["verification"]["stage_checks"] if c["status"] == "FLAG"]
-    assert "POL-08" in fired
+    assert "POL-01" in fired
 
 
 def test_advancing_stage_by_stage_ends_where_start_all_ends(api):
@@ -188,8 +189,8 @@ def test_the_learned_rule_still_changes_openai_when_approved_before_estimation(a
         advance(api, OPENAI)
     assert api.get(f"/api/obligations/{OPENAI}").json()["header"]["supported"] is None
     drive(api, OPENAI)
-    assert api.post("/api/close/run").status_code == 200
-    assert api.post("/api/close/advance-to-january").status_code == 200
+    assert api.post(f"/api/obligations/{OPENAI}/deliver-reply").status_code == 200
+    drive(api, OPENAI)
     assert table(api)["OpenAI"][1] == "18600.00"
 
 
@@ -213,7 +214,7 @@ def test_the_log_is_the_run_rows_including_verifier_and_reviewer(api):
     assert all(e["kind"] == "VERIFICATION" and e["method"] == "CODE" for e in gates)
     assert all(e["verification"]["passed"] <= e["verification"]["total"] for e in gates)
     policy = next(e for e in entries if e["agent"] == "policy")
-    assert {r["rule_id"] for r in policy["detail"]["rules"]} >= {"POL-01", "POL-08"}
+    assert {r["rule_id"] for r in policy["detail"]["rules"]} >= {"POL-01", "POL-07"}
     assert [r["rule_id"] for r in policy["detail"]["rules"] if r["fired"]] == ["POL-01"]
     evidence = [e for e in entries if e["agent"] == "evidence"]
     sources = [s for e in evidence for s in e["detail"]["sources"]]
@@ -484,7 +485,7 @@ def test_an_unknown_file_is_refused_and_a_change_is_replayed_around_other_cases(
         json={"excluded_file_ids": ["FILE-ASUS-03"]},
     )
     cases = table(api)
-    assert cases["Mintlify"][0] == "Close-ready" and cases["Notability"][0] == "Blocked"
+    assert cases["Mintlify"][0] == "Close-ready" and cases["Notability"][0] == "Needs review"
     assert cases["ASUS"][0] == "Pending"
 
 
@@ -496,7 +497,7 @@ def test_the_live_judge_records_whether_the_model_or_the_rules_picked_the_files(
     fallback = [FileDecision(file_id="F-1", selected=False, reason="rules")]
     monkeypatch.setattr(ingestion, "rule_judge", lambda case, cards: fallback)
 
-    judge = demo_state._ModelOrRules()
+    judge = ingestion.ModelOrRulesJudge()
     monkeypatch.setattr(ingestion, "llm_judge", lambda case, cards: picked)
     assert judge(None, []) == picked
     assert judge.__name__ == "llm_judge"
@@ -515,10 +516,11 @@ def test_a_case_that_has_not_run_lists_the_files_it_will_read_but_judges_none(ap
     assert ingestion["available"] is False
     assert ingestion["files"] == [] and ingestion["selected_count"] == 0
     offered = ingestion["offered"]
-    assert len(offered) == 10
+    count = 9 if obligation_id == ASUS_NO_RECEIPT else 10
+    assert len(offered) == count
     assert {"file_id", "name", "kind", "format", "size_label", "preview"} == set(offered[0])
     assert all(f["preview"] for f in offered)
-    assert len({f["file_id"] for f in offered}) == 10
+    assert len({f["file_id"] for f in offered}) == count
 
     advance(api, obligation_id)
     advance(api, obligation_id)

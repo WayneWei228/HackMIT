@@ -204,24 +204,26 @@ def state(ob):
 # --- integration: the real chain ---------------------------------------------------------------
 
 
-def test_queue_holds_asus_and_notability_with_blocked_first(chain):
+def test_queue_holds_asus_and_notability_and_both_can_be_approved(chain):
     queue = review_queue(chain, now=NOW)
-    assert [i.obligation_id for i in queue] == [NOTABILITY, ASUS]
-    notability, asus = queue
-    assert notability.blocked and not asus.blocked
-    assert notability.amount == Decimal("1800.00")
-    assert asus.amount == Decimal("32000.00")
-    assert notability.policy_decision == D.BLOCK and asus.policy_decision == D.REQUIRE_CONTROLLER
-    assert notability.rule_ids == ["POL-08"]
-    assert asus.rule_ids == ["POL-01", "POL-07"]
-    assert "POL-08" in notability.reason and "POL-01" in asus.reason
-    assert notability.allowed_decisions == [C.REQUEST_MORE_EVIDENCE, C.REJECT]
-    assert asus.allowed_decisions == [
-        C.APPROVE,
-        C.APPROVE_WITH_ADJUSTMENT,
-        C.REQUEST_MORE_EVIDENCE,
-        C.REJECT,
-    ]
+    assert [i.obligation_id for i in queue] == [ASUS, NOTABILITY]
+    asus, notability = queue
+    assert not asus.blocked and not notability.blocked
+    assert asus.amount == Decimal("32000.00") and notability.amount == Decimal("1800.00")
+    assert asus.policy_decision == D.REQUIRE_CONTROLLER
+    assert notability.policy_decision == D.REQUIRE_CONTROLLER
+    assert asus.rule_ids == ["POL-01", "POL-07"] and notability.rule_ids == ["POL-01"]
+    assert "POL-01" in asus.reason and "expensed" in notability.reason
+    assert (
+        asus.allowed_decisions
+        == notability.allowed_decisions
+        == [
+            C.APPROVE,
+            C.APPROVE_WITH_ADJUSTMENT,
+            C.REQUEST_MORE_EVIDENCE,
+            C.REJECT,
+        ]
+    )
 
 
 def test_permitted_and_waiting_obligations_are_not_in_the_queue(chain):
@@ -280,7 +282,20 @@ def test_adjustment_produces_a_balanced_entry_at_the_adjusted_amount(chain):
     assert card.value_json["adjusted_amount"] == "30400.00"
 
 
-def test_notability_cannot_be_approved_and_nothing_changes(chain):
+def blocked_case(hand):
+    waiting(
+        hand,
+        "VEN-NOTABILITY",
+        to="blocked",
+        amount="1800.00",
+        policy=D.BLOCK,
+        hits=[hit("POL-09", "Above the approved total.", "HIT", "BLOCK")],
+    )
+    return hand
+
+
+def test_a_blocked_case_cannot_be_approved_and_nothing_changes(hand):
+    chain = blocked_case(hand)
     ob = chain.get(m.TrueUpObligation, NOTABILITY)
     wp = chain.get(m.TrueUpWorkpaper, ob.current_workpaper_id)
     before = (state(ob), wp.status, wp.controller_decision, ob.accrual_status)
@@ -301,7 +316,8 @@ def test_notability_cannot_be_approved_and_nothing_changes(chain):
     assert not cards(chain, NOTABILITY) and not runs(chain, NOTABILITY)
 
 
-def test_request_more_evidence_on_notability_routes_to_gather_evidence(chain):
+def test_request_more_evidence_on_a_blocked_case_routes_to_gather_evidence(hand):
+    chain = blocked_case(hand)
     result = decide(
         chain,
         NOTABILITY,
@@ -313,7 +329,7 @@ def test_request_more_evidence_on_notability_routes_to_gather_evidence(chain):
     ob = chain.get(m.TrueUpObligation, NOTABILITY)
     assert state(ob) == (S.GATHERING_EVIDENCE, A.GATHER_EVIDENCE)
     assert result.workpaper_status == e.WorkpaperStatus.DRAFT
-    assert [i.obligation_id for i in review_queue(chain, now=NOW)] == [ASUS]
+    assert [i.obligation_id for i in review_queue(chain, now=NOW)] == []
 
 
 def test_reject_closes_the_obligation_with_no_accrual(chain):
@@ -365,12 +381,12 @@ def test_packet_for_a_capitalized_purchase_needing_review(chain):
     json.dumps(packet.model_dump(mode="json"))
 
 
-def test_packet_for_a_blocked_obligation_says_do_not_approve(chain):
+def test_packet_for_a_blocked_obligation_says_do_not_approve(hand):
+    chain = blocked_case(hand)
     packet = build_packet(chain, NOTABILITY, now=NOW)
     assert packet.allowed_decisions == [C.REQUEST_MORE_EVIDENCE, C.REJECT]
     assert packet.recommendation.startswith("Do not approve")
-    assert packet.workpaper.warnings and "expensed" in packet.workpaper.warnings[0]
-    assert [h.rule_id for h in packet.policy_hits] == ["POL-08"]
+    assert [h.rule_id for h in packet.policy_hits] == ["POL-09"]
     assert packet.obligation.workflow_stage == S.BLOCKED
 
 
@@ -634,3 +650,15 @@ def test_journal_lines_are_untouched_when_only_approving(hand):
     wp = hand.get(m.TrueUpWorkpaper, ob.current_workpaper_id)
     assert wp.journal_entry_json == lines and wp.proposed_amount == Decimal("32000.00")
     assert hand.scalar(select(func.count()).select_from(m.TrueUpEvidence)) == 1
+
+
+def test_a_case_that_reached_the_controller_before_policy_says_so_in_plain_words(hand):
+    ob = waiting(hand, "VEN-ASUS", amount="32000.00", policy=D.NOT_RUN)
+    wp = hand.get(m.TrueUpWorkpaper, ob.current_workpaper_id)
+    wp.calculation_inputs_json = {"conflicts": ["Evidence card EVD-1 gives UNIT_RATE 0.05."]}
+    hand.flush()
+    packet = build_packet(hand, ob.obligation_id, now=NOW)
+    assert packet.allowed_decisions == [C.REQUEST_MORE_EVIDENCE, C.REJECT]
+    assert "NOT_RUN" not in packet.recommendation
+    assert packet.recommendation.startswith("Policy has not run on this estimate yet")
+    assert "EVD-1 gives UNIT_RATE 0.05" in packet.recommendation

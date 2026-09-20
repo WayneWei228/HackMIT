@@ -176,10 +176,14 @@ def obligations(session):
     ).all()
 
 
-def test_opens_the_five_demo_obligations_from_the_real_seed(demo):
+def test_opens_the_six_demo_obligations_from_the_real_seed(demo):
     result = detect(demo, PERIOD, now=NOW)
-    assert result.opened == [f"OBL-{v.removeprefix('VEN-')}-{PERIOD}" for v in sorted(DEMO_VENDORS)]
-    by_vendor = {o.vendor_id: o for o in obligations(demo)}
+    ids = [f"OBL-{v.removeprefix('VEN-')}-{PERIOD}" for v in sorted(DEMO_VENDORS)]
+    assert result.opened == sorted([*ids, f"OBL-ASUS-{PERIOD}-02"])
+    by_id = {o.obligation_id: o for o in obligations(demo)}
+    second = by_id[f"OBL-ASUS-{PERIOD}-02"]
+    assert (second.vendor_id, second.po_id) == ("VEN-ASUS", "PO-ASUS-2026-B")
+    by_vendor = {o.vendor_id: o for o in by_id.values() if o.obligation_id in ids}
     assert set(by_vendor) == set(DEMO_VENDORS)
     assert (by_vendor["VEN-MINTLIFY"].contract_id, by_vendor["VEN-MINTLIFY"].po_id) == (
         "CON-MINTLIFY",
@@ -377,7 +381,7 @@ def test_run_log_is_written(demo):
     assert {mintlify_v2, "PO-ASUS-2026"} <= set(run.input_record_ids_json)
     decisions = {f["decision"] for f in run.facts_used_json}
     assert "opened" in decisions
-    assert "Opened 5 obligations" in run.decision_summary
+    assert "Opened 6 obligations" in run.decision_summary
 
 
 def test_run_log_records_skips(session):

@@ -57,7 +57,7 @@ def main() -> None:
     print("EXPECTED")
     checks = [
         ("every property is proved on the real workflow", real.holds),
-        ("the real workflow has 37 edges and every one has a gate", real.get("completeness").holds),
+        ("every edge of the real workflow has a gate", real.get("completeness").holds),
         (
             "an unguarded BLOCKED -> DRAFT edge breaks policy-before-posting",
             not planted.get("policy_before_posting").holds,

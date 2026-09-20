@@ -10,7 +10,8 @@ from trueup.simulator.files.models import RelevanceTruth
 from trueup.simulator.files.scoring import score_selection, visible_files
 from trueup.simulator.files.text import usd, usd2
 
-VENDORS = ("Mintlify", "OpenAI", "ASUS", "Meta", "Notability")
+VENDORS = ("Mintlify", "OpenAI", "ASUS", "ASUS", "Meta", "Notability")
+NO_RECEIPT = "CASE-ASUS-2026-12-02"
 RELEVANT = ("SUPPORTS_AMOUNT", "SUPPORTS_DISCREPANCY")
 LEAKY = ("relevant", "noise", "negative", "supports_", "late_arrival", "in_universe", "role")
 
@@ -25,8 +26,34 @@ def test_every_case_has_ten_files_and_three_to_four_relevant(built):
     for case in universe.cases:
         assert 9 <= len(_close_files(universe, case.case_id)) <= 11
         wanted = [e for e in truth.for_case(case.case_id) if e.in_universe and e.relevant]
-        expected = 3 if case.vendor_name == "Mintlify" else range(3, 5)
+        expected = (
+            2
+            if case.case_id == NO_RECEIPT
+            else 3
+            if case.vendor_name == "Mintlify"
+            else range(3, 5)
+        )
         assert (len(wanted) == expected) if isinstance(expected, int) else len(wanted) in expected
+
+
+def test_the_second_asus_case_has_its_own_folder_and_no_goods_receipt(built):
+    universe, truth, out = built
+    both = {
+        c.case_id: universe.for_case(c.case_id) for c in universe.cases if c.vendor_name == "ASUS"
+    }
+    good, degraded = both["CASE-ASUS-2026-12"], both[NO_RECEIPT]
+    assert {Path(f.path).parent.name for f in good} == {"asus"}
+    assert {Path(f.path).parent.name for f in degraded} == {"asus_no_receipt"}
+    assert any(f.name.startswith("goods_receipt") for f in good)
+    assert not any("receipt" in f.name for f in degraded)
+    late = [f.name for f in degraded if f.available_at > CLOSE]
+    assert late == ["reply_asus_20270102.eml"]
+    title = next(c.title for c in universe.cases if c.case_id == NO_RECEIPT)
+    assert title == "ASUS December accrual (goods receipt missing)"
+    only_in_good = {f.name for f in good if f.available_at <= CLOSE} - {
+        f.name for f in degraded if f.available_at <= CLOSE
+    }
+    assert only_in_good == {"goods_receipt_use-asus-2026-12-18.pdf"}
 
 
 def test_mintlify_relevant_files_match_the_comp(built):

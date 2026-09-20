@@ -23,6 +23,7 @@ _POSTED = {e.AccrualStatus.POSTED_SIMULATED, e.AccrualStatus.TRUE_UP_COMPLETE}
 
 CAUSES = {
     "MISSED_ESCALATOR": "Missed price step-up",
+    "INCOMPLETE_DATA_EXTRAPOLATION": "Estimate built on incomplete data",
     "USAGE_VARIANCE": "Usage differed from the estimate",
     "SCOPE_CHANGE": "Scope changed",
     "TIMING_DIFFERENCE": "Timing difference",

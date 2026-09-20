@@ -287,6 +287,20 @@ def _diagnose(
     methods = e.EstimationMethod
     cause = e.RootCause
 
+    if inputs.get("basis") == "INCOMPLETE_DATA":
+        fallback = inputs.get("fallback") or {}
+        coverage = fallback.get("coverage") or {}
+        return Diagnosis(
+            cause.INCOMPLETE_DATA_EXTRAPOLATION,
+            True,
+            f"The estimate projected {coverage.get('covered_days')} of "
+            f"{coverage.get('period_days')} days of usage ({fallback.get('method')}) because the "
+            f"owner did not reply. The invoice bills {_money(actual)}, {_money(variance)} away. "
+            "The variance comes from extrapolating incomplete data, not from a rule the "
+            "playbook missed.",
+            ["usage purchase", "estimate built on incomplete data", "extrapolation error"],
+        )
+
     if method == methods.MILESTONE_ACCEPTED_AMOUNT:
         accepted = _dec(inputs.get("accepted_amount"))
         cap = _dec(inputs.get("budget_cap"))

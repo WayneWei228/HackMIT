@@ -7,6 +7,7 @@ Posting is simulated, so every GL row it writes says so in its description.
 
 from __future__ import annotations
 
+from collections.abc import Collection
 from datetime import UTC, date, datetime
 from decimal import ROUND_HALF_UP, Decimal
 from typing import Any
@@ -23,7 +24,7 @@ from trueup.store.workflow import IllegalTransitionError, advance
 
 AGENT_NAME = "journal_entry_service"
 CENT = Decimal("0.01")
-SIMULATED_PREFIX = "[Simulated TrueUp posting]"
+SIMULATED_PREFIX = "[Synthetic TrueUp posting]"
 _APPROVING = (e.ControllerDecision.APPROVE, e.ControllerDecision.APPROVE_WITH_ADJUSTMENT)
 
 
@@ -199,7 +200,7 @@ def post_simulated(session: Session, obligation_id: str, *, now: datetime) -> Po
         agent_name=AGENT_NAME,
         action="post_simulated",
         status=e.AgentRunStatus.COMPLETED,
-        decision_summary=f"Posted {accrual['entry_id']} to the simulated ledger.",
+        decision_summary=f"Posted {accrual['entry_id']} to the synthetic ledger.",
         output_summary=accrual["entry_id"],
         at=now,
         obligation_id=obligation_id,
@@ -212,8 +213,13 @@ def post_simulated(session: Session, obligation_id: str, *, now: datetime) -> Po
     return PostResult(obligation_id=obligation_id, gl_entry_id=accrual["entry_id"])
 
 
-def post_due_reversals(session: Session, *, now: datetime) -> ReversalsResult:
-    """Post every drafted reversal dated on or before the clock, once, after its accrual posted."""
+def post_due_reversals(
+    session: Session, *, now: datetime, obligation_ids: Collection[str] | None = None
+) -> ReversalsResult:
+    """Post every drafted reversal dated on or before the clock, once, after its accrual posted.
+
+    `obligation_ids` limits the work to those obligations' reversals.
+    """
     today = _utc_date(now)
     periods = _periods(session)
     posted: list[PostedReversal] = []
@@ -224,6 +230,8 @@ def post_due_reversals(session: Session, *, now: datetime) -> ReversalsResult:
         .order_by(m.TrueUpWorkpaper.workpaper_id)
     ).all()
     for workpaper in workpapers:
+        if obligation_ids is not None and workpaper.obligation_id not in obligation_ids:
+            continue
         entries = _entries(workpaper)
         reversal = next((x for x in entries if x["entry_type"] == "ACCRUAL_REVERSAL"), None)
         if reversal is None or date.fromisoformat(reversal["posting_date"]) > today:

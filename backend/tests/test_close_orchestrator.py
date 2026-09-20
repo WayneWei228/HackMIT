@@ -33,6 +33,7 @@ JANUARY = datetime(2027, 1, 31, tzinfo=UTC)
 ASUS, MINTLIFY, OPENAI, META, NOTABILITY = (
     f"OBL-{name}-{PERIOD}" for name in ("ASUS", "MINTLIFY", "OPENAI", "META", "NOTABILITY")
 )
+ASUS_NO_RECEIPT = f"OBL-ASUS-{PERIOD}-02"
 S = e.WorkflowStage
 D = e.ControllerDecision
 
@@ -102,48 +103,72 @@ def state(session, oid):
 # ---- the full close ---------------------------------------------------------------------------
 
 
-def test_resting_state_at_close_for_all_five_cases(demo):
+def test_resting_state_at_close_for_all_six_cases(demo):
     at_close = demo[3]
     resting = {o.obligation_id: o.workflow_stage for o in at_close.obligations}
     assert resting == {
         MINTLIFY: S.AWAITING_ACTUAL_INVOICE,
         OPENAI: S.AWAITING_OUTREACH,
         ASUS: S.AWAITING_ACTUAL_INVOICE,
+        ASUS_NO_RECEIPT: S.AWAITING_OUTREACH,
         META: S.AWAITING_ACTUAL_INVOICE,
-        NOTABILITY: S.BLOCKED,
+        NOTABILITY: S.AWAITING_CONTROLLER,
     }
     assert at_close.outcome(OPENAI).accrued is None
+    assert at_close.outcome(ASUS_NO_RECEIPT).accrued is None
     assert at_close.outcome(ASUS).accrued == Decimal("32000.00")
-    assert at_close.outcome(NOTABILITY).policy_decision == e.PolicyDecision.BLOCK
+    assert at_close.outcome(NOTABILITY).policy_decision == e.PolicyDecision.REQUIRE_CONTROLLER
 
 
 def test_final_table_after_january(demo):
     final = demo[4]
     table = {
-        o.vendor_id: (o.accrued, o.invoice, o.root_cause, o.workflow_stage)
+        o.obligation_id: (o.accrued, o.invoice, o.root_cause, o.workflow_stage)
         for o in final.obligations
     }
     assert table == {
-        "VEN-MINTLIFY": (Decimal("1400.00"), Decimal("1400.00"), None, S.CLOSED),
-        "VEN-OPENAI": (Decimal("18600.00"), Decimal("18600.00"), None, S.CLOSED),
-        "VEN-ASUS": (Decimal("32000.00"), Decimal("32000.00"), None, S.CLOSED),
-        "VEN-META": (
+        MINTLIFY: (Decimal("1400.00"), Decimal("1400.00"), None, S.CLOSED),
+        OPENAI: (Decimal("18600.00"), Decimal("18600.00"), None, S.CLOSED),
+        ASUS: (Decimal("32000.00"), Decimal("32000.00"), None, S.CLOSED),
+        ASUS_NO_RECEIPT: (Decimal("32000.00"), None, None, S.AWAITING_ACTUAL_INVOICE),
+        META: (
             Decimal("24700.00"),
             Decimal("30000.00"),
             "SOURCE_DATA_ERROR",
             S.AWAITING_CONTROLLER,
         ),
-        "VEN-NOTABILITY": (Decimal("1800.00"), None, None, S.BLOCKED),
+        NOTABILITY: (Decimal("1800.00"), None, None, S.AWAITING_CONTROLLER),
     }
     assert sorted(final.controller_queue) == [META, NOTABILITY]
     assert final.errors == []
+
+
+def test_the_second_asus_order_is_accrued_only_on_the_owners_confirmed_quantity(demo):
+    session, _, _, at_close, final = demo
+    assert at_close.outcome(ASUS_NO_RECEIPT).accrual_status == e.AccrualStatus.NOT_STARTED
+    ob = session.get(m.TrueUpObligation, ASUS_NO_RECEIPT)
+    assert ob.accrual_status == e.AccrualStatus.POSTED_SIMULATED
+    wp = session.get(m.TrueUpWorkpaper, ob.current_workpaper_id)
+    inputs = wp.calculation_inputs_json
+    assert inputs["evidence_basis"] == "OWNER_CONFIRMED_QUANTITY"
+    assert (inputs["received_quantity"], inputs["ordered_quantity"]) == ("20", "25")
+    assert wp.proposed_amount == Decimal("32000.00") != Decimal("40000.00")
+    assert "confirmed by the owner, no goods receipt on file" in " ".join(inputs["warnings"])
+    entries = session.scalars(
+        select(m.CompanyGLEntry).where(m.CompanyGLEntry.obligation_id == ASUS_NO_RECEIPT)
+    ).all()
+    assert entries and all(
+        Decimal(line["debit"]) + Decimal(line["credit"]) in (Decimal("0.00"), Decimal("32000.00"))
+        for entry in entries
+        for line in entry.lines_json
+    )
 
 
 def test_only_the_scripted_controller_decided(demo):
     session, _, controller, at_close, final = demo
     steps = at_close.steps + final.steps
     decisions = [s for s in steps if s.action == "decide"]
-    assert [s.obligation_id for s in decisions] == [ASUS]
+    assert [s.obligation_id for s in decisions] == [ASUS, ASUS_NO_RECEIPT]
     assert [s.action for s in steps if s.action.endswith("_rule")] == ["approve_rule"]
     wp = session.get(m.TrueUpWorkpaper, session.get(m.TrueUpObligation, ASUS).current_workpaper_id)
     assert wp.controller_decision == D.APPROVE
@@ -161,9 +186,9 @@ def test_january_reconciliation_and_rule_confirmation(demo):
     assert reconciled[META].startswith("SOURCE_DATA_ERROR")
 
 
-def test_four_accruals_are_reversed_on_the_first_of_january(demo):
+def test_five_accruals_are_reversed_on_the_first_of_january(demo):
     reversals = [s for s in demo[4].steps if s.action == "post_reversal"]
-    assert len(reversals) == 4
+    assert len(reversals) == 5
     assert {s.at.date().isoformat() for s in reversals} == {"2027-01-01", "2027-01-03"}
 
 
@@ -208,7 +233,7 @@ def test_with_no_controller_everything_that_needs_a_person_stays_queued():
     sim = fresh()
     with sim.session() as session:
         report = run(session, sim, None, through=JANUARY)
-        assert sorted(report.controller_queue) == [ASUS, META, NOTABILITY]
+        assert sorted(report.controller_queue) == [ASUS, ASUS_NO_RECEIPT, META, NOTABILITY]
         assert report.outcome(ASUS).workflow_stage == S.AWAITING_CONTROLLER
         assert report.outcome(ASUS).accrual_status == e.AccrualStatus.PENDING_APPROVAL
         assert "waiting in the Controller queue" in report.outcome(ASUS).rested_because
@@ -266,36 +291,14 @@ def test_the_controller_can_reject_an_accrual():
         )
 
 
-def test_request_more_evidence_on_a_blocked_accrual_regathers_and_writes_a_fresh_workpaper():
+def test_request_more_evidence_without_a_topic_on_sufficient_evidence_is_refused_and_stays_queued():
     sim = fresh()
     with sim.session() as session:
         controller = Deciding(controller_id(session), {"VEN-NOTABILITY": D.REQUEST_MORE_EVIDENCE})
         report = run(session, sim, controller)
-        ob = session.get(m.TrueUpObligation, NOTABILITY)
-        workpapers = session.scalars(
-            select(m.TrueUpWorkpaper)
-            .where(m.TrueUpWorkpaper.obligation_id == NOTABILITY)
-            .order_by(m.TrueUpWorkpaper.workpaper_id)
-        ).all()
-        assert [w.workpaper_id for w in workpapers] == [
-            f"WP-{NOTABILITY}-01",
-            f"WP-{NOTABILITY}-02",
-        ]
-        assert workpapers[0].status == e.WorkpaperStatus.DRAFT
-        assert ob.current_workpaper_id == workpapers[1].workpaper_id
-        assert workpapers[1].policy_decision == e.PolicyDecision.BLOCK
-        assert (ob.workflow_stage, ob.next_action) == (S.BLOCKED, e.NextAction.CONTROLLER_REVIEW)
-        actions = [s.action for s in report.steps if s.obligation_id == NOTABILITY]
-        assert actions.count("decide") == 1
-        assert actions.count("estimate") == 2 and actions.count("extract_facts") == 2
-        cards = session.scalars(
-            select(m.TrueUpEvidence).where(
-                m.TrueUpEvidence.obligation_id == NOTABILITY,
-                m.TrueUpEvidence.source_table == "document",
-            )
-        ).all()
-        assert len({c.evidence_id for c in cards}) == len(cards)
-        assert len({(c.source_id, c.fact, c.source_excerpt) for c in cards}) == len(cards)
+        assert any(NOTABILITY in err and "explicit topic" in err for err in report.errors), (
+            report.errors
+        )
 
 
 def test_request_more_evidence_before_approval_goes_back_to_outreach_and_is_not_forced():
@@ -322,11 +325,10 @@ def test_an_agent_that_refuses_leaves_the_obligation_where_it_was(monkeypatch):
 
         monkeypatch.setattr(estimation_agent, "estimate", refuse)
         report = run(session, sim, None)
-        for vendor in ("MINTLIFY", "OPENAI", "ASUS", "META", "NOTABILITY"):
-            oid = f"OBL-{vendor}-{PERIOD}"
+        for oid in (MINTLIFY, OPENAI, ASUS, ASUS_NO_RECEIPT, META, NOTABILITY):
             assert state(session, oid) == (S.ESTIMATING, e.NextAction.ESTIMATE)
             assert report.outcome(oid).rested_because.startswith("refused: IllegalTransitionError")
-        assert len(report.errors) == 5
+        assert len(report.errors) == 6
 
 
 def test_a_finished_or_waiting_obligation_is_a_resting_state_not_a_crash():
@@ -376,7 +378,7 @@ def test_an_accrual_is_pending_approval_only_while_it_waits_in_the_controller_qu
         report = run(session, sim, None)
         asus = session.get(m.TrueUpObligation, ASUS)
         assert asus.accrual_status == e.AccrualStatus.PENDING_APPROVAL
-        assert report.outcome(NOTABILITY).accrual_status == e.AccrualStatus.NOT_STARTED
+        assert report.outcome(NOTABILITY).accrual_status == e.AccrualStatus.PENDING_APPROVAL
         controller = demo_controller(session)
         run_ = CloseRun(session, sim, controller)
         run_.settle(now=CLOSE, period=PERIOD)
@@ -623,7 +625,7 @@ def test_the_dispute_moves_only_through_verified_gates(disputed):
 def test_the_dispute_is_decided_by_the_controller_and_the_orchestrator_approves_nothing(disputed):
     report, _, _ = disputed
     decisions = [s for s in report.steps if s.action == "decide"]
-    assert sorted(s.obligation_id for s in decisions) == [ASUS, META]
+    assert sorted(s.obligation_id for s in decisions) == [ASUS, ASUS_NO_RECEIPT, META]
     assert {s.note.split(" by ")[0] for s in decisions} == {"APPROVE", "DISPUTE_WITH_VENDOR"}
 
 

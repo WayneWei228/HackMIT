@@ -20,7 +20,7 @@
       "expected_root_cause": null,
       "invoice_arrival_time": "2026-11-24T10:00:00Z",
       "expected_baseline_accrual": "1800.00",
-      "expected_close_status": "BLOCKED"
+      "expected_close_status": "NEEDS_REVIEW"
     },
     {
       "period": "2026-11",

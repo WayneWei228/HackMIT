@@ -49,6 +49,10 @@ _TITLES = {
     ("evidence", "extract_facts"): "Evidence extracted facts",
     ("classification", "classify_purchase"): "Classification chose the purchase type",
     ("estimation", "estimate_accrual"): "Estimation computed the accrual",
+    (
+        "estimation",
+        "estimate_incomplete_data",
+    ): "Estimation projected the accrual on incomplete data",
     ("policy", "verify_policy"): "Policy checked the accrual",
     ("reviewer", "review"): "Reviewer checked the workpaper",
     ("journal_entry_service", "draft_entry"): "Journal entry service drafted the entry",
@@ -56,6 +60,7 @@ _TITLES = {
     ("journal_entry_service", "post_reversal"): "Journal entry service posted the reversal",
     ("outreach", "send_outreach"): "Outreach asked the owner",
     ("outreach", "process_reply"): "Outreach processed a reply",
+    ("outreach", "time_out_request"): "Outreach stopped waiting for a reply",
     ("controller_workspace", "record_decision"): "Controller decided",
     ("reconciliation", "match_invoice"): "Reconciliation matched the invoice",
     ("reconciliation", "reconcile"): "Reconciliation graded the accrual",
@@ -71,6 +76,7 @@ _FROM_AGENT = {
     "GATHERING_EVIDENCE/GATHER_EVIDENCE": "evidence",
     "CLASSIFYING/CLASSIFY": "classification",
     "ESTIMATING/ESTIMATE": "estimation",
+    "ESTIMATING/ESTIMATE_INCOMPLETE": "estimation",
     "ESTIMATING/VERIFY_POLICY": "policy",
     "AWAITING_OUTREACH/SEND_OUTREACH": "outreach",
     "AWAITING_CONTROLLER/CONTROLLER_REVIEW": "controller_workspace",
@@ -85,6 +91,7 @@ _TO_AGENT = {
     "GATHERING_EVIDENCE/GATHER_EVIDENCE": "ingestion",
     "CLASSIFYING/CLASSIFY": "classification",
     "ESTIMATING/ESTIMATE": "estimation",
+    "ESTIMATING/ESTIMATE_INCOMPLETE": "estimation",
     "ESTIMATING/VERIFY_POLICY": "policy",
     "AWAITING_OUTREACH/SEND_OUTREACH": "outreach",
     "AWAITING_CONTROLLER/CONTROLLER_REVIEW": "controller_workspace",
@@ -378,7 +385,7 @@ def _record_of(
         record = {"purchase_type": ob.purchase_type.value, "signals": generic["facts_used"]}
         record["summary"] = generic["summary"]
         return "Classification", record, list(generic["output_ids"])
-    if frm == "ESTIMATING/ESTIMATE":
+    if frm in ("ESTIMATING/ESTIMATE", "ESTIMATING/ESTIMATE_INCOMPLETE"):
         if wp is None:
             return "EstimationOutcome", generic, list(generic["output_ids"])
         record = {
@@ -478,6 +485,24 @@ def _title(row: m.TrueUpAgentRun, route: dict[str, str] | None) -> str:
     if row.agent_name == "verifier" and route is not None:
         moved = "held" if route["from"] == route["routed"] else "moved"
         return f"Verification gate {moved} {route['from']} to {route['routed']}"
+    if row.agent_name == "outreach":
+        name = next(
+            (
+                fact["recipient_name"]
+                for fact in row.facts_used_json or []
+                if isinstance(fact, dict) and fact.get("recipient_name")
+            ),
+            None,
+        )
+        if name and row.action == "send_outreach":
+            return f"Outreach sent an email to {name}"
+        if name and row.action == "process_reply":
+            return f"Outreach read {name}'s reply"
+    if (row.agent_name, row.action) == (
+        "estimation",
+        "estimate_accrual",
+    ) and row.decision_summary.startswith("No estimate"):
+        return "Estimation did not produce an estimate"
     return _TITLES.get((row.agent_name, row.action), f"{row.agent_name}: {row.action}")
 
 
@@ -486,7 +511,15 @@ def _method(row: m.TrueUpAgentRun) -> v.Method | None:
         return _METHOD[row.agent_name]  # type: ignore[return-value]
     if row.agent_name == "orchestrator":
         return None
+    if row.agent_name == "outreach":
+        wrote_with_model = any(
+            isinstance(fact, dict) and "llm" in (fact.get("drafted_by"), fact.get("parsed_by"))
+            for fact in row.facts_used_json or []
+        )
+        return "LLM" if wrote_with_model else "CODE"
     text = f"{row.decision_summary} {row.output_summary}"
+    if "chosen by llm_proposer" in text:
+        return "LLM"
     return "LLM" if "llm_judge" in text or "llm_extractor" in text else "CODE"
 
 

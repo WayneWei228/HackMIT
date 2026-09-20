@@ -78,7 +78,10 @@ def clone_vendor(session, source_id, new_id, name):
             vendor_id=new_id,
         )
     for po in session.scalars(
-        select(m.CompanyPurchaseOrder).where(m.CompanyPurchaseOrder.vendor_id == source_id)
+        select(m.CompanyPurchaseOrder)
+        .where(m.CompanyPurchaseOrder.vendor_id == source_id)
+        .order_by(m.CompanyPurchaseOrder.po_id)
+        .limit(1)
     ):
         clone(
             session,
@@ -221,7 +224,7 @@ def test_evidence_that_contradicts_the_rules_goes_to_the_controller(session):
     usage = session.scalars(
         select(m.CompanyServiceEvidence).where(m.CompanyServiceEvidence.vendor_id == "VEN-OPENAI")
     ).first()
-    clone(session, usage, service_evidence_id="USE-ODD-1", vendor_id="VEN-MINTLIFY")
+    clone(session, usage, service_evidence_id="USE-ODD-1", vendor_id="VEN-MINTLIFY", po_id=None)
     obligation = open_for(session, "VEN-MINTLIFY")
     result = classify(session, obligation.obligation_id, now=NOW)
     assert result.purchase_type == P.FIXED_RECURRING

@@ -20,6 +20,7 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from trueup.agents.service_scope import service_evidence_of
 from trueup.gateway import llm
 from trueup.store import enums as e
 from trueup.store import models as m
@@ -238,11 +239,7 @@ def _load(session: Session, obligation: m.TrueUpObligation):
     active = [c for c in covering if c.status == e.ContractStatus.ACTIVE]
     contract = (active or covering or versions or [None])[0]
     service_rows = list(
-        session.scalars(
-            select(m.CompanyServiceEvidence).where(
-                m.CompanyServiceEvidence.vendor_id == obligation.vendor_id
-            )
-        )
+        session.scalars(select(m.CompanyServiceEvidence).where(service_evidence_of(obligation)))
     )
     non_po_rows = list(
         session.scalars(

@@ -244,6 +244,40 @@
       ]
     },
     {
+      "po_id": "PO-ASUS-2026-B",
+      "po_number": "PO-2026-1005",
+      "vendor_id": "VEN-ASUS",
+      "contract_id": null,
+      "status": "OPEN",
+      "order_type": "STANDARD",
+      "entity_id": "ENT-001",
+      "cost_center": "CC-OPS-100",
+      "po_owner_id": "OPS-001",
+      "approved_total": "40000.00",
+      "currency": "USD",
+      "service_start_date": null,
+      "service_end_date": null,
+      "gl_account": "150200",
+      "description": "25 laptops for the second engineering cohort",
+      "line_items_json": [
+        {
+          "po_line_id": "PO-2026-1005-001",
+          "item_category": "MATERIAL",
+          "gl_account_code": "150200",
+          "quantity_ordered": "25",
+          "unit_price": "1600.00",
+          "quantity_received": "0",
+          "quantity_billed": "0",
+          "line_description": "ASUS ExpertBook laptop, 16 GB, 512 GB",
+          "service_start_date": null,
+          "service_end_date": null,
+          "receipt_required": true,
+          "useful_life_months": 36,
+          "in_service_date": null
+        }
+      ]
+    },
+    {
       "po_id": "PO-META-2026",
       "po_number": "PO-2026-1004",
       "vendor_id": "VEN-META",
@@ -1016,6 +1050,16 @@
       "updated_at": "2026-12-01T08:00:00Z"
     },
     {
+      "config_key": "estimation_fallback",
+      "config_value_json": {
+        "outreach_wait_hours": 48,
+        "min_covered_fraction": "0.25",
+        "history_periods": 3,
+        "conservative_received_fraction": "0.50"
+      },
+      "updated_at": "2026-12-01T08:00:00Z"
+    },
+    {
       "config_key": "policy_rules",
       "config_value_json": [
         {
@@ -1045,10 +1089,6 @@
         {
           "rule_id": "POL-07",
           "text": "Capitalize equipment over the threshold and depreciate it over its life"
-        },
-        {
-          "rule_id": "POL-08",
-          "text": "Record prepaid services as an asset and expense them over the term"
         }
       ],
       "updated_at": "2026-12-01T08:00:00Z"

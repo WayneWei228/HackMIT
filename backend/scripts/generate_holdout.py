@@ -876,10 +876,6 @@ COMPANY_CONFIG = json.loads(
    {
     "rule_id": "POL-07",
     "text": "Capitalize equipment over the threshold and depreciate it over its life"
-   },
-   {
-    "rule_id": "POL-08",
-    "text": "Record prepaid services as an asset and expense them over the term"
    }
   ],
   "updated_at": "2026-12-01T08:00:00Z"
