@@ -119,7 +119,9 @@ def test_every_control_reports_pass_fail_per_obligation(session):
         assert [c.check_id for c in audited.controls] == list(CHECKS)
         assert all(c.status != "FAIL" for c in audited.controls)
     asus = report.for_obligation(ASUS)
-    assert [c.status.value for c in asus.controls] == ["PASS"] * len(CHECKS)
+    assert [c.status.value for c in asus.controls] == ["PASS"] * (len(CHECKS) - 1) + [
+        "NOT_APPLICABLE"
+    ]
     notability = {c.check_id: c.status.value for c in report.for_obligation(NOTABILITY).controls}
     assert notability["AUD-03"] == "NOTE" and notability["AUD-07"] == "NOT_APPLICABLE"
     assert {c.check_id for c in report.global_controls} == {"AUD-08", "AUD-09"}

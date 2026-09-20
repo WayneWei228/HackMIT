@@ -149,20 +149,7 @@ def enforce(session: Session, obligation_id: str, *, now: datetime) -> PolicyRes
             f"{workpaper.workpaper_id} already has policy decision {workpaper.policy_decision}"
         )
 
-    config = _load_config(session)
-    context = Context(
-        config=config,
-        obligation=obligation,
-        workpaper=workpaper,
-        po=session.get(m.CompanyPurchaseOrder, obligation.po_id) if obligation.po_id else None,
-        gl_entries=list(
-            session.scalars(
-                select(m.CompanyGLEntry).where(m.CompanyGLEntry.vendor_id == obligation.vendor_id)
-            )
-        ),
-    )
-    rules = [rule(context) for rule in _RULES]
-    decision = next(d for d in _PRECEDENCE if d == _D.PERMIT or _has(rules, d))
+    decision, rules = evaluate(session, obligation, workpaper)
     summary = _summary(decision, rules)
 
     stage, action = _ROUTE[decision]
@@ -199,6 +186,26 @@ def enforce(session: Session, obligation_id: str, *, now: datetime) -> PolicyRes
         rules=rules,
         summary=summary,
     )
+
+
+def evaluate(
+    session: Session, obligation: m.TrueUpObligation, workpaper: m.TrueUpWorkpaper
+) -> tuple[e.PolicyDecision, list[RuleResult]]:
+    """Run every policy rule against a workpaper and return the decision. Writes nothing."""
+    context = Context(
+        config=_load_config(session),
+        obligation=obligation,
+        workpaper=workpaper,
+        po=session.get(m.CompanyPurchaseOrder, obligation.po_id) if obligation.po_id else None,
+        gl_entries=list(
+            session.scalars(
+                select(m.CompanyGLEntry).where(m.CompanyGLEntry.vendor_id == obligation.vendor_id)
+            )
+        ),
+    )
+    rules = [rule(context) for rule in _RULES]
+    decision = next(d for d in _PRECEDENCE if d == _D.PERMIT or _has(rules, d))
+    return decision, rules
 
 
 def _has(rules: list[RuleResult], decision: e.PolicyDecision) -> bool:

@@ -13,6 +13,7 @@ simulator's clock and outreach replies.
 
 from __future__ import annotations
 
+import functools
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -38,6 +39,7 @@ from trueup.agents import (
     outreach_agent,
     policy_agent,
     reconciliation_agent,
+    reviewer_agent,
 )
 from trueup.agents.controller_workspace import ReviewPacket, Summarizer
 from trueup.agents.evidence_agent import Extractor
@@ -49,7 +51,8 @@ from trueup.store import enums as e
 from trueup.store import models as m
 from trueup.store.integrity import AgentRunLog
 from trueup.store.types import coerce_money
-from trueup.store.workflow import advance
+from trueup.store.workflow import advance, gatekeeping
+from trueup.verification import ActionType, Verdict, Verifier
 
 AGENT_NAME = "orchestrator"
 MAX_MOVES_PER_OBLIGATION = 60
@@ -121,6 +124,8 @@ class CloseSettings:
     gather_evidence: bool = True
     summarizer: Summarizer | None = None
     narrator: Narrator | None = None
+    review_narrator: reviewer_agent.Narrator | None = None
+    verify: bool = True
 
 
 NO_EVIDENCE = CloseSettings(gather_evidence=False)
@@ -205,6 +210,19 @@ def _aware(stamp: datetime) -> datetime:
 # ---- the run ------------------------------------------------------------------------------------
 
 
+def _gated(method: Callable[..., Any]) -> Callable[..., Any]:
+    """Run a phase with the verifier watching every workflow move the agents make."""
+
+    @functools.wraps(method)
+    def wrapper(self: CloseRun, *args: Any, **kwargs: Any) -> Any:
+        if self.verifier is None:
+            return method(self, *args, **kwargs)
+        with gatekeeping(self.verifier):
+            return method(self, *args, **kwargs)
+
+    return wrapper
+
+
 class CloseRun:
     """One close in progress: the session, the simulator, the caller's Controller and settings."""
 
@@ -226,9 +244,16 @@ class CloseRun:
         self._asked: set[tuple] = set()
         self._reviewed: set[str] = set()
         self._offered_rules: set[str] = set()
+        self._refused_posts: set[tuple] = set()
+        self.verifier: Verifier | None = (
+            Verifier(session, seed_dir=self.settings.seed_dir, universe_loader=self._maybe_universe)
+            if self.settings.verify
+            else None
+        )
 
     # -- public stage runner -----------------------------------------------------------------
 
+    @_gated
     def advance_obligation(
         self, obligation_id: str, *, now: datetime, stop_at: State | None = None
     ) -> str:
@@ -255,6 +280,7 @@ class CloseRun:
             f"{_label(_state(ob))}"
         )
 
+    @_gated
     def settle(self, *, now: datetime, period: str | None = None) -> int:
         """Move every obligation as far as it can go now. Returns how many steps were taken."""
         now = _aware(now)
@@ -312,6 +338,7 @@ class CloseRun:
             )
         self._offer_rules(now)
 
+    @_gated
     def detect(self, period: str, *, now: datetime) -> list[str]:
         now = _aware(now)
         result = detection_agent.detect(self.session, period, now=now)
@@ -327,6 +354,7 @@ class CloseRun:
             )
         return result.opened
 
+    @_gated
     def collect_replies(self, *, now: datetime) -> int:
         """Poll the simulator for outreach replies and escalate requests past their deadline."""
         if self.sim is None:
@@ -375,6 +403,7 @@ class CloseRun:
             )
         return len(result.posted)
 
+    @_gated
     def tick(self, *, now: datetime) -> int:
         """One day of the post-close window: reversals, replies, then everything that can move."""
         mark = len(self.steps)
@@ -516,6 +545,8 @@ class CloseRun:
         try:
             sent = outreach_agent.send_outreach(self.session, ob.obligation_id, now=now)
         except outreach_agent.OutreachError as exc:
+            if "explicit topic" in str(exc) and self._verifier_asked_for_outreach(ob):
+                return self._escalate_unaskable(ob, now)
             self._error(f"{ob.obligation_id}: {exc}")
             return f"cannot send outreach: {exc}"
         if sent.created:
@@ -531,7 +562,53 @@ class CloseRun:
             )
         return f"waiting for {sent.recipient_person_id} to reply to {sent.outreach_key}"
 
+    def _verifier_asked_for_outreach(self, ob: m.TrueUpObligation) -> bool:
+        if self.verifier is None:
+            return False
+        last = next(
+            (v for v in reversed(self.verifier.history) if v.obligation_id == ob.obligation_id),
+            None,
+        )
+        return (
+            last is not None
+            and last.result.verdict == Verdict.OUTREACH
+            and last.routed_to == _label(OUTREACH)
+        )
+
+    def _escalate_unaskable(self, ob: m.TrueUpObligation, now: datetime) -> bool:
+        """The verifier asked for evidence no outreach topic covers, so the Controller decides."""
+        before = _state(ob)
+        advance(ob, *CONTROLLER, outreach_agent.AGENT_NAME, at=now)
+        self._record(
+            ob.obligation_id,
+            outreach_agent.AGENT_NAME,
+            "escalate",
+            before,
+            CONTROLLER,
+            now,
+            "the verifier needs more evidence and no outreach topic applies",
+        )
+        return True
+
+    def _review(self, ob: m.TrueUpObligation, now: datetime) -> None:
+        """The Reviewer looks at each workpaper once before it reaches the Controller."""
+        if not reviewer_agent.needs_review(self.session, ob):
+            return
+        finding = reviewer_agent.review(
+            self.session, ob.obligation_id, now=now, narrator=self.settings.review_narrator
+        )
+        self._record(
+            ob.obligation_id,
+            reviewer_agent.AGENT_NAME,
+            "review",
+            None,
+            None,
+            now,
+            f"{finding.verdict.value}: {len(finding.failed)} of {len(finding.checklist)} failed",
+        )
+
     def _controller_review(self, ob: m.TrueUpObligation, now: datetime) -> bool | str:
+        self._review(ob, now)
         queue_reason = self._queue_reason(ob, now)
         if self.controller is None:
             return f"waiting in the Controller queue: {queue_reason}"
@@ -585,6 +662,9 @@ class CloseRun:
 
     def _wait(self, ob: m.TrueUpObligation, now: datetime) -> bool | str:
         if ob.accrual_status == e.AccrualStatus.DRAFTED:
+            refusal = self._verify_post(ob, now)
+            if refusal:
+                return refusal
             posted = journal_entry_service.post_simulated(self.session, ob.obligation_id, now=now)
             self._record(
                 ob.obligation_id,
@@ -641,6 +721,46 @@ class CloseRun:
         return True
 
     # -- shared pieces -----------------------------------------------------------------------
+
+    def _verify_post(self, ob: m.TrueUpObligation, now: datetime) -> str | None:
+        """Ask the verifier before the accrual is written to the ledger."""
+        if self.verifier is None:
+            return None
+        fingerprint = (ob.obligation_id, ob.current_workpaper_id, ob.updated_at)
+        if fingerprint in self._refused_posts:
+            return "posting refused by the verifier"
+        result = self.verifier.verify_action(
+            ob, ActionType.POST_ACCRUAL, journal_entry_service.AGENT_NAME, now
+        )
+        if result.verdict == Verdict.PERMIT:
+            return None
+        self._refused_posts.add(fingerprint)
+        reason = "; ".join(c.detail for c in result.failed)
+        self._error(f"{ob.obligation_id}: posting refused by the verifier: {reason}")
+        return f"posting refused by the verifier: {reason}"
+
+    def _verify_rule_approval(self, row: m.TrueUpLearningRule, now: datetime) -> str | None:
+        if self.verifier is None or self.controller is None:
+            return None
+        ob = self.session.get(m.TrueUpObligation, row.obligation_id)
+        if ob is None:
+            return None
+        result = self.verifier.verify_action(
+            ob,
+            ActionType.APPROVE_RULE,
+            self.controller.person_id,
+            now,
+            {"learning_id": row.learning_id, "decided_by": self.controller.person_id},
+        )
+        if result.verdict == Verdict.PERMIT:
+            return None
+        return "; ".join(c.detail for c in result.failed)
+
+    def _maybe_universe(self) -> FileUniverse | None:
+        try:
+            return self._universe_or_load()
+        except (OSError, ValueError):
+            return None
 
     def _match_arrivals(self, now: datetime) -> None:
         for obligation_id in reconciliation_agent.collect_arrivals(self.session, now=now):
@@ -700,6 +820,11 @@ class CloseRun:
             )
             if decision is None:
                 continue
+            if decision.approve:
+                refusal = self._verify_rule_approval(row, now)
+                if refusal:
+                    self._error(f"{row.learning_id}: approval refused by the verifier: {refusal}")
+                    continue
             try:
                 if decision.approve:
                     learning_agent.approve_rule(

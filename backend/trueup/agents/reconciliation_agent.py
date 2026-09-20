@@ -163,10 +163,6 @@ def reconcile(session: Session, obligation_id: str, *, now: datetime) -> Reconci
         )
     target = _route(diagnosis, variance, de_minimis, currency_clash)
 
-    advance(ob, *target, AGENT_NAME, at=now)
-    if target != _CONTROLLER:
-        ob.accrual_status = e.AccrualStatus.TRUE_UP_COMPLETE
-
     record = {
         "accrued": _money(accrued),
         "actual": _money(actual),
@@ -182,6 +178,10 @@ def reconcile(session: Session, obligation_id: str, *, now: datetime) -> Reconci
     inputs["reconciliation"] = record
     workpaper.calculation_inputs_json = inputs
     cards = _invoice_cards(session, ob, invoices, diagnosis, now)
+
+    advance(ob, *target, AGENT_NAME, at=now)
+    if target != _CONTROLLER:
+        ob.accrual_status = e.AccrualStatus.TRUE_UP_COMPLETE
 
     routed = e.WorkflowStage(target[0]), e.NextAction(target[1])
     escalated = target == _CONTROLLER

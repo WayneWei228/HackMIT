@@ -141,6 +141,13 @@ class AgentNote(BaseModel):
     uncertainties: list[str]
 
 
+class ReviewSummary(BaseModel):
+    verdict: str
+    rationale: str
+    rationale_source: str
+    failed_checks: list[str]
+
+
 class ReviewPacket(BaseModel):
     obligation: ObligationSummary
     workpaper: WorkpaperSummary | None
@@ -152,6 +159,7 @@ class ReviewPacket(BaseModel):
     narrative: str = ""
     narrative_source: Literal["llm", "template"] = "template"
     narrative_note: str | None = None
+    review: ReviewSummary | None = None
 
 
 class DecisionResult(BaseModel):
@@ -230,6 +238,7 @@ def build_packet(
         agent_notes=_agent_notes(session, obligation_id),
         allowed_decisions=allowed,
         recommendation=_recommendation(workpaper, hits, allowed),
+        review=_review_summary(session, workpaper),
     )
     base = packet.model_dump(mode="json")
     packet.narrative, packet.narrative_source, packet.narrative_note = _narrate(
@@ -266,7 +275,18 @@ def decide(
         raise AdjustmentError("an adjusted amount only goes with APPROVE_WITH_ADJUSTMENT")
 
     target = _target(decision, from_state)
-    advance(obligation, target[0], target[1], AGENT_NAME, at=now)
+    advance(
+        obligation,
+        target[0],
+        target[1],
+        AGENT_NAME,
+        at=now,
+        facts={
+            "controller_decision": decision.value,
+            "decided_by": decided_by,
+            "adjusted_amount": None if adjusted_amount is None else str(adjusted_amount),
+        },
+    )
 
     if workpaper is not None:
         if new_lines is not None:
@@ -586,6 +606,22 @@ def _policy_hits(
         for fact in runs[-1].facts_used_json
         if fact.get("status") != "PASS"
     ]
+
+
+def _review_summary(session: Session, workpaper: m.TrueUpWorkpaper | None) -> ReviewSummary | None:
+    """The Reviewer's finding for this workpaper, if it has looked. Read from its evidence card."""
+    if workpaper is None:
+        return None
+    card = session.get(m.TrueUpEvidence, f"EVD-REVIEW-{workpaper.workpaper_id}")
+    if card is None:
+        return None
+    value = card.value_json or {}
+    return ReviewSummary(
+        verdict=value.get("verdict", ""),
+        rationale=value.get("rationale", ""),
+        rationale_source=value.get("rationale_source", "template"),
+        failed_checks=[c["detail"] for c in value.get("checklist", []) if not c.get("passed")],
+    )
 
 
 def _agent_notes(session: Session, obligation_id: str) -> list[AgentNote]:

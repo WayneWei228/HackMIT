@@ -7,7 +7,8 @@ every difference as a typed finding. Its only write is one row in the append-onl
 Controls (deterministic code; a language model may only word the summary, never state a number):
 AUD-01 evidence traceability, AUD-02 recomputation, AUD-03 journal entries, AUD-04 policy and
 approvals, AUD-05 workflow integrity, AUD-06 cutoff and duplicates, AUD-07 reconciliation,
-AUD-08 learning rules, AUD-09 completeness. Entry point: `audit(session, now=..., period=...)`.
+AUD-08 learning rules, AUD-09 completeness, AUD-10 verified handoffs.
+Entry point: `audit(session, now=..., period=...)`.
 
 Two helpers are borrowed from the agents whose work is re-performed (the policy rules and the
 variance diagnosis), so that a recorded outcome is compared with what the same logic gives on the
@@ -66,6 +67,7 @@ CHECKS: dict[str, str] = {
     "AUD-07": "Reconciliation",
     "AUD-08": "Learning rules",
     "AUD-09": "Completeness",
+    "AUD-10": "Verified handoffs",
 }
 
 _ACCRUAL = e.GLEntryType.ACCRUAL
@@ -1737,6 +1739,74 @@ def _rules_control(world: _World, rec: _Recorder) -> None:
             )
 
 
+# ---- AUD-10 verified handoffs -------------------------------------------------------------------
+
+_HOLD_LABELS = frozenset(
+    {
+        "AWAITING_OUTREACH/SEND_OUTREACH",
+        "AWAITING_CONTROLLER/CONTROLLER_REVIEW",
+        "BLOCKED/CONTROLLER_REVIEW",
+    }
+)
+_ACTION_ONLY = frozenset({"POST_ACCRUAL", "APPROVE_RULE"})
+
+
+def _verifier_control(world: _World, case: _Case, rec: _Recorder) -> None:
+    """Every move the obligation made has a verifier record, and only a PERMIT moved it on."""
+    rows = [r for r in case.runs if (r.agent_name, r.action) == ("verifier", "verify_handoff")]
+    if not rows:
+        rec.skip("AUD-10", "The close ran without the verifier, so no handoff was verified.")
+        return
+    rec.applied("AUD-10", f"{len(rows)} verified handoffs chained to the resting state.")
+    previous: str | None = None
+    for run in rows:
+        facts = [f for f in run.facts_used_json or [] if isinstance(f, dict)]
+        routing = next((f for f in facts if f.get("kind") == "routing"), None)
+        result = next((f for f in facts if f.get("kind") == "verification_result"), None)
+        proposal = next((f for f in facts if f.get("kind") == "action_proposal"), {})
+        if routing is None or result is None:
+            rec.critical(
+                "AUD-10",
+                f"Verifier run {run.run_id} carries no routing or result.",
+                records=[run.run_id],
+            )
+            continue
+        action = (proposal.get("proposal") or {}).get("action_type")
+        if previous is not None and routing["from"] != previous:
+            rec.critical(
+                "AUD-10",
+                f"The obligation moved from {previous} to {routing['from']} without a verified "
+                "handoff.",
+                expected=previous,
+                actual=routing["from"],
+                records=[run.run_id],
+            )
+        verdict = result["result"]["verdict"]
+        if (
+            action not in _ACTION_ONLY
+            and routing["routed"] not in _HOLD_LABELS
+            and verdict != "PERMIT"
+        ):
+            rec.critical(
+                "AUD-10",
+                f"The obligation was moved to {routing['routed']} although the verifier answered "
+                f"{verdict}.",
+                expected="PERMIT",
+                actual=verdict,
+                records=[run.run_id],
+            )
+        previous = routing["routed"]
+    current = f"{case.ob.workflow_stage.value}/{case.ob.next_action.value}"
+    if previous is not None and previous != current:
+        rec.critical(
+            "AUD-10",
+            f"The obligation is at {current}, but the last verified handoff left it at {previous}.",
+            expected=previous,
+            actual=current,
+            records=[case.ob.obligation_id],
+        )
+
+
 # ---- AUD-09 completeness ------------------------------------------------------------------------
 
 
@@ -1863,6 +1933,7 @@ _OBLIGATION_CONTROLS: list[tuple[str, Callable[[_World, _Case, _Recorder], None]
     ("AUD-07", _reconciliation_control),
     ("AUD-08", _learning_control),
     ("AUD-09", _completeness_control),
+    ("AUD-10", _verifier_control),
 ]
 
 

@@ -4,7 +4,9 @@ The real way a rule becomes ACTIVE is the Learning agent's loop: grade a past ac
 invoice, diagnose the miss, propose a rule, replay it over history, and wait for the Controller.
 `activate_escalator_rule` skips all of that and exists only so unit tests and chain scripts can
 begin with the escalator rule already learned. Its parent rows are marked `test_fixture` and
-belong to a closed history period, so no live agent ever picks them up.
+belong to a closed history period, so no live agent ever picks them up. The rule is recorded as
+approved by the configured Controller after a passing replay, exactly as the real loop leaves it,
+so the verifier sees a rule that meets the controls it enforces.
 """
 
 from __future__ import annotations
@@ -110,6 +112,8 @@ def activate_escalator_rule(session: Session, *, now: datetime) -> str:
     )
     session.flush()
     rule = CandidateRule.apply_contract_escalator([LEARNING_ID])
+    ownership = session.get(m.CompanyConfig, "ownership_map")
+    controller = (ownership.config_value_json or {}).get("controller") if ownership else None
     session.add(
         m.TrueUpLearningRule(
             learning_id=LEARNING_ID,
@@ -123,9 +127,17 @@ def activate_escalator_rule(session: Session, *, now: datetime) -> str:
             root_cause=e.RootCause.MISSED_ESCALATOR,
             root_cause_summary="Fixture: the baseline ignored the contract escalator step-up.",
             candidate_rule_json=rule.model_dump(mode="json"),
-            replay_result_json={"fixture": True},
+            replay_result_json={
+                "fixture": True,
+                "passed": True,
+                "criteria": {
+                    "supporting_misses_improve": True,
+                    "no_correct_estimate_flips": True,
+                    "total_error_falls": True,
+                },
+            },
             status=e.LearningStatus.ACTIVE,
-            approved_by=FIXTURE_AGENT,
+            approved_by=controller or FIXTURE_AGENT,
             created_at=now,
             updated_at=now,
         )

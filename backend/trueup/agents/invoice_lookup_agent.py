@@ -94,11 +94,11 @@ def lookup(session: Session, obligation_id: str, *, now: datetime) -> LookupResu
 
     status, matched, reason = _decide(candidates)
     stage, action = _ROUTE[status]
-    advance(ob, stage, action, AGENT_NAME, at=now)
     ob.invoice_status = status
     ob.matched_invoice_id = matched
     if status == e.InvoiceStatus.INVOICE_FOUND:
         ob.accrual_status = e.AccrualStatus.NOT_NEEDED
+    advance(ob, stage, action, AGENT_NAME, at=now)
 
     result = LookupResult(
         obligation_id=ob.obligation_id,

@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable, Iterator, Mapping
+from contextlib import contextmanager
+from contextvars import ContextVar
 from datetime import datetime
+from typing import Any
 
 from trueup.store.enums import AccrualStatus
 from trueup.store.enums import NextAction as A
@@ -50,6 +54,26 @@ class IllegalTransitionError(ValueError):
     """Raised when an obligation is moved along an edge the workflow does not allow."""
 
 
+Gatekeeper = Callable[
+    [TrueUpObligation, State, State, str | None, datetime, Mapping[str, Any]], State
+]
+_GATEKEEPER: ContextVar[Gatekeeper | None] = ContextVar("trueup_gatekeeper", default=None)
+
+
+@contextmanager
+def gatekeeping(gatekeeper: Gatekeeper) -> Iterator[None]:
+    """While active, every advance() asks the gatekeeper first and moves where it says.
+
+    The gatekeeper returns the state to move to: the requested one when the handoff verifies, or
+    another legal state, or it raises. It never changes the obligation itself.
+    """
+    token = _GATEKEEPER.set(gatekeeper)
+    try:
+        yield
+    finally:
+        _GATEKEEPER.reset(token)
+
+
 def allowed_transitions() -> dict[State, frozenset[State]]:
     """Map each (workflow_stage, next_action) state to the states it may move to."""
     return dict(_GRAPH)
@@ -62,14 +86,26 @@ def advance(
     assigned_agent: str | None,
     *,
     at: datetime,
+    facts: Mapping[str, Any] | None = None,
 ) -> TrueUpObligation:
-    """Move an obligation along a legal edge, stamping `at` from the simulation clock."""
+    """Move an obligation along a legal edge, stamping `at` from the simulation clock.
+
+    `facts` are decisions the caller has made but not written yet, for an active gatekeeper.
+    """
     current = (S(obligation.workflow_stage), A(obligation.next_action))
     target = (S(to_stage), A(next_action))
     if target not in _GRAPH.get(current, frozenset()):
         raise IllegalTransitionError(
             f"{current[0]}/{current[1]} cannot move to {target[0]}/{target[1]}"
         )
+    gatekeeper = _GATEKEEPER.get()
+    if gatekeeper is not None:
+        target = gatekeeper(obligation, current, target, assigned_agent, at, facts or {})
+        if target not in _GRAPH.get(current, frozenset()):
+            raise IllegalTransitionError(
+                f"the gatekeeper routed {current[0]}/{current[1]} to {target[0]}/{target[1]}, "
+                "which the workflow does not allow"
+            )
     obligation.workflow_stage, obligation.next_action = target
     _track_pending_approval(obligation, current, target)
     obligation.assigned_agent = assigned_agent
