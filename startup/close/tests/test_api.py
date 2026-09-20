@@ -733,7 +733,7 @@ def test_periods_before_anything_has_run(empty_client):
     assert body["current"] == MONTHS[0]
     for row in body["periods"]:
         assert set(row) == {"period", "label", "state", "cases", "accrued_total", "true_up_total",
-                            "documents", "can_close", "can_settle"}
+                            "unsettled", "documents", "can_close", "can_settle"}
         assert row["state"] == "NOT_RUN" and row["cases"] == 0 and not row["can_settle"]
         assert row["documents"] == 1          # the source PDF, counted before anything has run
     assert [r["can_close"] for r in body["periods"]] == [True, False, False, False]

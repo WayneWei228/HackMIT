@@ -66,7 +66,7 @@
           "service_period": "2026-12",
           "description": "Team documentation plan (amended monthly fee)",
           "amount": 1400.0,
-          "folder": "2026-12/afterclose"
+          "folder": "2027-01"
         }
       ]
     },
@@ -163,7 +163,22 @@
           "generated_on": "2027-01-08",
           "status": "FINAL",
           "replaces": "USG-OPENAI-DEC",
-          "folder": "2026-12/afterclose"
+          "folder": "2027-01"
+        },
+        {
+          "document_type": "USAGE_REPORT",
+          "document_id": "USG-OPENAI-JAN",
+          "service_period": "2027-01",
+          "description": "API usage through January 27 (partial)",
+          "quantity": 810000,
+          "unit": "API usage unit",
+          "unit_rate": 0.02,
+          "amount": 16200.0,
+          "coverage_start": "2027-01-01",
+          "coverage_end": "2027-01-27",
+          "generated_on": "2027-01-28",
+          "status": "PARTIAL",
+          "folder": "2027-01"
         }
       ]
     },
@@ -236,7 +251,7 @@
           "service_period": "2026-12",
           "description": "Advertising delivered for the product-launch campaign",
           "delivered_amount": 24700.0,
-          "folder": "2026-12/afterclose"
+          "folder": "2027-01"
         }
       ]
     }

@@ -40,18 +40,20 @@ export function RecommendationPanel({
       </div>
 
       <div className="mt-[18px] text-ui leading-[normal] text-ink-2">Accrual amount</div>
-      <div className="relative mt-1.5 h-[50px]">
+      {/* Both layers share one grid cell so a long value wraps inside the card instead of overflowing it. */}
+      <div className="mt-1.5 grid min-h-[50px] min-w-0">
         <motion.span
           animate={{ opacity: settled ? 0 : 1 }}
           transition={timing.dash}
-          className="font-display absolute top-0 left-0 text-[44px] leading-[1.1] text-[#C4C8BE]"
+          className="font-display col-start-1 row-start-1 text-[44px] leading-[1.1] text-[#C4C8BE]"
         >
           —
         </motion.span>
         <motion.span
           animate={{ opacity: settled ? 1 : 0, y: settled ? 0 : 8 }}
           transition={timing.settle}
-          className="font-display absolute top-0 left-0 text-[44px] leading-[1.1] whitespace-nowrap text-ink-deep"
+          title={ACCRUAL_AMOUNT}
+          className={`font-display col-start-1 row-start-1 min-w-0 leading-[1.1] [overflow-wrap:anywhere] text-ink-deep ${ACCRUAL_AMOUNT.length > 9 ? "text-[32px]" : "text-[44px]"}`}
         >
           {ACCRUAL_AMOUNT}
         </motion.span>

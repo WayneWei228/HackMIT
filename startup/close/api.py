@@ -894,38 +894,39 @@ def screen_classification(case: dict, cases: list[dict]) -> dict:
     final, rules, model = classification.get("final"), classification.get("rules"), classification.get("model")
     confidence = classification.get("model_confidence")
     agree = classification.get("agree")
+    name = lambda code: TREATMENT.get(code, code)  # readable on screen; the codes stay in the dossier
     frequency = "Recurring" if (final or "").startswith("RECURRING") else "One-time" if final else "—"
     rate_type = "Variable" if (final or "").endswith("VARIABLE") else "Fixed" if final else "—"
     decided_by = "PO columns" if rules else "Line description" if final else "Undecided"
     agreement = {True: "Rules and model agree", False: "Rules and model disagree"}.get(agree, "Not comparable")
     line = line_of(case)
 
-    facts = [fact("Rules category", rules or "no rule fits", "po_headers, po_lines"),
-             fact("Model category", model or "not asked",
+    facts = [fact("Rules category", name(rules) or "no rule fits", "po_headers, po_lines"),
+             fact("Model category", name(model) or "not asked",
                   f"line description{'' if confidence is None else f' · {confidence:.0%} confidence'}"),
              fact("Line description", line.get("line_description") or "none",
                   f"po_lines · {case.get('po_line_id')}"),
-             fact("Final category", final or "undecided", f"classifier · {case['case_key']}")]
+             fact("Final category", name(final) or "undecided", f"classifier · {case['case_key']}")]
     for i, problem in enumerate(classification.get("contradictions") or []):
         facts.append(fact(f"Contradiction {i + 1}", problem, "po columns"))
 
     checks = [
         check("Recurring or one-time",
-              f"The columns read {rules or 'nothing decisive'}: {classification.get('rules_why') or '—'}."),
+              f"The columns read {name(rules) or 'nothing decisive'}: {classification.get('rules_why') or '—'}."),
         check("Fixed or variable",
-              f"{rate_type} — {final or 'no category'} is what the rule tree settles on."),
+              f"{rate_type} — {name(final) or 'no category'} is what the rule tree settles on."),
         check("Rule tree against the description",
               f"{agreement}.",
               pending_body="Reading the line description and comparing it with the PO columns...",
-              sub=[f"Rules · {rules or 'no rule fits'}",
-                   f"Model · {model or 'not asked'}"
+              sub=[f"Rules · {name(rules) or 'no rule fits'}",
+                   f"Model · {name(model) or 'not asked'}"
                    + ("" if confidence is None else f" at {confidence:.0%} confidence"),
                    f"Agreement · {agreement.lower()}",
                    f"Contradictions · {len(classification.get('contradictions') or [])} found"]),
         check("Treatment for estimation",
-              (f"{final} means Estimation priced this line with {basis_label(case).lower()}."
+              (f"{name(final)} means Estimation priced this line with {basis_label(case).lower()}."
                if (case.get("estimate") or {}).get("estimator")
-               else f"{final}, but {why_no_estimate(case)[0].lower()}{why_no_estimate(case)[1:]}")
+               else f"{name(final)}, but {why_no_estimate(case)[0].lower()}{why_no_estimate(case)[1:]}")
               if final else "No category, so the case goes to a human rather than to Estimation.",
               pending_body="Deciding how Estimation should build this line...", waiting_until=10),
     ]
@@ -935,7 +936,7 @@ def screen_classification(case: dict, cases: list[dict]) -> dict:
         text_row("Decided by", decided_by),
         text_row("Model agrees", {True: "Yes", False: "No"}.get(agree, "Not comparable"),
                  "accent" if agree is False else "ink"),
-        text_row("Final", final or "undecided"),
+        text_row("Final", name(final) or "undecided"),
     ]
     if confidence is not None:
         rows.append({"kind": "confidence", "label": "Confidence",
@@ -950,8 +951,8 @@ def screen_classification(case: dict, cases: list[dict]) -> dict:
             {"kind": "status", "label": "STATUS", "value": CASE_STATUS.get(case.get("status"), "Running")},
         ],
         facts=facts,
-        attributes=[{"label": "Rule tree result", "value": rules or "no rule fits"},
-                    {"label": "Model reading", "value": model or "not asked"}],
+        attributes=[{"label": "Rule tree result", "value": name(rules) or "no rule fits"},
+                    {"label": "Model reading", "value": name(model) or "not asked"}],
         intro="Recurring or one-time, fixed or variable: the PO columns decide, the description checks the "
               "decision.",
         checks=checks,
@@ -964,9 +965,9 @@ def screen_classification(case: dict, cases: list[dict]) -> dict:
                     {"label": "Cross-check the description", "multiline": True},
                     {"label": "Settle the classification"}, {"label": "Prepare handoff"}],
         inputs_label=f"{len(facts)} evidence inputs", attributes_from=f"{frequency} · {rate_type}",
-        handoff_blurb=(f"Estimation receives {final} and prices the line with {basis_label(case).lower()}."
+        handoff_blurb=(f"Estimation receives {name(final)} and prices the line with {basis_label(case).lower()}."
                        if final and (case.get("estimate") or {}).get("estimator") else
-                       f"Estimation receives {final}, but {why_no_estimate(case)[0].lower()}"
+                       f"Estimation receives {name(final)}, but {why_no_estimate(case)[0].lower()}"
                        f"{why_no_estimate(case)[1:]}" if final else
                        "No category, so the case goes to a human rather than to Estimation."))
 

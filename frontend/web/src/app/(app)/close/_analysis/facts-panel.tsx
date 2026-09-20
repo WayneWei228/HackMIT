@@ -44,7 +44,11 @@ export function FactsPanel({ step }: { step: number }) {
           <div className="mt-[9px] flex items-start gap-[11px]">
             <SourceDocIcon className="mt-[3px] flex-none text-faint-3" />
             <div className="min-w-0">
-              <div className="font-display text-xl leading-[1.15] text-ink-deep">
+              {/* A fact value may be an amount or a long label: it wraps inside the card, never past it. */}
+              <div
+                title={fact.amount}
+                className={`font-display leading-[1.15] [overflow-wrap:anywhere] text-ink-deep ${fact.amount.length > 16 ? "text-[17px]" : "text-xl"}`}
+              >
                 {fact.amount}
               </div>
               <FactSource fact={fact} caseParam={caseParam} />

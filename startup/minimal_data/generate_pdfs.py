@@ -535,8 +535,8 @@ def main() -> None:
             else:
                 raise ValueError(f"Unsupported document type: {kind}")
             generated.append(path)
-    if len(generated) != 17:
-        raise RuntimeError(f"Expected 17 PDFs, generated {len(generated)}")
+    if len(generated) != 18:
+        raise RuntimeError(f"Expected 18 PDFs, generated {len(generated)}")
     print(f"generated={len(generated)} output={OUTPUT}")
 
 

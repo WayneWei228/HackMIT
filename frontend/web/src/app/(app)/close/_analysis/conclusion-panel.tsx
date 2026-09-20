@@ -21,6 +21,15 @@ function rowMotion(index: number, visible: boolean) {
  * Right column: the number the agent is prepared to stand behind, the terms
  * it rests on, and what happens to it next.
  */
+/** Type size for the hero value: amounts stay large, longer wording steps down so it fits the card. */
+function heroSize(value: string): string {
+  const length = value.trim().length;
+  if (length <= 9) return "text-[44px]";
+  if (length <= 14) return "text-[36px]";
+  if (length <= 20) return "text-[30px]";
+  return "text-[24px]";
+}
+
 export function ConclusionPanel({
   step,
   complete,
@@ -49,12 +58,15 @@ export function ConclusionPanel({
       <div className="mt-[18px] text-ui text-ink-2">
         {conclusion.amountLabel}
       </div>
-      <div className="relative mt-1.5 h-[50px]">
+      {/* The hero value is a category name as often as an amount, so it sizes to its length and
+          wraps inside the card instead of running past the edge. Both layers share one grid cell,
+          which lets the card grow with a two-line value. */}
+      <div className="mt-1.5 grid min-h-[50px] min-w-0">
         <motion.span
           initial={false}
           animate={{ opacity: amountReady ? 0 : 1 }}
           transition={{ duration: 0.25, ease: easeOutSoft }}
-          className="font-display absolute top-0 left-0 text-[44px] leading-[1.1] text-[#C4C8BE]"
+          className="font-display col-start-1 row-start-1 text-[44px] leading-[1.1] text-[#C4C8BE]"
         >
           —
         </motion.span>
@@ -65,7 +77,8 @@ export function ConclusionPanel({
             y: amountReady ? 0 : 8,
           }}
           transition={{ duration: 0.45, ease: easeOutSoft }}
-          className="font-display absolute top-0 left-0 text-[44px] leading-[1.1] whitespace-nowrap text-ink-deep"
+          title={conclusion.amount}
+          className={`font-display col-start-1 row-start-1 min-w-0 leading-[1.1] text-balance break-words text-ink-deep ${heroSize(conclusion.amount)}`}
         >
           {conclusion.amount}
         </motion.span>

@@ -267,28 +267,42 @@ workspace(root, as_of) -> Workspace                  # root/db, root/state, root
 index_documents(root, pdf_dir) -> [{doc_id, file, period, available_at}]
 run_close(root, pdf_dir, period, llm) -> {period, accrued_total, cases, tickets}
 run_settlement(root, pdf_dir, period, llm) -> {period, settled, true_up_total}
-status(root, pdf_dir) -> [{period, state: NOT_RUN|CLOSED|SETTLED, cases, accrued_total, true_up_total, documents}]
+status(root, pdf_dir) -> [{period, state: NOT_RUN|CLOSED|SETTLED, cases, accrued_total, true_up_total, unsettled, documents}]
 reset(root) -> None                                  # wipe db / state / out / world
 ```
 
 `run_close` refuses (`ValueError`) while an earlier month folder is unclosed - earlier months build the purchase
 tables - and is safe to re-run: documents are hash-cached, Detection keeps CLOSED/SETTLED cases, and the cutoff
-re-reports the same accruals. `state/runs.json` records `closed_at` / `settled_at` per month. `try_run.py` is a thin
-CLI over it (`--fresh` = `runner.reset`).
+re-reports the same accruals. `state/runs.json` records `closed_at` / `settled_at` per month. A month is `SETTLED`
+once settlement has run for it AND it either trued something up or has no accrual left waiting; `unsettled` counts
+the CLOSED cases still waiting for an actual, so December can be settled and still carry one open accrual.
+`try_run.py` is a thin CLI over it (`--fresh` = `runner.reset`).
+
+**A document lives in the month it arrived, and each close settles the months before it.** December's invoice
+reaches us in January, so it is filed in `2027-01/` and is stamped `<next>-01` - after December's cutoff
+(`<next>-05`), so it can never be read back into the December close, and before January's first pass
+(`<next>-02`), so January sees it. Therefore every close pass, right after `evidence.run` for its own month,
+sweeps each earlier month that still has an accrual waiting for its actual or a variance nobody explained:
+`outreach` (answers) -> `settlement` (true-ups, vendor questions) -> `outreach` (word them), marking that month
+settled and refreshing its package. December's true-ups are booked by the January close; a month whose late
+documents never come (ASUS, invoiced by nobody) simply stays in `unsettled`. `run_settlement(period)` runs the
+same sweep on its own clock for whatever the period's own folder still brings.
 
 ## Closing the loop (built after the five workers)
 
 Time in a close. The runner (`runner.py`, driven by `try_run.py`) runs every month in TWO passes and a settlement in two more; `<next>` is the following month:
 
 ```text
-<next>-02T12:00Z  close pass 1   evidence -> detection -> invoice_lookup -> classifier -> estimation -> outreach (opens tickets)
+<next>-02T12:00Z  close pass 1   evidence -> settle the earlier months -> detection -> invoice_lookup -> classifier -> estimation -> outreach (opens tickets)
 <next>-05T12:00Z  close pass 2   the same again (replies are in the tables now) -> outreach (answers, expiries, forced fallbacks) -> close_out
 <next>-15T12:00Z  settle pass 1  evidence (after-close documents) -> settlement (true-ups, vendor tickets)
 <next>-25T12:00Z  settle pass 2  evidence (vendor replies) -> outreach (answers) -> settlement (explanations)
 ```
 
-Document availability comes from the folder: `<P>/*` -> `<P>-01`; `<P>/replies/*` -> `<next>-03`; `<P>/afterclose/*` -> `<next>-12`;
+Document availability comes from the folder: `<P>/*` -> `<next>-01`; `<P>/replies/*` -> `<next>-03`; `<P>/afterclose/*` -> `<next>-12`;
 `<P>/afterclose/replies/*` -> `<next>-20`. A reply is a document named `REPLY-<ticket_id>`; Evidence extracts it by the facts it states.
+A ticket's deadline: the close cutoff for a blocking question, `opened_at` + 10 days for a non-blocking one, so a
+question asked at the cutoff is never expired the moment it is asked.
 
 Tickets (`tickets.py`, `state/outreach.json`): `{ticket_id = T-<period>-<case_key>-<REASON>, case_id, period, reason, asked_of INTERNAL|VENDOR, to, question,
 message, blocking, deadline, state OPEN|ANSWERED|EXPIRED, opened_at, answered_at, answered_by_doc, expired_at}`. `open_ticket` is idempotent.

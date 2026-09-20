@@ -124,6 +124,19 @@ def test_a_data_mismatch_is_a_non_blocking_question_to_procurement(tmp_path):
     assert case["status"] == "ESTIMATED" and case["estimate"]["amount"] == 1400.0
 
 
+def test_a_non_blocking_question_asked_at_the_cutoff_is_not_expired_on_the_spot(tmp_path):
+    """The cutoff is the deadline of the blocking questions only: they are the ones holding the close."""
+    ws, llm = close(tmp_path)
+    cutoff = "2027-01-05T00:00:00Z"                                  # the clock is 12:00 on the same day
+    result = by_id(outreach.run(ws, llm, P, cutoff))
+    mismatch = result["T-2026-12-PO-001-001-DATA_MISMATCH"]
+    assert (mismatch["blocking"], mismatch["state"], mismatch["expired_at"]) == (False, "OPEN", None)
+    assert (mismatch["opened_at"], mismatch["deadline"]) == (AS_OF, "2027-01-15T12:00:00Z")
+    blocking = result["T-2026-12-CAMPAIGN-004-001-MISSING_DATA"]
+    assert (blocking["deadline"], blocking["state"]) == (cutoff, "EXPIRED")   # nobody answered by the cutoff
+    assert by_id(outreach.run(ws, llm, P, cutoff))["T-2026-12-PO-001-001-DATA_MISMATCH"]["state"] == "OPEN"
+
+
 def test_a_classification_mismatch_ticket_carries_the_suggestion(tmp_path):
     llm = make_llm({"PO-003-001": {"category": "RECURRING_VARIABLE", "confidence": 0.95}})
     ws, _ = close(tmp_path, llm=llm)

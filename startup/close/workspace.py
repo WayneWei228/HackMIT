@@ -123,6 +123,11 @@ def next_day(day: str) -> str:
     return (date.fromisoformat(day[:10]) + timedelta(days=1)).isoformat()
 
 
+def plus_days(ts: str, days: int) -> str:
+    """`ts` moved on by whole days, keeping whatever time-of-day format it came with."""
+    return (date.fromisoformat(ts[:10]) + timedelta(days=days)).isoformat() + ts[10:]
+
+
 __all__ = [
     "CLOSE_DIR",
     "Workspace",
@@ -134,6 +139,7 @@ __all__ = [
     "overlap_days",
     "period_bounds",
     "period_of",
+    "plus_days",
     "prev_periods",
     "repo_root",
 ]

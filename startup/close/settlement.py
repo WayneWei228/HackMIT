@@ -13,11 +13,9 @@ names a cause by re-reading what was visible AT CLOSE (`ws.at(case["as_of"])`):
 A later pass looks again at the unexplained cases: an answered ticket plus a contract version that became
 available after the close and prices the actual is the explanation.
 """
-from datetime import date, timedelta
-
 from . import case as cases_mod
 from . import estimation, events, invoice_lookup, store, tickets
-from .workspace import covers
+from .workspace import covers, plus_days
 
 TOLERANCE = 0.005
 VARIANCE_REASON = "VARIANCE_UNEXPLAINED"
@@ -28,11 +26,6 @@ VARIABLE = {"RECURRING_VARIABLE", "ONE_TIME_VARIABLE"}
 
 def visible(ws, name: str) -> list[dict]:
     return store.visible(store.load_table(ws, name), ws.as_of)
-
-
-def plus_days(ts: str, days: int) -> str:
-    """`ts` moved on by whole days, keeping whatever time-of-day format it came with."""
-    return (date.fromisoformat(ts[:10]) + timedelta(days=days)).isoformat() + ts[10:]
 
 
 def later_than(row: dict, as_of: str) -> bool:

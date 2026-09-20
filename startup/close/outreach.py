@@ -4,6 +4,8 @@ For the period's cases:
   OUTREACH_PENDING        a blocking MISSING_DATA question to the PO requester - the estimate waits for the answer
   flag DATA_MISMATCH      a non-blocking question to Procurement: two sources disagree about the rate
   flag CLASSIFICATION_MISMATCH  a non-blocking question to Procurement: the columns and the description disagree
+A blocking question expires at the close cutoff; a non-blocking one, which holds nothing up, has ten days from
+when it was asked, so asking at the cutoff never produces a ticket that is expired the moment it is opened.
 Code decides who is asked, what is asked and when it expires; the LLM only writes the wording of a NEW ticket, and
 any failure sends the plain question instead. A reply is an ordinary document (`REPLY-<ticket_id>`): when Evidence
 has accepted one, the ticket is ANSWERED. Past its deadline a ticket EXPIRES, and a blocking one forces its case to
@@ -11,8 +13,10 @@ book the recorded fallback - or, when there is none, 0.00 and a human.
 """
 from . import case as cases_mod
 from . import estimation, events, store, tickets
+from .workspace import plus_days
 
 PROCUREMENT = "Procurement"
+NON_BLOCKING_DAYS = 10      # a question that does not hold the close still gets a real window to be answered in
 
 
 def requesters(ws) -> dict[str, str]:
@@ -43,6 +47,16 @@ def pending(case: dict, period: str, requester: str) -> list[dict]:
                     "question": f"{case['case_key']}: the PO columns say {classification.get('rules')} but the "
                                 f"description reads as {classification.get('suggested')}. Which is right?"})
     return out
+
+
+def deadline_for(ws, ask: dict, cutoff: str) -> str:
+    """When this question runs out of time.
+
+    A blocking question expires at the close cutoff: it is holding the estimate, and when nobody answers the
+    case has to book its fallback and close anyway. A non-blocking one is not holding anything, so it gets ten
+    days from the moment it is asked - the window settlement gives a vendor - and is therefore never opened
+    already past its deadline, even when the cutoff is the clock it is asked at."""
+    return cutoff if ask["blocking"] else plus_days(ws.as_of, NON_BLOCKING_DAYS)
 
 
 def write_message(ws, llm, case: dict, ask: dict, period: str, deadline: str, asked_of: str = "INTERNAL") -> dict:
@@ -98,9 +112,10 @@ def run(ws, llm, period: str, deadline: str) -> list[dict]:
     for case in [c for c in everything if c["period"] == period]:
         for ask in pending(case, period, asks.get(case.get("po_line_id")) or PROCUREMENT):
             tid = tickets.ticket_id(case, ask["reason"])
-            message = None if tid in known else write_message(ws, llm, case, ask, period, deadline)
+            by_when = deadline_for(ws, ask, deadline)
+            message = None if tid in known else write_message(ws, llm, case, ask, period, by_when)
             ticket = tickets.open_ticket(ws, case, ask["reason"], to=ask["to"], asked_of="INTERNAL", question=ask["question"],
-                                         deadline=deadline, blocking=ask["blocking"], message=message)
+                                         deadline=by_when, blocking=ask["blocking"], message=message)
             known.add(tid)
             opened = (case.get("outreach") or {}).get("tickets") or []
             if ticket["ticket_id"] not in opened:

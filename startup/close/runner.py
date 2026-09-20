@@ -9,22 +9,28 @@ worker builds every table from the PDFs in the folder.
     index_documents(root, pdf_dir)         world/documents/index.json, straight from the folders
     run_close(root, pdf_dir, period, llm)  the two close passes, the cutoff and the snapshot
     run_settlement(...)                    the two settlement passes and the snapshot
-    status(root, pdf_dir)                  NOT_RUN | CLOSED | SETTLED per month
+    status(root, pdf_dir)                  NOT_RUN | CLOSED | SETTLED per month, and what is still unsettled
     reset(root)                            wipe db / state / out / world
 
+A document is filed in the folder of the month it ARRIVED, not the month it is about: December's late
+invoice reaches us in January, so it lives in `2027-01/` and is first seen when January is closed.
 Folders decide when a document becomes known (`<next>` = the following month):
 
-    <P>/*                      during the month              (<P>-01)
+    <P>/*                      arrived during the month      (<next>-01)   known by the time P is closed
     <P>/replies/*              answers before the cutoff     (<next>-03)   a reply is named REPLY-<ticket_id>
-    <P>/afterclose/*           arrives after the close       (<next>-12)
+    <P>/afterclose/*           arrives after P is closed     (<next>-12)   still supported; the month folder is enough
     <P>/afterclose/replies/*   vendor answers after close    (<next>-20)
 
 Each month runs on a simulated clock:
 
-    <next>-02  close pass 1   evidence, detection, invoice lookup, classification, estimation, outreach (asks)
+    <next>-02  close pass 1   evidence, settle the earlier months, detection, invoice lookup, classification,
+                              estimation, outreach (asks)
     <next>-05  close pass 2   the same again with the replies, outreach (answers / expiries), close out
     <next>-15  settle pass 1  evidence (after-close documents), settlement (true-ups, vendor questions)
     <next>-25  settle pass 2  evidence (vendor replies), outreach (answers), settlement (explanations)
+
+Because a document about December only arrives in January, each close first settles what the months already
+closed are still waiting for: the January close is where December's invoice becomes December's true-up.
 """
 from __future__ import annotations
 
@@ -57,11 +63,15 @@ def next_month(period: str) -> str:
 
 
 def available_at(period: str, rel: Path) -> str:
-    """When a document filed at `rel` inside the month folder becomes known."""
+    """When a document filed at `rel` inside the month folder becomes known.
+
+    A document that simply arrived during the month is known when the month ends (`<next>-01`), which is
+    before that month's own close and after the close of the month before it: a January invoice for December
+    can never be read back into the December close, only into December's settlement."""
     parts, nxt = rel.parts[:-1], next_month(period)
     if "afterclose" in parts:
         return f"{nxt}-20" if "replies" in parts else f"{nxt}-12"
-    return f"{nxt}-03" if "replies" in parts else f"{period}-01"
+    return f"{nxt}-03" if "replies" in parts else f"{nxt}-01"
 
 
 def periods(pdf_dir: Path) -> list[str]:
@@ -180,6 +190,55 @@ def mark(ws, period: str, key: str) -> dict:
 
 
 # --------------------------------------------------------------------------------------------------------------
+# What the months already closed are still waiting for
+# --------------------------------------------------------------------------------------------------------------
+
+
+def awaiting_actual(ws, period: str) -> list[dict]:
+    """Closed cases of `period` that carry an accrual and have not met their actual yet."""
+    return [c for c in cases_mod.cases_for(ws, period)
+            if c["status"] == "CLOSED" and (c.get("estimate") or {}).get("amount") is not None]
+
+
+def unexplained(ws, period: str) -> list[dict]:
+    """Settled cases of `period` whose variance nobody has explained yet: a vendor was asked."""
+    return [c for c in cases_mod.cases_for(ws, period)
+            if c["status"] == "SETTLED" and (c.get("settlement") or {}).get("explained") is False]
+
+
+def settle_sweep(ws, period: str, llm, say) -> list[dict]:
+    """One settlement sweep over a period at the current clock: read the answers, book the true-ups, and
+    word the questions settlement just opened. The same sequence a settlement pass runs."""
+    deadline = f"{next_month(period)}-05T00:00:00Z"
+    outreach.run(ws, llm, period, deadline=deadline)                # replies that arrived -> ANSWERED
+    touched = settlement.run(ws, period)
+    outreach.run(ws, llm, period, deadline=deadline)                # word the new vendor questions
+    if touched:
+        mark(ws, period, "settled_at")
+        say(f"\n  -- settling {period} with what {period} could not see, clock {ws.as_of}")
+        for t in tickets.load(ws):
+            if t["period"] == period and t["asked_of"] == "VENDOR":
+                say(f"    ticket {t['ticket_id']:<52} {t['state']:<9} to {t['to']} ({t['asked_of']})")
+        show_cases(say, ws, period)
+        snapshot(ws, period, [])                                    # the month's package keeps up
+    return touched
+
+
+def catch_up(ws, period: str, llm, say) -> list[str]:
+    """Before this month's own cases: settle every earlier month that is still waiting for something.
+
+    A close is the first moment the documents that arrived this month are on the table, and some of them
+    are about a month that is already closed."""
+    book, done = runs(ws), []
+    for earlier in sorted(p for p in book if p < period and (book[p] or {}).get("closed_at")):
+        if not (awaiting_actual(ws, earlier) or unexplained(ws, earlier)):
+            continue
+        if settle_sweep(ws, earlier, llm, say):
+            done.append(earlier)
+    return done
+
+
+# --------------------------------------------------------------------------------------------------------------
 # The passes
 # --------------------------------------------------------------------------------------------------------------
 
@@ -206,6 +265,7 @@ def run_close(root: Path, pdf_dir: Path, period: str, llm, *, out: Callable[[str
         say(f"\n  -- {label}, clock {ws.as_of}")
         documents = evidence.run(ws, llm, period)
         show_documents(say, documents)
+        catch_up(ws, period, llm, say)      # what arrived this month about the months already closed
         detection.run(ws, period)
         invoice_lookup.run(ws, period)
         classifier.run(ws, llm, period)
@@ -223,26 +283,21 @@ def run_close(root: Path, pdf_dir: Path, period: str, llm, *, out: Callable[[str
 
 
 def run_settlement(root: Path, pdf_dir: Path, period: str, llm, *, out: Callable[[str], None] | None = None) -> dict:
-    """Settle one closed month: the documents the close could not see, the true-ups, and the vendor questions."""
+    """Settle one closed month on its own clock: the documents the close could not see, the true-ups and the
+    vendor questions. A later month's close does the same sweep for this month when its documents arrive there."""
     say = _sayer(out)
     ws = workspace(root, f"{period}-01T00:00:00Z")
     if not (runs(ws).get(period) or {}).get("closed_at"):
         raise ValueError(f"cannot settle {period}: it has not been closed yet")
     index_documents(root, pdf_dir)
-    nxt, deadline = next_month(period), f"{next_month(period)}-05T00:00:00Z"
+    nxt = next_month(period)
     for label, day in SETTLE_PASSES:
         ws = ws.at(f"{nxt}-{day}T12:00:00Z")
         documents = evidence.run(ws, llm, period)
-        outreach.run(ws, llm, period, deadline=deadline)            # vendor replies -> ANSWERED
-        settled = settlement.run(ws, period)
-        outreach.run(ws, llm, period, deadline=deadline)            # word the vendor questions settlement just opened
-        changed = [t for t in tickets.load(ws) if t["period"] == period and t["asked_of"] == "VENDOR"]
-        if documents or settled:
+        if documents:
             say(f"\n  -- {label}, clock {ws.as_of}")
             show_documents(say, documents)
-            for t in changed:
-                say(f"    ticket {t['ticket_id']:<52} {t['state']:<9} to {t['to']} ({t['asked_of']})")
-            show_cases(say, ws, period)
+        settle_sweep(ws, period, llm, say)
         snapshot(ws, period, documents)
     mark(ws, period, "settled_at")
     mine = [c for c in cases_mod.cases_for(ws, period) if c.get("settlement")]
@@ -251,19 +306,28 @@ def run_settlement(root: Path, pdf_dir: Path, period: str, llm, *, out: Callable
 
 
 def status(root: Path, pdf_dir: Path) -> list[dict]:
-    """Where every month folder stands: whether it ran, what it accrued, what it trued up."""
+    """Where every month folder stands: whether it ran, what it accrued, what it trued up, and how many of
+    its accruals are still waiting for an actual (a closed month can be settled and still have one open)."""
     ws = workspace(root, "1970-01-01T00:00:00Z")
     book, cases = runs(ws), cases_mod.load_cases(ws)
     out = []
     for period in periods(pdf_dir):
         mine = [c for c in cases if c.get("period") == period]
         done = book.get(period) or {}
-        state = "SETTLED" if done.get("settled_at") else "CLOSED" if done.get("closed_at") else "NOT_RUN"
+        settled = [c for c in mine if c.get("settlement")]
+        waiting = [c for c in mine if c["status"] == "CLOSED" and (c.get("estimate") or {}).get("amount") is not None]
+        if not done.get("closed_at"):
+            state = "NOT_RUN"
+        elif done.get("settled_at") and (settled or not waiting):
+            state = "SETTLED"      # settlement has run and either trued something up or has nothing left to do
+        else:
+            state = "CLOSED"
         accruals = read_json(ws.out_dir / period / "accruals.json")
         trueups = read_json(ws.out_dir / period / "trueups.json")
         out.append({"period": period, "state": state, "cases": len(mine),
                     "accrued_total": round(sum(a.get("amount") or 0 for a in accruals), 2),
                     "true_up_total": round(sum(t.get("true_up") or 0 for t in trueups), 2),
+                    "unsettled": len(waiting),
                     "documents": len(documents_in(pdf_dir, period))})
     return out
 
