@@ -1,0 +1,4 @@
+# #marketing-launch
+[2026-12-03 10:00] taylor: launch video is approved, agency is loading it today
+[2026-12-03 11:00] riley: can we get the landing page ready before the ads go live?
+[2026-12-04 09:00] sam: landing page is up on staging

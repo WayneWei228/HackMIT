@@ -1,0 +1,30 @@
+From: Riley Kim <riley.kim@northstar.example>
+To: Alex Chen <alex@mintlify.example>
+Date: Thu, 10 Dec 2026 09:30:00 +0000
+Subject: Re: Mintlify SSO and custom domain
+Message-ID: <FILE-MINTLIFY-01@northstar.example>
+In-Reply-To: <FILE-MINTLIFY-01-2@northstar.example>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+MIME-Version: 1.0
+
+That worked, SSO is live. We stay on the current plan, so nothing else change=
+s on our side.
+
+Riley
+
+On Wed, Dec 09, 2026 at 14:00 UTC, Alex Chen <alex@mintlify.example> wrote:
+> Add the CNAME from the dashboard, then paste the SAML metadata under Settin=
+gs. Propagation usually takes under an hour.
+>=20
+> Alex
+
+On Tue, Dec 08, 2026 at 10:00 UTC, Riley Kim <riley.kim@northstar.example> wr=
+ote:
+> Hi Alex,
+>=20
+> We want to put the docs site on our own domain and turn on SSO for the edit=
+ors. Which DNS records do you need from us?
+>=20
+> Thanks,
+> Riley

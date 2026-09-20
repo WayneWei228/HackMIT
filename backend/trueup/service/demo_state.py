@@ -15,6 +15,7 @@ file out of play instead of being edited in place.
 
 from __future__ import annotations
 
+import os
 from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
@@ -56,7 +57,10 @@ MOMENTS = Moments(
     invoices=JANUARY_AT,
     vendor_reply=VENDOR_REPLY_MOMENTS[-1],
 )
-SEED_DIR = Path(__file__).resolve().parents[2] / "seed"
+DEFAULT_SEED_DIR = Path(__file__).resolve().parents[2] / "seed"
+# The world the demo runs in: the generator's default, or a generated directory named by
+# TRUEUP_SEED_DIR, such as `seed_late_amendment` (scripts/generate_late_amendment.py).
+SEED_DIR = Path(os.environ.get("TRUEUP_SEED_DIR") or DEFAULT_SEED_DIR)
 DEMO_USER = "demo user"
 
 Phase = Literal["DAY_ONE", "CLOSED", "JANUARY"]
@@ -152,7 +156,7 @@ def load_demo_close(
     The five December obligations are detected and left untouched, so every case starts Pending
     and the presenter starts each one by hand.
     """
-    sim = Simulator.initialize()
+    sim = Simulator.initialize(seed_dir=None if SEED_DIR == DEFAULT_SEED_DIR else SEED_DIR)
     state = DemoState(sim=sim, judge=judge, overrides=dict(overrides or {}))
     with sim.session() as session:
         run_for(state, session).learn_from_history(now=_aware(sim.now()))

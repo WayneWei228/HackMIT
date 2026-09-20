@@ -245,7 +245,7 @@ def test_no_model_uses_the_template_and_says_so(session):
     assert any("No language model" in n for n in notes)
 
 
-@pytest.mark.parametrize("topic", [t for t in Topic if t != Topic.INVOICE_DISPUTE])
+@pytest.mark.parametrize("topic", [t for t in Topic if t not in outreach.TO_VENDOR])
 def test_every_template_passes_its_own_guardrail(session, topic):
     obligation = at_outreach(session, "VEN-OPENAI", S.MISSING_USAGE)
     sent = send_outreach(session, obligation.obligation_id, now=NOW, topic=topic)

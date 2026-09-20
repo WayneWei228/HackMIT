@@ -6,7 +6,11 @@ import type { ReactNode } from "react";
 import { formatMoney, formatSigned } from "@/lib/money";
 import { routes } from "@/lib/routes";
 
+import { DecisionBox } from "./decision-box";
 import { useVerificationScreen } from "./screen-context";
+
+/** Emails about a posted accrual go to the vendor, not to the service owner inside the company. */
+const TO_VENDOR = new Set(["INVOICE_DISPUTE", "VARIANCE_EXPLANATION"]);
 
 function Block({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -48,7 +52,7 @@ const CAUSES: Record<string, string> = {
  * request to the service owner, the January invoice that graded the accrual,
  * and the entries posted. Blocks appear only when the case has that history.
  */
-export function CaseActivityPanel() {
+export function CaseActivityPanel({ className = "mt-[14px]" }: { className?: string }) {
   const view = useVerificationScreen();
   const { controller, reconciliation, outreach, rulesApplied, entries, audit } = view;
   const blocks: ReactNode[] = [];
@@ -71,6 +75,9 @@ export function CaseActivityPanel() {
             {controller.record.notes ? `: ${controller.record.notes}` : "."}
           </div>
         )}
+        {/* Once January has graded the case, what the Controller decides is the invoice, so the
+            buttons sit under the finding they act on instead of beside the December checks. */}
+        {controller.in_queue && reconciliation && <DecisionBox />}
       </Block>,
     );
   }
@@ -100,7 +107,14 @@ export function CaseActivityPanel() {
 
   if (outreach.length > 0) {
     blocks.push(
-      <Block key="outreach" title="OUTREACH TO THE SERVICE OWNER">
+      <Block
+        key="outreach"
+        title={
+          outreach.some((message) => TO_VENDOR.has(message.topic))
+            ? "LETTERS WITH THE VENDOR"
+            : "OUTREACH TO THE SERVICE OWNER"
+        }
+      >
         <div className="flex flex-col gap-3">
           {outreach.map((message, index) => (
             <div
@@ -193,7 +207,9 @@ export function CaseActivityPanel() {
   if (blocks.length === 0) return null;
 
   return (
-    <section className="mt-[14px] rounded-xl border border-divider bg-panel px-5 pt-5 pb-[22px] shadow-[var(--shadow-tile)]">
+    <section
+      className={`${className} rounded-xl border border-divider bg-panel px-5 pt-5 pb-[22px] shadow-[var(--shadow-tile)]`}
+    >
       <div className="font-display text-2xl text-ink-deep">Case activity</div>
       <div className="mt-1.5 border-b border-divider-3 pb-[14px] text-sm leading-[1.6] text-faint">
         What happened to this accrual after the checks.

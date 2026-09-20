@@ -219,7 +219,11 @@ def _month_name(period: str) -> str:
     return f"{fx.period_start(period):%B %Y}"
 
 
-def _mintlify(w: _World) -> None:
+# When the vendor's reply to the variance question, and with it the signed amendment, arrives.
+MINTLIFY_AMENDMENT_SENT_AT = fx.utc(2027, 2, 2, 10)
+
+
+def _mintlify(w: _World, amendment_known: bool = True) -> None:
     fee_v1 = "4.1 Customer shall pay a monthly subscription fee of $1,200 for the Standard "
     fee_v1 += "Workspace plan, invoiced monthly in arrears."
     fee_v2 = "Amendment 1, signed November 18, 2026. 4.2 Commencing December 1, 2026, the "
@@ -234,28 +238,30 @@ def _mintlify(w: _World) -> None:
         service_owner_id="ENG-001",
         procurement_owner_id="PROC-001",
     )
-    w.contracts += [
-        fx.contract(
-            **common,
-            contract_version=1,
-            contract_name="Mintlify Master Subscription Agreement",
-            status="SUPERSEDED",
-            effective_start_date=date(2026, 1, 1),
-            effective_end_date=date(2026, 11, 30),
-            base_rate=fx.money(1200),
-            contract_text=fee_v1,
-        ),
-        fx.contract(
-            **common,
-            contract_version=2,
-            contract_name="Mintlify Master Subscription Agreement, Amendment 1",
-            status="ACTIVE",
-            effective_start_date=date(2026, 12, 1),
-            effective_end_date=date(2027, 11, 30),
-            base_rate=fx.money(1400),
-            contract_text=fee_v2,
-        ),
-    ]
+    original = fx.contract(
+        **common,
+        contract_version=1,
+        contract_name="Mintlify Master Subscription Agreement",
+        status="SUPERSEDED",
+        effective_start_date=date(2026, 1, 1),
+        effective_end_date=date(2026, 11, 30),
+        base_rate=fx.money(1200),
+        contract_text=fee_v1,
+    )
+    amended = fx.contract(
+        **common,
+        contract_version=2,
+        contract_name="Mintlify Master Subscription Agreement, Amendment 1",
+        status="ACTIVE",
+        effective_start_date=date(2026, 12, 1),
+        effective_end_date=date(2027, 11, 30),
+        base_rate=fx.money(1400),
+        contract_text=fee_v2,
+    )
+    if amendment_known:
+        w.contracts += [original, amended]
+    else:
+        _mintlify_amendment_arrives_late(w, original, amended)
     w.pos.append(
         fx.purchase_order(
             po_id="PO-MINTLIFY-2026",
@@ -372,6 +378,49 @@ def _mintlify(w: _World) -> None:
         None,
         fx.money(1400),
         "DONE",
+    )
+    if not amendment_known:
+        w.outreach.append(
+            OutreachResponse(
+                outreach_key="MINTLIFY-2026-12-VARIANCE_EXPLANATION",
+                available_at=MINTLIFY_AMENDMENT_SENT_AT,
+                recipient_role="VENDOR_BILLING",
+                response_text=(
+                    f"Hi, invoice {dec.invoice_number} is correct. Amendment No. 1 to the Master "
+                    "Subscription Agreement, signed on November 18, 2026, raised the Standard "
+                    "Workspace fee from 1,200.00 to 1,400.00 per month from December 1, 2026. It "
+                    "looks like the signed copy never reached your finance team, so it is attached "
+                    "again here. The 1,400.00 stands.\n\nAlex Chen\nBilling, Mintlify"
+                ),
+                parsed_truth={"resolved": True, "confirmed_amount": "1400.00"},
+            )
+        )
+
+
+def _mintlify_amendment_arrives_late(w: _World, original, amended) -> None:
+    """The company holds only the original agreement until the vendor sends the amendment.
+
+    December therefore closes on the original fee and January's invoice leaves a difference no
+    record explains. The amendment is filed the moment the vendor's reply brings the signed copy,
+    which is what lets Reconciliation explain the difference when it looks again.
+    """
+    on_file = {"status": "ACTIVE", "effective_end_date": amended.effective_end_date}
+    w.contracts.append(original.model_copy(update=on_file))
+    w.insert(
+        "EVT-MINTLIFY-2027-02-AMENDMENT-FILED",
+        MINTLIFY_AMENDMENT_SENT_AT,
+        "company_contracts",
+        amended,
+    )
+    w.update(
+        "EVT-MINTLIFY-2027-02-ORIGINAL-SUPERSEDED",
+        MINTLIFY_AMENDMENT_SENT_AT,
+        "company_contracts",
+        {"contract_row_id": original.contract_row_id},
+        {
+            "status": original.status,
+            "effective_end_date": original.effective_end_date.isoformat(),
+        },
     )
 
 
@@ -950,10 +999,12 @@ def _config(w: _World) -> None:
     ]
 
 
-def generate(seed: int = DEFAULT_SEED) -> GeneratedWorld:
+def generate(seed: int = DEFAULT_SEED, *, mintlify_amendment_known: bool = True) -> GeneratedWorld:
+    """The five-vendor world. `mintlify_amendment_known=False` is the late-amendment variant:
+    Mintlify's price rise is not on file at close, so January's invoice leaves $200 unexplained."""
     w = _World(seed)
     w.vendors = [fx.vendor(*row) for row in VENDOR_ROWS]
-    _mintlify(w)
+    _mintlify(w, mintlify_amendment_known)
     _openai(w)
     _asus(w)
     _meta(w)

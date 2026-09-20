@@ -46,7 +46,7 @@ export function VerificationScreen() {
 }
 
 function VerificationBody({ run }: { run: ReturnType<typeof useVerificationRun> }) {
-  const { received, stageChecks, escalation, header } = useVerificationScreen();
+  const { received, stageChecks, escalation, header, reconciliation } = useVerificationScreen();
   const { view } = run;
   const done = useRevealDone();
   const { count } = useRevealSlice(0, view.controls.length);
@@ -74,6 +74,8 @@ function VerificationBody({ run }: { run: ReturnType<typeof useVerificationRun> 
         )}
 
         <div className="min-h-0 flex-1 overflow-y-auto px-[34px] pb-[26px]">
+          {/* Once the invoice has graded the accrual, that is the news on this screen, so it leads. */}
+          {reconciliation && <CaseActivityPanel className="mb-3.5" />}
           {received && (
             <div className="mb-3.5">
               <ReceivedStrip received={received} />
@@ -114,7 +116,7 @@ function VerificationBody({ run }: { run: ReturnType<typeof useVerificationRun> 
               </div>
             </section>
           )}
-          <CaseActivityPanel />
+          {!reconciliation && <CaseActivityPanel />}
         </div>
       </main>
 

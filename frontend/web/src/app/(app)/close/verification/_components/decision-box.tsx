@@ -24,6 +24,13 @@ export function DecisionBox() {
   const [actor, setActor] = useState(controllerId);
   const allowed = new Set(controller.allowed_decisions);
   const canApprove = allowed.has("APPROVE");
+  /* After January the accrual is already posted, so what is left to decide is the invoice:
+     the backend offers one of these only when Reconciliation's finding calls for it. */
+  const toVendor: { decision: Decision; label: string }[] = [
+    { decision: "ASK_VENDOR_TO_EXPLAIN", label: "Ask vendor to explain" },
+    { decision: "DISPUTE_WITH_VENDOR", label: "Dispute with vendor" },
+  ];
+  const vendorMoves = toVendor.filter((move) => allowed.has(move.decision));
 
   const decide = (decision: Decision) =>
     run(() => decideObligation(obligationId, { decision, notes, decided_by: actor }));
@@ -59,10 +66,27 @@ export function DecisionBox() {
       />
       {/* text-[13.5px]: `cn` reads the custom `text-ui` token as a colour and drops it against
           the variant's own text colour, so the size and line-height are restated here. */}
+      {vendorMoves.map((move) => (
+        <Button
+          key={move.decision}
+          variant="solid"
+          disabled={pending}
+          onClick={() => decide(move.decision)}
+          className="mt-1 w-full justify-center border border-accent px-3.5 text-[13.5px] leading-none hover:bg-accent-deep disabled:cursor-not-allowed disabled:opacity-45"
+        >
+          {move.label}
+        </Button>
+      ))}
       <Button
-        variant="solid"
+        variant={vendorMoves.length > 0 ? "secondary" : "solid"}
         disabled={!canApprove || pending}
-        title={canApprove ? undefined : "Policy blocked this accrual, so it cannot be approved."}
+        title={
+          canApprove
+            ? undefined
+            : vendorMoves.length > 0
+              ? "The accrual is already posted; what is open is the invoice."
+              : "Policy blocked this accrual, so it cannot be approved."
+        }
         onClick={() => decide("APPROVE")}
         className="mt-1 w-full justify-center border border-accent px-3.5 text-[13.5px] leading-none hover:bg-accent-deep disabled:cursor-not-allowed disabled:opacity-45"
       >

@@ -20,7 +20,14 @@ from trueup.store import models as m
 
 SENDER = v.Party(name="Finance Operations", role="Finance")
 _OWNER_ROLE_LABELS = {"VENDOR_BILLING": "VENDOR_CONTACT"}
-_FACTS = ("quantity", "unit", "in_service_date", "service_received", "corrected_amount")
+_FACTS = (
+    "quantity",
+    "unit",
+    "in_service_date",
+    "service_received",
+    "corrected_amount",
+    "confirmed_amount",
+)
 _OUTREACH_FROM = "AWAITING_OUTREACH/SEND_OUTREACH"
 
 

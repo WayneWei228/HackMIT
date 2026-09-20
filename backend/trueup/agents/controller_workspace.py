@@ -34,6 +34,8 @@ REVIEW_STATES = frozenset(
     {(_S.AWAITING_CONTROLLER, _A.CONTROLLER_REVIEW), (_S.BLOCKED, _A.CONTROLLER_REVIEW)}
 )
 _APPROVING = (_C.APPROVE, _C.APPROVE_WITH_ADJUSTMENT)
+# Decisions that write to the vendor. The accrual is already posted, so its workpaper is kept.
+_TO_VENDOR = (_C.DISPUTE_WITH_VENDOR, _C.ASK_VENDOR_TO_EXPLAIN)
 _APPROVABLE_POLICY = (_D.PERMIT, _D.REQUIRE_CONTROLLER)
 _FINAL_STATUS = (
     e.WorkpaperStatus.APPROVED,
@@ -269,10 +271,11 @@ def decide(
         )
     workpaper = _workpaper(session, obligation)
     _check_allowed(obligation, workpaper, decision)
-    if decision == _C.DISPUTE_WITH_VENDOR and not _vendor_contact(session, obligation.vendor_id):
+    if decision in _TO_VENDOR and not _vendor_contact(session, obligation.vendor_id):
+        email = "a dispute email" if decision == _C.DISPUTE_WITH_VENDOR else "the question"
         raise DecisionNotAllowedError(
             f"no contact is configured for {_vendor_name(session, obligation.vendor_id)}, "
-            "so a dispute email has nowhere to go"
+            f"so {email} has nowhere to go"
         )
     original = coerce_money(workpaper.proposed_amount) if workpaper is not None else None
     new_lines = _adjusted_lines(workpaper, decision, adjusted_amount, notes, original)
@@ -293,8 +296,9 @@ def decide(
         },
     )
 
-    if workpaper is not None and decision == _C.DISPUTE_WITH_VENDOR:
-        _record_dispute(workpaper, decided_by, notes, now)
+    if workpaper is not None and decision in _TO_VENDOR:
+        kind = "DISPUTE" if decision == _C.DISPUTE_WITH_VENDOR else "QUESTION"
+        _record_dispute(workpaper, decided_by, notes, now, kind=kind)
     elif workpaper is not None:
         if new_lines is not None:
             adjusted = adjusted_amount.quantize(_CENTS)
@@ -411,9 +415,17 @@ def _vendor_contact(session: Session, vendor_id: str) -> dict[str, Any] | None:
 
 
 def _record_dispute(
-    workpaper: m.TrueUpWorkpaper, decided_by: str, notes: str, now: datetime
+    workpaper: m.TrueUpWorkpaper,
+    decided_by: str,
+    notes: str,
+    now: datetime,
+    *,
+    kind: str = "DISPUTE",
 ) -> None:
     """Keep the approved workpaper as it is and note the dispute beside it.
+
+    A QUESTION is the same record with a different ask: the invoice is accepted, the variance is
+    unexplained, and the vendor is asked what changed instead of being asked to correct anything.
 
     The email may only cite what Reconciliation recorded, so those figures are copied here when the
     Controller raises the dispute and nothing else feeds the draft.
@@ -422,6 +434,7 @@ def _record_dispute(
     workpaper.calculation_inputs_json = {
         **(workpaper.calculation_inputs_json or {}),
         "dispute": {
+            "kind": kind,
             "status": "RAISED",
             "raised_by": decided_by,
             "raised_at": now.isoformat(),
@@ -471,7 +484,8 @@ def _allowed(
         if _simple_entry(workpaper):
             allowed.append(_C.APPROVE_WITH_ADJUSTMENT)
     disputes = [_C.DISPUTE_WITH_VENDOR] if _disputable(obligation, workpaper) else []
-    return [*disputes, *allowed, _C.REQUEST_MORE_EVIDENCE, _C.REJECT]
+    questions = [_C.ASK_VENDOR_TO_EXPLAIN] if _unexplained(obligation, workpaper) else []
+    return [*disputes, *questions, *allowed, _C.REQUEST_MORE_EVIDENCE, _C.REJECT]
 
 
 def reconciliation_record(workpaper: m.TrueUpWorkpaper | None) -> dict[str, Any] | None:
@@ -498,11 +512,33 @@ def _disputable(obligation: m.TrueUpObligation, workpaper: m.TrueUpWorkpaper | N
     )
 
 
+def _unexplained(obligation: m.TrueUpObligation, workpaper: m.TrueUpWorkpaper | None) -> bool:
+    """A posted accrual whose accepted invoice left a variance that no record explains."""
+    if (obligation.workflow_stage, obligation.next_action) != (
+        _S.AWAITING_CONTROLLER,
+        _A.CONTROLLER_REVIEW,
+    ):
+        return False
+    if workpaper is None or obligation.accrual_status != e.AccrualStatus.POSTED_SIMULATED:
+        return False
+    record = reconciliation_record(workpaper)
+    return (
+        record is not None
+        and record.get("root_cause") == e.RootCause.UNKNOWN.value
+        and record.get("invoice_accepted") is True
+    )
+
+
 def _check_allowed(
     obligation: m.TrueUpObligation,
     workpaper: m.TrueUpWorkpaper | None,
     decision: e.ControllerDecision,
 ) -> None:
+    if decision == _C.ASK_VENDOR_TO_EXPLAIN and decision not in _allowed(obligation, workpaper):
+        raise DecisionNotAllowedError(
+            f"{obligation.obligation_id} has no reconciled variance that the records leave "
+            "unexplained, so there is nothing to ask the vendor"
+        )
     if decision == _C.DISPUTE_WITH_VENDOR and decision not in _allowed(obligation, workpaper):
         raise DecisionNotAllowedError(
             f"{obligation.obligation_id} has no reconciled invoice above what was delivered, "
@@ -784,6 +820,12 @@ def _recommendation(
     if workpaper is None:
         return "No estimate exists, so nothing can be approved. Request more evidence or reject."
     decision = workpaper.policy_decision
+    if _C.ASK_VENDOR_TO_EXPLAIN in allowed:
+        record = reconciliation_record(workpaper) or {}
+        return (
+            f"Ask the vendor. The invoice bills {record.get('actual')} but the agreement on file "
+            f"supports {record.get('accrued')}, and no record explains the difference."
+        )
     if _C.DISPUTE_WITH_VENDOR in allowed:
         record = reconciliation_record(workpaper) or {}
         return (

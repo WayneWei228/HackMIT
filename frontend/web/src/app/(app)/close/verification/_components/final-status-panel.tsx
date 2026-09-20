@@ -56,7 +56,8 @@ export function FinalStatusPanel({
   noteTitle: string;
   noteBody: string;
 }) {
-  const { amount, finalRows, journal, controller, header } = useVerificationScreen();
+  const { amount, finalRows, journal, controller, header, reconciliation } =
+    useVerificationScreen();
   const ready = header.status === "Close-ready" || header.status === "Complete";
   const settled = ready;
   const statusColor = settled ? "#2E8047" : header.status === "Blocked" ? "#A4452F" : "#B9791F";
@@ -140,7 +141,8 @@ export function FinalStatusPanel({
         </div>
       </motion.div>
 
-      {controller.in_queue && <DecisionBox />}
+      {/* After January the decision is about the invoice; Case activity draws it under that finding. */}
+      {controller.in_queue && !reconciliation && <DecisionBox />}
     </section>
   );
 }

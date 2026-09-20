@@ -478,7 +478,15 @@ def _title(row: m.TrueUpAgentRun, route: dict[str, str] | None) -> str:
     if row.agent_name == "verifier" and route is not None:
         moved = "held" if route["from"] == route["routed"] else "moved"
         return f"Verification gate {moved} {route['from']} to {route['routed']}"
+    if (row.agent_name, row.action) == ("outreach", "send_outreach") and _to_vendor(row):
+        return "Outreach asked the vendor"
     return _TITLES.get((row.agent_name, row.action), f"{row.agent_name}: {row.action}")
+
+
+def _to_vendor(row: m.TrueUpAgentRun) -> bool:
+    """A dispute or a variance question goes to the vendor's billing contact, not to an owner."""
+    topics = {f.get("topic") for f in row.facts_used_json or [] if isinstance(f, dict)}
+    return bool(topics & {"INVOICE_DISPUTE", "VARIANCE_EXPLANATION"})
 
 
 def _method(row: m.TrueUpAgentRun) -> v.Method | None:

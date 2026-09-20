@@ -691,6 +691,7 @@ _DECISION_FOR_TARGET = {
     (e.WorkflowStage.AWAITING_OUTREACH, e.NextAction.SEND_OUTREACH): (
         e.ControllerDecision.REQUEST_MORE_EVIDENCE,
         e.ControllerDecision.DISPUTE_WITH_VENDOR,
+        e.ControllerDecision.ASK_VENDOR_TO_EXPLAIN,
     ),
     (e.WorkflowStage.GATHERING_EVIDENCE, e.NextAction.GATHER_EVIDENCE): (
         e.ControllerDecision.REQUEST_MORE_EVIDENCE,
@@ -1004,7 +1005,8 @@ def ver_24(h: Handoff) -> CheckResult:
 # ---- VER-25, VER-26, VER-27: raising an invoice with the vendor ---------------------------------
 
 _MONEY = re.compile(r"\d[\d,]*\.\d{2}")
-_DISPUTE_TOPIC = "INVOICE_DISPUTE"
+# The two emails that go to a vendor about a posted accrual: a dispute and a question.
+_VENDOR_TOPICS = ("INVOICE_DISPUTE", "VARIANCE_EXPLANATION")
 
 
 def _outreach_cards(h: Handoff, direction: str) -> list[m.TrueUpEvidence]:
@@ -1013,13 +1015,15 @@ def _outreach_cards(h: Handoff, direction: str) -> list[m.TrueUpEvidence]:
         for c in h.cards
         if c.evidence_type == e.EvidenceCardType.OUTREACH_RESPONSE
         and (c.value_json or {}).get("direction") == direction
-        and (c.value_json or {}).get("topic") == _DISPUTE_TOPIC
+        and (c.value_json or {}).get("topic") in _VENDOR_TOPICS
     ]
 
 
 def ver_25(h: Handoff) -> CheckResult:
     name = "A vendor dispute rests on a reconciled invoice above what was delivered"
-    if h.facts.get("controller_decision") != e.ControllerDecision.DISPUTE_WITH_VENDOR.value:
+    decision = h.facts.get("controller_decision")
+    asking = decision == e.ControllerDecision.ASK_VENDOR_TO_EXPLAIN.value
+    if not asking and decision != e.ControllerDecision.DISPUTE_WITH_VENDOR.value:
         return _skip("VER-25", name, "This handoff is not a vendor dispute.")
     record = h.inputs.get("reconciliation") or {}
     if h.ob.accrual_status != e.AccrualStatus.POSTED_SIMULATED:
@@ -1030,7 +1034,20 @@ def ver_25(h: Handoff) -> CheckResult:
             expected=e.AccrualStatus.POSTED_SIMULATED.value,
             actual=h.ob.accrual_status.value,
         )
-    if (
+    if asking:
+        # A question is only for an accepted invoice whose variance no record explains.
+        if (
+            record.get("root_cause") != e.RootCause.UNKNOWN.value
+            or record.get("invoice_accepted") is not True
+        ):
+            return _fail(
+                "VER-25",
+                name,
+                "Reconciliation did not leave an accepted invoice with an unexplained variance.",
+                expected=e.RootCause.UNKNOWN.value,
+                actual=str(record.get("root_cause")),
+            )
+    elif (
         record.get("root_cause") != e.RootCause.SOURCE_DATA_ERROR.value
         or record.get("invoice_accepted") is not False
     ):
@@ -1062,6 +1079,8 @@ def ver_26(h: Handoff) -> CheckResult:
         return _fail(
             "VER-26", name, "There is no posted accrual for the vendor to correct against."
         )
+    if dispute.get("kind") == "QUESTION":
+        return _question_answered(name, value, dispute)
     if not value.get("resolved") or value.get("corrected_amount") is None:
         return _fail("VER-26", name, "The reply does not commit to a corrected invoice amount.")
     try:
@@ -1092,6 +1111,26 @@ def ver_26(h: Handoff) -> CheckResult:
     if corrected not in shown:
         return _fail("VER-26", name, f"{corrected} does not appear in the vendor's reply text.")
     return _pass("VER-26", name, f"The vendor commits to {corrected}.", expected=str(supported))
+
+
+def _question_answered(name: str, value: dict, dispute: dict) -> CheckResult:
+    """The vendor's explanation stands only if it confirms exactly the amount it invoiced."""
+    if not value.get("resolved") or value.get("confirmed_amount") is None:
+        return _fail("VER-26", name, "The reply does not confirm the invoiced amount.")
+    try:
+        confirmed = coerce_money(value["confirmed_amount"])
+        invoiced = coerce_money(dispute["invoiced_amount"])
+    except (KeyError, TypeError, ValueError):
+        return _fail("VER-26", name, "The confirmed amount is not an exact Decimal.")
+    if abs(confirmed - invoiced) > TOLERANCE:
+        return _fail(
+            "VER-26",
+            name,
+            f"The vendor confirms {confirmed}, not the {invoiced} it invoiced.",
+            expected=str(invoiced),
+            actual=str(confirmed),
+        )
+    return _pass("VER-26", name, f"The vendor confirms the {invoiced} it invoiced and says why.")
 
 
 def ver_27(h: Handoff) -> CheckResult:

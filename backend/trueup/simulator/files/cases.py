@@ -93,15 +93,23 @@ def mintlify(ctx: Ctx) -> list[Spec]:
     vid = ctx.vendor.vendor_id
     contracts = ctx.view.contracts(vid)
     old, new = contracts[0], contracts[-1]
+    # In the late-amendment world only the original agreement is on file at close, so no
+    # document of the December close may mention a new fee.
+    amended = new is not old
     po = ctx.view.pos(vid)[0]
     prior = latest_invoice(ctx)
     signed = new.effective_start_date - timedelta(days=13)
     term_end = new.effective_end_date or old.effective_end_date
+    clause_41 = (
+        f"During the initial term the monthly subscription fee for the Standard "
+        f"Workspace plan is {usd(old.base_rate)} per month, invoiced monthly in arrears."
+    )
     clause_42 = (
         f"Commencing {long_date(new.effective_start_date)}, the monthly subscription fee for the "
         f"Standard Workspace plan shall increase from {usd(old.base_rate)} to {usd(new.base_rate)} "
         "per month for the remainder of the term."
     )
+    fee_clauses = [f"4.1 {clause_41}", *([f"4.2 {clause_42}"] if amended else [])]
     bp = boilerplate(ctx.legal, ctx.cast.customer)
     agreement = Doc(
         ctx.name,
@@ -117,14 +125,27 @@ def mintlify(ctx: Ctx) -> list[Spec]:
                 )
             ),
             *before_fees(bp),
-            *_fees_section(
-                f"4.1 During the initial term the monthly subscription fee for the Standard "
-                f"Workspace plan is {usd(old.base_rate)} per month, invoiced monthly in arrears.",
-                f"4.2 {clause_42}",
-            ),
+            *_fees_section(*fee_clauses),
             *after_fees(bp),
-            *_amendment(signed, new.effective_start_date, old.base_rate, new.base_rate),
+            *(
+                _amendment(signed, new.effective_start_date, old.base_rate, new.base_rate)
+                if amended
+                else ()
+            ),
         ),
+    )
+    next_close = (
+        [
+            f"The amended agreement signed on {long_date(signed)} raises the monthly fee to "
+            f"{usd(new.base_rate)} effective {long_date(new.effective_start_date)}.",
+            "Action for the December close: accrue at the amended agreement rate, not the rate on "
+            "the purchase order.",
+        ]
+        if amended
+        else [
+            "No change to the agreement is on file.",
+            "Action for the December close: accrue at the same agreement rate.",
+        ]
     )
     memo = memo_doc(
         "Close Memo",
@@ -137,10 +158,7 @@ def mintlify(ctx: Ctx) -> list[Spec]:
         [
             f"November was accrued and invoiced at {usd(prior.amount)}, the rate in force through "
             f"{long_date(old.effective_end_date)}.",
-            f"The amended agreement signed on {long_date(signed)} raises the monthly fee to "
-            f"{usd(new.base_rate)} effective {long_date(new.effective_start_date)}.",
-            "Action for the December close: accrue at the amended agreement rate, not the rate on "
-            "the purchase order.",
+            *next_close,
         ],
     )
     po_doc, _ = _po_doc(
@@ -189,10 +207,15 @@ def mintlify(ctx: Ctx) -> list[Spec]:
             "Master Subscription Agreement",
             agreement,
             previews.clause(
-                ctx.name, "Master Subscription Agreement", "4. Fees and Payment", "4.2", clause_42
+                ctx.name,
+                "Master Subscription Agreement",
+                "4. Fees and Payment",
+                *(("4.2", clause_42) if amended else ("4.1", clause_41)),
             ),
             "SUPPORTS_AMOUNT",
-            "The amended fee clause sets the effective monthly price for the accrued month.",
+            "The amended fee clause sets the effective monthly price for the accrued month."
+            if amended
+            else "The fee clause sets the monthly price for the accrued month.",
             at(11, 18),
         ),
         ap_history_spec(

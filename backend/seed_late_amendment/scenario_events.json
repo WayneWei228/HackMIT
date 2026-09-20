@@ -1,0 +1,387 @@
+[
+  {
+    "event_id": "EVT-ASUS-2026-12-RECEIPT",
+    "available_at": "2026-12-18T14:00:00Z",
+    "operation": "INSERT",
+    "table": "company_service_evidence",
+    "record": {
+      "service_evidence_id": "USE-ASUS-2026-12-18",
+      "vendor_id": "VEN-ASUS",
+      "contract_id": null,
+      "po_id": "PO-ASUS-2026",
+      "service_start_date": "2026-12-18",
+      "service_end_date": "2026-12-18",
+      "evidence_type": "GOODS_RECEIPT",
+      "quantity": "20",
+      "unit": "EACH",
+      "accepted_amount": "32000.00",
+      "source_system": "WAREHOUSE",
+      "confirmed_by_person_id": "OPS-001",
+      "confirmation_status": "OWNER_CONFIRMED",
+      "created_at": "2026-12-18T14:00:00Z"
+    }
+  },
+  {
+    "event_id": "EVT-ASUS-2026-12-RECEIPT-PO",
+    "available_at": "2026-12-18T14:05:00Z",
+    "operation": "UPDATE",
+    "table": "company_purchase_orders",
+    "record": {
+      "line_items_json": [
+        {
+          "po_line_id": "PO-2026-1003-001",
+          "item_category": "MATERIAL",
+          "gl_account_code": "150200",
+          "quantity_ordered": "25",
+          "unit_price": "1600.00",
+          "quantity_received": "20",
+          "quantity_billed": "0",
+          "line_description": "ASUS ExpertBook laptop, 16 GB, 512 GB",
+          "service_start_date": null,
+          "service_end_date": null,
+          "receipt_required": true,
+          "useful_life_months": 36,
+          "in_service_date": null
+        }
+      ]
+    },
+    "key": {
+      "po_id": "PO-ASUS-2026"
+    }
+  },
+  {
+    "event_id": "EVT-OPENAI-2026-12-USAGE-PARTIAL",
+    "available_at": "2026-12-28T18:00:00Z",
+    "operation": "INSERT",
+    "table": "company_service_evidence",
+    "record": {
+      "service_evidence_id": "USE-OPENAI-2026-12-PARTIAL",
+      "vendor_id": "VEN-OPENAI",
+      "contract_id": "CON-OPENAI",
+      "po_id": "PO-OPENAI-2026",
+      "service_start_date": "2026-12-01",
+      "service_end_date": "2026-12-19",
+      "evidence_type": "SYSTEM_USAGE",
+      "quantity": "576000",
+      "unit": "API_CALL",
+      "accepted_amount": null,
+      "source_system": "ENGINEERING_PLATFORM",
+      "confirmed_by_person_id": null,
+      "confirmation_status": "PENDING",
+      "created_at": "2026-12-28T18:00:00Z"
+    }
+  },
+  {
+    "event_id": "EVT-META-2026-12-DELIVERY",
+    "available_at": "2026-12-30T17:00:00Z",
+    "operation": "INSERT",
+    "table": "company_service_evidence",
+    "record": {
+      "service_evidence_id": "USE-META-2026-12",
+      "vendor_id": "VEN-META",
+      "contract_id": null,
+      "po_id": "PO-META-2026",
+      "service_start_date": "2026-12-01",
+      "service_end_date": "2026-12-31",
+      "evidence_type": "MILESTONE_ACCEPTANCE",
+      "quantity": null,
+      "unit": null,
+      "accepted_amount": "24700.00",
+      "source_system": "PROJECT_MANAGEMENT",
+      "confirmed_by_person_id": "MKT-001",
+      "confirmation_status": "OWNER_CONFIRMED",
+      "created_at": "2026-12-30T17:00:00Z"
+    }
+  },
+  {
+    "event_id": "EVT-MINTLIFY-2027-01-INVOICE",
+    "available_at": "2027-01-03T09:00:00Z",
+    "operation": "INSERT",
+    "table": "company_ap_invoices",
+    "record": {
+      "invoice_id": "INV-MINTLIFY-2026-12",
+      "vendor_id": "VEN-MINTLIFY",
+      "invoice_number": "MINT-2027-001",
+      "invoice_date": "2027-01-02",
+      "received_at": "2027-01-03T09:00:00Z",
+      "service_start_date": "2026-12-01",
+      "service_end_date": "2026-12-31",
+      "amount": "1400.00",
+      "currency": "USD",
+      "po_id": "PO-MINTLIFY-2026",
+      "contract_id": "CON-MINTLIFY",
+      "status": "IN_QUEUE",
+      "duplicate_flag": false,
+      "credit_flag": false,
+      "description": "Mintlify Standard Workspace subscription, December 2026",
+      "line_items_json": null,
+      "created_at": "2027-01-03T09:00:00Z",
+      "updated_at": "2027-01-03T09:00:00Z"
+    }
+  },
+  {
+    "event_id": "EVT-MINTLIFY-2027-01-PENDING",
+    "available_at": "2027-01-04T09:00:00Z",
+    "operation": "UPDATE",
+    "table": "company_ap_invoices",
+    "record": {
+      "status": "PENDING_APPROVAL",
+      "updated_at": "2027-01-04T09:00:00Z"
+    },
+    "key": {
+      "invoice_id": "INV-MINTLIFY-2026-12"
+    }
+  },
+  {
+    "event_id": "EVT-OPENAI-2027-01-INVOICE",
+    "available_at": "2027-01-05T09:00:00Z",
+    "operation": "INSERT",
+    "table": "company_ap_invoices",
+    "record": {
+      "invoice_id": "INV-OPENAI-2026-12",
+      "vendor_id": "VEN-OPENAI",
+      "invoice_number": "OA-2027-001",
+      "invoice_date": "2027-01-04",
+      "received_at": "2027-01-05T09:00:00Z",
+      "service_start_date": "2026-12-01",
+      "service_end_date": "2026-12-31",
+      "amount": "18600.00",
+      "currency": "USD",
+      "po_id": "PO-OPENAI-2026",
+      "contract_id": "CON-OPENAI",
+      "status": "IN_QUEUE",
+      "duplicate_flag": false,
+      "credit_flag": false,
+      "description": "OpenAI API usage, December 2026",
+      "line_items_json": null,
+      "created_at": "2027-01-05T09:00:00Z",
+      "updated_at": "2027-01-05T09:00:00Z"
+    }
+  },
+  {
+    "event_id": "EVT-META-2027-01-INVOICE",
+    "available_at": "2027-01-07T09:00:00Z",
+    "operation": "INSERT",
+    "table": "company_ap_invoices",
+    "record": {
+      "invoice_id": "INV-META-2026-12",
+      "vendor_id": "VEN-META",
+      "invoice_number": "META-2027-001",
+      "invoice_date": "2027-01-06",
+      "received_at": "2027-01-07T09:00:00Z",
+      "service_start_date": "2026-12-01",
+      "service_end_date": "2026-12-31",
+      "amount": "30000.00",
+      "currency": "USD",
+      "po_id": "PO-META-2026",
+      "contract_id": null,
+      "status": "IN_QUEUE",
+      "duplicate_flag": false,
+      "credit_flag": false,
+      "description": "Product launch campaign, total campaign budget",
+      "line_items_json": null,
+      "created_at": "2027-01-07T09:00:00Z",
+      "updated_at": "2027-01-07T09:00:00Z"
+    }
+  },
+  {
+    "event_id": "EVT-ASUS-2027-01-INVOICE",
+    "available_at": "2027-01-08T09:00:00Z",
+    "operation": "INSERT",
+    "table": "company_ap_invoices",
+    "record": {
+      "invoice_id": "INV-ASUS-2026-12",
+      "vendor_id": "VEN-ASUS",
+      "invoice_number": "ASUS-2027-001",
+      "invoice_date": "2027-01-07",
+      "received_at": "2027-01-08T09:00:00Z",
+      "service_start_date": "2026-12-18",
+      "service_end_date": "2026-12-18",
+      "amount": "32000.00",
+      "currency": "USD",
+      "po_id": "PO-ASUS-2026",
+      "contract_id": null,
+      "status": "IN_QUEUE",
+      "duplicate_flag": false,
+      "credit_flag": false,
+      "description": "20 ASUS ExpertBook laptops delivered December 18, 2026",
+      "line_items_json": [
+        {
+          "description": "ASUS ExpertBook laptop",
+          "quantity": "20",
+          "unit_price": "1600.00"
+        }
+      ],
+      "created_at": "2027-01-08T09:00:00Z",
+      "updated_at": "2027-01-08T09:00:00Z"
+    }
+  },
+  {
+    "event_id": "EVT-META-2027-01-REVIEW",
+    "available_at": "2027-01-08T09:00:00Z",
+    "operation": "UPDATE",
+    "table": "company_ap_invoices",
+    "record": {
+      "status": "PENDING_REVIEW",
+      "updated_at": "2027-01-08T09:00:00Z"
+    },
+    "key": {
+      "invoice_id": "INV-META-2026-12"
+    }
+  },
+  {
+    "event_id": "EVT-ASUS-2027-01-INVOICE-PO",
+    "available_at": "2027-01-08T09:05:00Z",
+    "operation": "UPDATE",
+    "table": "company_purchase_orders",
+    "record": {
+      "line_items_json": [
+        {
+          "po_line_id": "PO-2026-1003-001",
+          "item_category": "MATERIAL",
+          "gl_account_code": "150200",
+          "quantity_ordered": "25",
+          "unit_price": "1600.00",
+          "quantity_received": "20",
+          "quantity_billed": "20",
+          "line_description": "ASUS ExpertBook laptop, 16 GB, 512 GB",
+          "service_start_date": null,
+          "service_end_date": null,
+          "receipt_required": true,
+          "useful_life_months": 36,
+          "in_service_date": null
+        }
+      ]
+    },
+    "key": {
+      "po_id": "PO-ASUS-2026"
+    }
+  },
+  {
+    "event_id": "EVT-ASUS-2027-01-RECEIPT",
+    "available_at": "2027-01-14T10:00:00Z",
+    "operation": "INSERT",
+    "table": "company_service_evidence",
+    "record": {
+      "service_evidence_id": "USE-ASUS-2027-01-14",
+      "vendor_id": "VEN-ASUS",
+      "contract_id": null,
+      "po_id": "PO-ASUS-2026",
+      "service_start_date": "2027-01-14",
+      "service_end_date": "2027-01-14",
+      "evidence_type": "GOODS_RECEIPT",
+      "quantity": "5",
+      "unit": "EACH",
+      "accepted_amount": "8000.00",
+      "source_system": "WAREHOUSE",
+      "confirmed_by_person_id": "OPS-001",
+      "confirmation_status": "OWNER_CONFIRMED",
+      "created_at": "2027-01-14T10:00:00Z"
+    }
+  },
+  {
+    "event_id": "EVT-ASUS-2027-01-RECEIPT-PO",
+    "available_at": "2027-01-14T10:05:00Z",
+    "operation": "UPDATE",
+    "table": "company_purchase_orders",
+    "record": {
+      "line_items_json": [
+        {
+          "po_line_id": "PO-2026-1003-001",
+          "item_category": "MATERIAL",
+          "gl_account_code": "150200",
+          "quantity_ordered": "25",
+          "unit_price": "1600.00",
+          "quantity_received": "25",
+          "quantity_billed": "20",
+          "line_description": "ASUS ExpertBook laptop, 16 GB, 512 GB",
+          "service_start_date": null,
+          "service_end_date": null,
+          "receipt_required": true,
+          "useful_life_months": 36,
+          "in_service_date": null
+        }
+      ]
+    },
+    "key": {
+      "po_id": "PO-ASUS-2026"
+    }
+  },
+  {
+    "event_id": "EVT-MINTLIFY-2027-02-AMENDMENT-FILED",
+    "available_at": "2027-02-02T10:00:00Z",
+    "operation": "INSERT",
+    "table": "company_contracts",
+    "record": {
+      "contract_row_id": "CON-MINTLIFY-V2",
+      "contract_id": "CON-MINTLIFY",
+      "contract_version": 2,
+      "vendor_id": "VEN-MINTLIFY",
+      "contract_name": "Mintlify Master Subscription Agreement, Amendment 1",
+      "status": "ACTIVE",
+      "effective_start_date": "2026-12-01",
+      "effective_end_date": "2027-11-30",
+      "billing_model": "FIXED_FEE",
+      "base_rate": "1400.00",
+      "rate_unit": "MONTH",
+      "billing_frequency": "MONTHLY_IN_ARREARS",
+      "escalator_percent": null,
+      "escalator_effective_date": null,
+      "service_owner_id": "ENG-001",
+      "procurement_owner_id": "PROC-001",
+      "contract_text": "Amendment 1, signed November 18, 2026. 4.2 Commencing December 1, 2026, the monthly subscription fee for the Standard Workspace plan shall increase from $1,200 to $1,400 per month for the remainder of the term."
+    }
+  },
+  {
+    "event_id": "EVT-MINTLIFY-2027-02-ORIGINAL-SUPERSEDED",
+    "available_at": "2027-02-02T10:00:00Z",
+    "operation": "UPDATE",
+    "table": "company_contracts",
+    "record": {
+      "status": "SUPERSEDED",
+      "effective_end_date": "2026-11-30"
+    },
+    "key": {
+      "contract_row_id": "CON-MINTLIFY-V1"
+    }
+  },
+  {
+    "event_id": "EVT-META-2027-02-INVOICE-CORRECTED",
+    "available_at": "2027-02-03T09:00:00Z",
+    "operation": "INSERT",
+    "table": "company_ap_invoices",
+    "record": {
+      "invoice_id": "INV-META-CORR-2026-12",
+      "vendor_id": "VEN-META",
+      "invoice_number": "META-2027-002",
+      "invoice_date": "2027-02-02",
+      "received_at": "2027-02-03T09:00:00Z",
+      "service_start_date": "2026-12-01",
+      "service_end_date": "2026-12-31",
+      "amount": "24700.00",
+      "currency": "USD",
+      "po_id": "PO-META-2026",
+      "contract_id": null,
+      "status": "IN_QUEUE",
+      "duplicate_flag": false,
+      "credit_flag": false,
+      "description": "Corrected invoice replacing META-2027-001, billed at the delivered and accepted amount",
+      "line_items_json": null,
+      "created_at": "2027-02-03T09:00:00Z",
+      "updated_at": "2027-02-03T09:00:00Z"
+    }
+  },
+  {
+    "event_id": "EVT-META-2027-02-INVOICE-VOIDED",
+    "available_at": "2027-02-03T09:05:00Z",
+    "operation": "UPDATE",
+    "table": "company_ap_invoices",
+    "record": {
+      "status": "VOIDED",
+      "updated_at": "2027-02-03T09:05:00Z"
+    },
+    "key": {
+      "invoice_id": "INV-META-2026-12"
+    }
+  }
+]

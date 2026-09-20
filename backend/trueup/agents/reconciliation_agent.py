@@ -161,7 +161,11 @@ def reconcile(session: Session, obligation_id: str, *, now: datetime) -> Reconci
             f"Invoice currency differs from the accrual currency {workpaper.currency}.",
             [*diagnosis.path, "currency mismatch"],
         )
-    target = _route(diagnosis, variance, de_minimis, currency_clash)
+    contradicts_contract = (
+        workpaper.estimation_method == e.EstimationMethod.FIXED_CONTRACT_RATE
+        and bool(ob.contract_id)
+    )
+    target = _route(diagnosis, variance, de_minimis, currency_clash, contradicts_contract)
 
     record = {
         "accrued": _money(accrued),
@@ -236,6 +240,21 @@ def _keep_history(
         return
     inputs["reconciliation_history"] = [*inputs.get("reconciliation_history", []), prior]
     dispute = inputs.get("dispute")
+    if dispute and dispute.get("status") == "VENDOR_EXPLAINED":
+        # The vendor answered the question: the invoice stood, and its own words say why.
+        record["vendor_explanation"] = {
+            "asked_at": dispute.get("raised_at"),
+            "replied_at": dispute.get("replied_at"),
+            "confirmed_amount": dispute.get("confirmed_amount"),
+            "reason": dispute.get("vendor_reason"),
+            "first_root_cause": prior.get("root_cause"),
+        }
+        record["explanation"] = (
+            f"{diagnosis.explanation} When first graded no record explained the difference, so "
+            f'the vendor was asked. The vendor answered: "{dispute.get("vendor_reason")}"'
+        )
+        inputs["dispute"] = {**dispute, "status": "RESOLVED", "resolved_at": now.isoformat()}
+        return
     if not (dispute and dispute.get("status") == "VENDOR_AGREED" and diagnosis.root_cause is None):
         return
     record["resolved_dispute"] = {
@@ -258,7 +277,11 @@ def _keep_history(
 
 
 def _route(
-    diagnosis: Diagnosis, variance: Decimal, de_minimis: Decimal, currency_clash: bool
+    diagnosis: Diagnosis,
+    variance: Decimal,
+    de_minimis: Decimal,
+    currency_clash: bool,
+    contradicts_contract: bool = False,
 ) -> tuple[e.WorkflowStage, e.NextAction]:
     cause = diagnosis.root_cause
     if cause is None:
@@ -267,6 +290,10 @@ def _route(
         return _CONTROLLER
     if cause in _SYSTEMATIC:
         return _LEARN
+    if cause == e.RootCause.UNKNOWN and contradicts_contract:
+        # A fixed fee billed at an amount the contract on file does not say is a price nobody
+        # told the company about. It repeats every month, so a person sees it however small.
+        return _CONTROLLER
     return _LEARN if abs(variance) <= de_minimis else _CONTROLLER
 
 

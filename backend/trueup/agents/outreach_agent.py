@@ -44,6 +44,7 @@ _DISPUTE_SYSTEM = (
 )
 _PARSE_SYSTEM = "You extract facts from a short reply. You never guess or compute a value."
 DISPUTE_PROMPT = Path(__file__).resolve().parents[1] / "prompts" / "outreach_dispute.md"
+VARIANCE_PROMPT = Path(__file__).resolve().parents[1] / "prompts" / "outreach_variance.md"
 VENDOR_CONTACT = "vendor_contact"
 
 
@@ -57,8 +58,11 @@ class Topic(StrEnum):
     RATE_CONFIRMATION = "RATE_CONFIRMATION"
     IN_SERVICE_DATE = "IN_SERVICE_DATE"
     INVOICE_DISPUTE = "INVOICE_DISPUTE"
+    VARIANCE_EXPLANATION = "VARIANCE_EXPLANATION"
 
 
+# The two emails that go to a vendor about a posted accrual; both cite Reconciliation's figures.
+TO_VENDOR = (Topic.INVOICE_DISPUTE, Topic.VARIANCE_EXPLANATION)
 TOPIC_BY_STATUS = {
     e.EvidenceStatus.MISSING_USAGE: Topic.USAGE_CONFIRMATION,
     e.EvidenceStatus.MISSING_SERVICE_CONFIRMATION: Topic.SERVICE_CONFIRMATION,
@@ -70,6 +74,7 @@ OWNER_FIELD = {
     Topic.IN_SERVICE_DATE: "service_owner_id",
     Topic.RATE_CONFIRMATION: "procurement_owner_id",
     Topic.INVOICE_DISPUTE: VENDOR_CONTACT,
+    Topic.VARIANCE_EXPLANATION: VENDOR_CONTACT,
 }
 ROLE_LABEL = {
     "service_owner_id": "SERVICE_OWNER",
@@ -82,6 +87,9 @@ ASK = {
     Topic.RATE_CONFIRMATION: "the rate we are being charged, and any amendment that changes it",
     Topic.IN_SERVICE_DATE: "the date each item received was placed in service",
     Topic.INVOICE_DISPUTE: "a corrected invoice or a credit memo for the amount that was delivered",
+    Topic.VARIANCE_EXPLANATION: (
+        "what changed, and the amendment or notice that supports the amount invoiced"
+    ),
 }
 
 
@@ -135,6 +143,7 @@ class ParsedReply(BaseModel):
     unit: str | None = None
     in_service_date: str | None = None
     corrected_amount: Decimal | None = None
+    confirmed_amount: Decimal | None = None
     reason: str = ""
 
 
@@ -269,7 +278,21 @@ def process_reply(
     parsed, parsed_by = _parse(reply_text, topic, units, parser, uncertainties)
     quantity, unit, given_date = _ground(parsed, reply_text, units, uncertainties)
     corrected = _ground_amount(parsed, reply_text, uncertainties)
-    if topic == Topic.INVOICE_DISPUTE:
+    confirmed = _ground_confirmed(parsed, reply_text, uncertainties)
+    if topic == Topic.VARIANCE_EXPLANATION:
+        # The invoice stands, so the posted accrual goes back to be graded against it again, now
+        # with whatever the vendor's explanation has put on file.
+        # What is quoted later as the vendor's answer is a sentence of the reply itself, never the
+        # reader's summary of it.
+        said = _vendor_sentence(reply_text)
+        resolved = _question_answered(session, obligation, parsed, confirmed, said, uncertainties)
+        to_estimate = False
+        target = (
+            (e.WorkflowStage.AWAITING_ACTUAL_INVOICE, e.NextAction.WAIT_FOR_INVOICE)
+            if resolved
+            else (e.WorkflowStage.AWAITING_CONTROLLER, e.NextAction.CONTROLLER_REVIEW)
+        )
+    elif topic == Topic.INVOICE_DISPUTE:
         resolved = _dispute_resolved(session, obligation, parsed, corrected, uncertainties)
         to_estimate = False
         target = (
@@ -301,6 +324,7 @@ def process_reply(
         "unit": unit,
         "in_service_date": None if given_date is None else given_date.isoformat(),
         "corrected_amount": None if corrected is None else format(corrected, "f"),
+        "confirmed_amount": None if confirmed is None else format(confirmed, "f"),
         "reason": parsed.reason,
         "parsed_by": parsed_by,
         "recipient_person_id": request.value_json["recipient_person_id"],
@@ -317,7 +341,9 @@ def process_reply(
         source_id=key,
         fact=_reply_fact(
             topic, resolved, quantity, unit, given_date, parsed.service_received, corrected
-        ),
+        )
+        if topic != Topic.VARIANCE_EXPLANATION
+        else _explanation_fact(topic, resolved, confirmed),
         value_json=value,
         source_excerpt=reply_text.strip()[:1000],
         confidence=Decimal("1.00") if resolved else Decimal("0.00"),
@@ -329,6 +355,8 @@ def process_reply(
     _close(request, "ANSWERED", now)
     if topic == Topic.INVOICE_DISPUTE:
         _note_dispute_reply(session, obligation, resolved, corrected, now)
+    elif topic == Topic.VARIANCE_EXPLANATION:
+        _note_explanation(session, obligation, resolved, confirmed, said, now)
     session.flush()
     advance(obligation, *target, AGENT_NAME, at=now)
     _log(
@@ -427,7 +455,8 @@ def expire_overdue(session: Session, *, now: datetime) -> list[ExpiredRequest]:
 def llm_drafter(facts: DraftFacts) -> Draft:
     lines = "\n".join(f"- {name}: {value}" for name, value in facts.rendered().items())
     if facts.dispute is not None:
-        prompt = DISPUTE_PROMPT.read_text().replace("{{FACTS}}", lines)
+        source = VARIANCE_PROMPT if facts.topic == Topic.VARIANCE_EXPLANATION else DISPUTE_PROMPT
+        prompt = source.read_text().replace("{{FACTS}}", lines)
         return cast(Draft, llm.complete_json(prompt, Draft, system=_DISPUTE_SYSTEM))
     prompt = DRAFT_PROMPT.read_text().replace("{{FACTS}}", lines)
     return cast(Draft, llm.complete_json(prompt, Draft, system=_DRAFT_SYSTEM))
@@ -442,6 +471,20 @@ def template_draft(facts: DraftFacts) -> Draft:
         else ""
     )
     month = f"{calendar.month_name[facts.service_end.month]} {facts.service_end.year}"
+    if facts.dispute is not None and facts.topic == Topic.VARIANCE_EXPLANATION:
+        d = facts.dispute
+        body = (
+            f"Hi {first},\n\nWe are closing the books for {month}. Invoice {d.invoice_number} "
+            f"is for {d.invoiced_amount:,.2f}, but the agreement we have on file for "
+            f"{facts.vendor_name} supports {d.supported_amount:,.2f}, covering {start} through "
+            f"{end}. Nothing in our records explains the difference. Could you tell us what "
+            f"changed, and send the amendment or notice that supports it, by "
+            f"{_long(facts.reply_by)}?\n\nThank you,\nFinance Operations"
+        )
+        return Draft(
+            subject=f"Invoice {d.invoice_number}: difference from the agreement on file",
+            body=body,
+        )
     if facts.dispute is not None:
         d = facts.dispute
         body = (
@@ -513,7 +556,34 @@ def rule_parser(reply: str, topic: Topic, units: list[str]) -> ParsedReply:
                 reason="The reply commits to a corrected invoice amount.",
             )
         return ParsedReply(resolved=False, reason="The reply states no corrected invoice amount.")
+    if topic == Topic.VARIANCE_EXPLANATION:
+        changed = re.search(
+            r"\bfrom\s+(\d[\d,]*\.\d{2})\s+to\s+(\d[\d,]*\.\d{2})", reply, re.IGNORECASE
+        )
+        if changed and _vendor_sentence(reply):
+            return ParsedReply(
+                resolved=True,
+                confirmed_amount=Decimal(changed.group(2).replace(",", "")),
+                reason="The reply says what changed the amount and confirms the new one.",
+            )
+        return ParsedReply(resolved=False, reason="The reply does not say what changed the amount.")
     return ParsedReply(resolved=False, reason="No language model is available to read this reply.")
+
+
+def _vendor_sentence(reply: str) -> str:
+    """The sentence of the reply that says why the amount changed, verbatim, or "" if none does.
+
+    A new sentence starts with a capital, so "Amendment No. 1" is not cut at its full stop.
+    """
+    sentences = re.split(r"(?<=[.!?])\s+(?=[A-Z])", reply)
+    return next(
+        (
+            s.strip()
+            for s in sentences
+            if re.search(r"amend|increase|raised|renew|price", s, re.IGNORECASE)
+        ),
+        "",
+    )
 
 
 # --- helpers -------------------------------------------------------------------------------
@@ -568,8 +638,10 @@ def _at_outreach(session: Session, obligation_id: str) -> m.TrueUpObligation:
 def _topic(session: Session, obligation: m.TrueUpObligation, explicit: Topic | str | None) -> Topic:
     if explicit is not None:
         return Topic(explicit)
-    if _dispute(session, obligation) is not None:
-        return Topic.INVOICE_DISPUTE
+    raised = _dispute(session, obligation)
+    if raised is not None:
+        question = raised.get("kind") == "QUESTION"
+        return Topic.VARIANCE_EXPLANATION if question else Topic.INVOICE_DISPUTE
     topic = TOPIC_BY_STATUS.get(obligation.evidence_status)
     if topic is None:
         raise OutreachError(
@@ -603,7 +675,7 @@ def _recipient(
 
 
 def _deadline_days(session: Session, topic: Topic | None = None) -> int:
-    if topic == Topic.INVOICE_DISPUTE:
+    if topic in TO_VENDOR:
         value = str(_config(session, DISPUTE_DEADLINE_CONFIG_KEY))
         return int(value) if value.isdigit() else DISPUTE_DEADLINE_DAYS
     value = str(_config(session, DEADLINE_CONFIG_KEY))
@@ -631,7 +703,7 @@ def _draft_facts(
         service_end=obligation.service_end_date,
         received_through=max(received, default=None),
         reply_by=(_utc(now) + timedelta(days=_deadline_days(session, topic))).date(),
-        dispute=_dispute_facts(session, obligation) if topic == Topic.INVOICE_DISPUTE else None,
+        dispute=_dispute_facts(session, obligation) if topic in TO_VENDOR else None,
     )
 
 
@@ -695,6 +767,57 @@ def _dispute_resolved(
         notes.append(f"The vendor commits to {corrected}, not the {supported} the records support.")
         return False
     return True
+
+
+def _question_answered(
+    session: Session,
+    obligation: m.TrueUpObligation,
+    parsed: ParsedReply,
+    confirmed: Decimal | None,
+    said: str,
+    notes: list[str],
+) -> bool:
+    """A reply answers the question only by confirming the amount invoiced and saying why."""
+    record = _dispute(session, obligation)
+    if record is None or not parsed.resolved or confirmed is None:
+        return False
+    if not said:
+        notes.append("No sentence of the reply says what changed the amount.")
+        return False
+    invoiced = Decimal(str(record["invoiced_amount"]))
+    if confirmed != invoiced:
+        notes.append(f"The vendor confirms {confirmed}, not the {invoiced} it invoiced.")
+        return False
+    return True
+
+
+def _note_explanation(
+    session: Session,
+    obligation: m.TrueUpObligation,
+    resolved: bool,
+    confirmed: Decimal | None,
+    reason: str,
+    now: datetime,
+) -> None:
+    """Keep the vendor's own words beside the question, for Reconciliation to quote."""
+    workpaper = _workpaper_of(session, obligation)
+    if workpaper is None:
+        return
+    inputs = dict(workpaper.calculation_inputs_json or {})
+    record = dict(inputs.get("dispute") or {})
+    record["status"] = "VENDOR_EXPLAINED" if resolved else "UNRESOLVED"
+    record["replied_at"] = _utc(now).isoformat()
+    record["confirmed_amount"] = None if confirmed is None else format(confirmed, "f")
+    record["vendor_reason"] = reason.strip()
+    inputs["dispute"] = record
+    workpaper.calculation_inputs_json = inputs
+    workpaper.updated_at = now
+
+
+def _explanation_fact(topic: Topic, resolved: bool, confirmed: Decimal | None) -> str:
+    if resolved and confirmed is not None:
+        return f"Vendor reply to {topic.value}: confirms {format(confirmed, 'f')} and says why"
+    return f"Vendor reply to {topic.value}: not enough to act on"
 
 
 def _note_dispute_reply(
@@ -831,6 +954,14 @@ def _ground(
 
 def _ground_amount(parsed: ParsedReply, reply: str, notes: list[str]) -> Decimal | None:
     amount = parsed.corrected_amount
+    if amount is not None and amount not in _numbers(reply):
+        notes.append(f"Dropped amount {amount}: it is not in the reply text.")
+        return None
+    return amount
+
+
+def _ground_confirmed(parsed: ParsedReply, reply: str, notes: list[str]) -> Decimal | None:
+    amount = parsed.confirmed_amount
     if amount is not None and amount not in _numbers(reply):
         notes.append(f"Dropped amount {amount}: it is not in the reply text.")
         return None

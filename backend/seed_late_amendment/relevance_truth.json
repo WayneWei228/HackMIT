@@ -1,0 +1,476 @@
+{
+  "entries": {
+    "FILE-ASUS-01": {
+      "file_id": "FILE-ASUS-01",
+      "case_id": "CASE-ASUS-2026-12",
+      "relevant": true,
+      "role": "SUPPORTS_DISCREPANCY",
+      "in_universe": true,
+      "reason": "Explains that only received units are capitalized and how they depreciate."
+    },
+    "FILE-ASUS-02": {
+      "file_id": "FILE-ASUS-02",
+      "case_id": "CASE-ASUS-2026-12",
+      "relevant": false,
+      "role": "HARD_NEGATIVE",
+      "in_universe": true,
+      "reason": "Mentions laptops and delays but gives no quantities, prices or dates."
+    },
+    "FILE-ASUS-03": {
+      "file_id": "FILE-ASUS-03",
+      "case_id": "CASE-ASUS-2026-12",
+      "relevant": true,
+      "role": "SUPPORTS_AMOUNT",
+      "in_universe": true,
+      "reason": "Shows how many units were actually received by year end."
+    },
+    "FILE-ASUS-04": {
+      "file_id": "FILE-ASUS-04",
+      "case_id": "CASE-ASUS-2026-12",
+      "relevant": false,
+      "role": "HARD_NEGATIVE",
+      "in_universe": true,
+      "reason": "A delivery record for a different order from a different supplier."
+    },
+    "FILE-ASUS-05": {
+      "file_id": "FILE-ASUS-05",
+      "case_id": "CASE-ASUS-2026-12",
+      "relevant": false,
+      "role": "NOISE",
+      "in_universe": true,
+      "reason": "Static vendor identity and payment terms carry no amount or period evidence."
+    },
+    "FILE-ASUS-06": {
+      "file_id": "FILE-ASUS-06",
+      "case_id": "CASE-ASUS-2026-12",
+      "relevant": false,
+      "role": "NOISE",
+      "in_universe": true,
+      "reason": "A quote thread about desks from a different supplier."
+    },
+    "FILE-ASUS-07": {
+      "file_id": "FILE-ASUS-07",
+      "case_id": "CASE-ASUS-2026-12",
+      "relevant": false,
+      "role": "HARD_NEGATIVE",
+      "in_universe": true,
+      "reason": "A prior-year invoice for an earlier order at a different price."
+    },
+    "FILE-ASUS-08": {
+      "file_id": "FILE-ASUS-08",
+      "case_id": "CASE-ASUS-2026-12",
+      "relevant": true,
+      "role": "SUPPORTS_AMOUNT",
+      "in_universe": true,
+      "reason": "Sets the ordered quantity and the agreed unit price."
+    },
+    "FILE-ASUS-09": {
+      "file_id": "FILE-ASUS-09",
+      "case_id": "CASE-ASUS-2026-12",
+      "relevant": false,
+      "role": "NOISE",
+      "in_universe": true,
+      "reason": "Existing assets only; the new laptops are not on the register yet."
+    },
+    "FILE-ASUS-10": {
+      "file_id": "FILE-ASUS-10",
+      "case_id": "CASE-ASUS-2026-12",
+      "relevant": false,
+      "role": "HARD_NEGATIVE",
+      "in_universe": true,
+      "reason": "Ledger rows belong mostly to other vendors and contain no ASUS receipt."
+    },
+    "FILE-ASUS-L1": {
+      "file_id": "FILE-ASUS-L1",
+      "case_id": "CASE-ASUS-2026-12",
+      "relevant": true,
+      "role": "LATE_ARRIVAL",
+      "in_universe": false,
+      "reason": "The real invoice arrives after the close and grades the accrual."
+    },
+    "FILE-ASUS-L2": {
+      "file_id": "FILE-ASUS-L2",
+      "case_id": "CASE-ASUS-2026-12",
+      "relevant": true,
+      "role": "LATE_ARRIVAL",
+      "in_universe": false,
+      "reason": "An outreach reply that arrives after the close."
+    },
+    "FILE-META-01": {
+      "file_id": "FILE-META-01",
+      "case_id": "CASE-META-2026-12",
+      "relevant": true,
+      "role": "SUPPORTS_AMOUNT",
+      "in_universe": true,
+      "reason": "Shows how much advertising was actually delivered."
+    },
+    "FILE-META-02": {
+      "file_id": "FILE-META-02",
+      "case_id": "CASE-META-2026-12",
+      "relevant": false,
+      "role": "NOISE",
+      "in_universe": true,
+      "reason": "Static vendor identity and payment terms carry no amount or period evidence."
+    },
+    "FILE-META-03": {
+      "file_id": "FILE-META-03",
+      "case_id": "CASE-META-2026-12",
+      "relevant": false,
+      "role": "NOISE",
+      "in_universe": true,
+      "reason": "Creative file specifications from the agency with no financial content."
+    },
+    "FILE-META-04": {
+      "file_id": "FILE-META-04",
+      "case_id": "CASE-META-2026-12",
+      "relevant": false,
+      "role": "NOISE",
+      "in_universe": true,
+      "reason": "Launch logistics chatter with no amounts."
+    },
+    "FILE-META-05": {
+      "file_id": "FILE-META-05",
+      "case_id": "CASE-META-2026-12",
+      "relevant": true,
+      "role": "SUPPORTS_AMOUNT",
+      "in_universe": true,
+      "reason": "Sets the budget ceiling and says charges follow delivered spend."
+    },
+    "FILE-META-06": {
+      "file_id": "FILE-META-06",
+      "case_id": "CASE-META-2026-12",
+      "relevant": false,
+      "role": "NOISE",
+      "in_universe": true,
+      "reason": "Creative direction with no spend or delivery figures."
+    },
+    "FILE-META-07": {
+      "file_id": "FILE-META-07",
+      "case_id": "CASE-META-2026-12",
+      "relevant": false,
+      "role": "HARD_NEGATIVE",
+      "in_universe": true,
+      "reason": "Ledger rows are mostly other vendors and contain no Meta campaign accrual."
+    },
+    "FILE-META-08": {
+      "file_id": "FILE-META-08",
+      "case_id": "CASE-META-2026-12",
+      "relevant": false,
+      "role": "HARD_NEGATIVE",
+      "in_universe": true,
+      "reason": "An invoice for the previous campaign at a different amount."
+    },
+    "FILE-META-09": {
+      "file_id": "FILE-META-09",
+      "case_id": "CASE-META-2026-12",
+      "relevant": true,
+      "role": "SUPPORTS_DISCREPANCY",
+      "in_universe": true,
+      "reason": "Precedent: the prior campaign was accrued on delivery, not budget."
+    },
+    "FILE-META-10": {
+      "file_id": "FILE-META-10",
+      "case_id": "CASE-META-2026-12",
+      "relevant": false,
+      "role": "NOISE",
+      "in_universe": true,
+      "reason": "Engagement metrics only; no dollars are reported."
+    },
+    "FILE-META-L1": {
+      "file_id": "FILE-META-L1",
+      "case_id": "CASE-META-2026-12",
+      "relevant": true,
+      "role": "LATE_ARRIVAL",
+      "in_universe": false,
+      "reason": "The real invoice arrives after the close and grades the accrual."
+    },
+    "FILE-META-L2": {
+      "file_id": "FILE-META-L2",
+      "case_id": "CASE-META-2026-12",
+      "relevant": true,
+      "role": "LATE_ARRIVAL",
+      "in_universe": false,
+      "reason": "The real invoice arrives after the close and grades the accrual."
+    },
+    "FILE-META-L3": {
+      "file_id": "FILE-META-L3",
+      "case_id": "CASE-META-2026-12",
+      "relevant": true,
+      "role": "LATE_ARRIVAL",
+      "in_universe": false,
+      "reason": "An outreach reply that arrives after the close."
+    },
+    "FILE-MINTLIFY-01": {
+      "file_id": "FILE-MINTLIFY-01",
+      "case_id": "CASE-MINTLIFY-2026-12",
+      "relevant": false,
+      "role": "HARD_NEGATIVE",
+      "in_universe": true,
+      "reason": "Mentions the vendor and the current plan but states no price or effective date."
+    },
+    "FILE-MINTLIFY-02": {
+      "file_id": "FILE-MINTLIFY-02",
+      "case_id": "CASE-MINTLIFY-2026-12",
+      "relevant": false,
+      "role": "HARD_NEGATIVE",
+      "in_universe": true,
+      "reason": "Talks about the docs site and Mintlify but contains no pricing or contract facts."
+    },
+    "FILE-MINTLIFY-03": {
+      "file_id": "FILE-MINTLIFY-03",
+      "case_id": "CASE-MINTLIFY-2026-12",
+      "relevant": true,
+      "role": "SUPPORTS_DISCREPANCY",
+      "in_universe": true,
+      "reason": "The prior close records the old accrual and flags the amendment for this month."
+    },
+    "FILE-MINTLIFY-04": {
+      "file_id": "FILE-MINTLIFY-04",
+      "case_id": "CASE-MINTLIFY-2026-12",
+      "relevant": false,
+      "role": "HARD_NEGATIVE",
+      "in_universe": true,
+      "reason": "Ledger rows are mostly other vendors, and the Mintlify rows show only past periods."
+    },
+    "FILE-MINTLIFY-05": {
+      "file_id": "FILE-MINTLIFY-05",
+      "case_id": "CASE-MINTLIFY-2026-12",
+      "relevant": true,
+      "role": "SUPPORTS_AMOUNT",
+      "in_universe": true,
+      "reason": "The fee clause sets the monthly price for the accrued month."
+    },
+    "FILE-MINTLIFY-06": {
+      "file_id": "FILE-MINTLIFY-06",
+      "case_id": "CASE-MINTLIFY-2026-12",
+      "relevant": false,
+      "role": "NOISE",
+      "in_universe": true,
+      "reason": "Product analytics with no billing or fee information."
+    },
+    "FILE-MINTLIFY-07": {
+      "file_id": "FILE-MINTLIFY-07",
+      "case_id": "CASE-MINTLIFY-2026-12",
+      "relevant": false,
+      "role": "HARD_NEGATIVE",
+      "in_universe": true,
+      "reason": "The previous month's invoice at the old fee looks current but covers a closed period."
+    },
+    "FILE-MINTLIFY-08": {
+      "file_id": "FILE-MINTLIFY-08",
+      "case_id": "CASE-MINTLIFY-2026-12",
+      "relevant": false,
+      "role": "NOISE",
+      "in_universe": true,
+      "reason": "Static vendor identity and payment terms carry no amount or period evidence."
+    },
+    "FILE-MINTLIFY-09": {
+      "file_id": "FILE-MINTLIFY-09",
+      "case_id": "CASE-MINTLIFY-2026-12",
+      "relevant": true,
+      "role": "SUPPORTS_DISCREPANCY",
+      "in_universe": true,
+      "reason": "Payment history shows the old fee still being billed, which exposes the price change."
+    },
+    "FILE-MINTLIFY-10": {
+      "file_id": "FILE-MINTLIFY-10",
+      "case_id": "CASE-MINTLIFY-2026-12",
+      "relevant": false,
+      "role": "HARD_NEGATIVE",
+      "in_universe": true,
+      "reason": "The purchase order still carries the pre-amendment price and was never updated."
+    },
+    "FILE-MINTLIFY-L1": {
+      "file_id": "FILE-MINTLIFY-L1",
+      "case_id": "CASE-MINTLIFY-2026-12",
+      "relevant": true,
+      "role": "LATE_ARRIVAL",
+      "in_universe": false,
+      "reason": "The real invoice arrives after the close and grades the accrual."
+    },
+    "FILE-MINTLIFY-L2": {
+      "file_id": "FILE-MINTLIFY-L2",
+      "case_id": "CASE-MINTLIFY-2026-12",
+      "relevant": true,
+      "role": "LATE_ARRIVAL",
+      "in_universe": false,
+      "reason": "An outreach reply that arrives after the close."
+    },
+    "FILE-NOTABILITY-01": {
+      "file_id": "FILE-NOTABILITY-01",
+      "case_id": "CASE-NOTABILITY-2026-12",
+      "relevant": true,
+      "role": "SUPPORTS_DISCREPANCY",
+      "in_universe": true,
+      "reason": "Shows the payment and the entry that expenses the full amount at once."
+    },
+    "FILE-NOTABILITY-02": {
+      "file_id": "FILE-NOTABILITY-02",
+      "case_id": "CASE-NOTABILITY-2026-12",
+      "relevant": false,
+      "role": "HARD_NEGATIVE",
+      "in_universe": true,
+      "reason": "Ledger rows are mostly other vendors and do not isolate the Notability entries."
+    },
+    "FILE-NOTABILITY-03": {
+      "file_id": "FILE-NOTABILITY-03",
+      "case_id": "CASE-NOTABILITY-2026-12",
+      "relevant": false,
+      "role": "NOISE",
+      "in_universe": true,
+      "reason": "Seat activity metrics with no billing information."
+    },
+    "FILE-NOTABILITY-04": {
+      "file_id": "FILE-NOTABILITY-04",
+      "case_id": "CASE-NOTABILITY-2026-12",
+      "relevant": false,
+      "role": "NOISE",
+      "in_universe": true,
+      "reason": "Static vendor identity and payment terms carry no amount or period evidence."
+    },
+    "FILE-NOTABILITY-05": {
+      "file_id": "FILE-NOTABILITY-05",
+      "case_id": "CASE-NOTABILITY-2026-12",
+      "relevant": true,
+      "role": "SUPPORTS_AMOUNT",
+      "in_universe": true,
+      "reason": "Provides the twelve service months over which the cost is spread."
+    },
+    "FILE-NOTABILITY-06": {
+      "file_id": "FILE-NOTABILITY-06",
+      "case_id": "CASE-NOTABILITY-2026-12",
+      "relevant": false,
+      "role": "NOISE",
+      "in_universe": true,
+      "reason": "Marketing update with public list prices that are not the contract price."
+    },
+    "FILE-NOTABILITY-07": {
+      "file_id": "FILE-NOTABILITY-07",
+      "case_id": "CASE-NOTABILITY-2026-12",
+      "relevant": false,
+      "role": "NOISE",
+      "in_universe": true,
+      "reason": "Seat administration chatter with no financial facts."
+    },
+    "FILE-NOTABILITY-08": {
+      "file_id": "FILE-NOTABILITY-08",
+      "case_id": "CASE-NOTABILITY-2026-12",
+      "relevant": true,
+      "role": "SUPPORTS_AMOUNT",
+      "in_universe": true,
+      "reason": "Confirms the cash payment that created the prepaid balance."
+    },
+    "FILE-NOTABILITY-09": {
+      "file_id": "FILE-NOTABILITY-09",
+      "case_id": "CASE-NOTABILITY-2026-12",
+      "relevant": true,
+      "role": "SUPPORTS_AMOUNT",
+      "in_universe": true,
+      "reason": "The invoice sets the prepaid amount and service period."
+    },
+    "FILE-NOTABILITY-10": {
+      "file_id": "FILE-NOTABILITY-10",
+      "case_id": "CASE-NOTABILITY-2026-12",
+      "relevant": false,
+      "role": "HARD_NEGATIVE",
+      "in_universe": true,
+      "reason": "A prior-year pilot invoice at a different amount."
+    },
+    "FILE-OPENAI-01": {
+      "file_id": "FILE-OPENAI-01",
+      "case_id": "CASE-OPENAI-2026-12",
+      "relevant": true,
+      "role": "SUPPORTS_DISCREPANCY",
+      "in_universe": true,
+      "reason": "Shows the December usage is incomplete and that the total was requested but not received."
+    },
+    "FILE-OPENAI-02": {
+      "file_id": "FILE-OPENAI-02",
+      "case_id": "CASE-OPENAI-2026-12",
+      "relevant": true,
+      "role": "SUPPORTS_AMOUNT",
+      "in_universe": true,
+      "reason": "States the unit rate and the step-up that sets the effective price."
+    },
+    "FILE-OPENAI-03": {
+      "file_id": "FILE-OPENAI-03",
+      "case_id": "CASE-OPENAI-2026-12",
+      "relevant": false,
+      "role": "HARD_NEGATIVE",
+      "in_universe": true,
+      "reason": "Ledger rows are mostly other vendors and show only past accruals."
+    },
+    "FILE-OPENAI-04": {
+      "file_id": "FILE-OPENAI-04",
+      "case_id": "CASE-OPENAI-2026-12",
+      "relevant": false,
+      "role": "NOISE",
+      "in_universe": true,
+      "reason": "Marketing newsletter with public list prices that do not apply to the contract."
+    },
+    "FILE-OPENAI-05": {
+      "file_id": "FILE-OPENAI-05",
+      "case_id": "CASE-OPENAI-2026-12",
+      "relevant": false,
+      "role": "NOISE",
+      "in_universe": true,
+      "reason": "Static vendor identity and payment terms carry no amount or period evidence."
+    },
+    "FILE-OPENAI-06": {
+      "file_id": "FILE-OPENAI-06",
+      "case_id": "CASE-OPENAI-2026-12",
+      "relevant": false,
+      "role": "HARD_NEGATIVE",
+      "in_universe": true,
+      "reason": "An early invoice for a closed period, with different units and a different rate."
+    },
+    "FILE-OPENAI-07": {
+      "file_id": "FILE-OPENAI-07",
+      "case_id": "CASE-OPENAI-2026-12",
+      "relevant": true,
+      "role": "SUPPORTS_DISCREPANCY",
+      "in_universe": true,
+      "reason": "Records the earlier accrual miss caused by using the stale rate."
+    },
+    "FILE-OPENAI-08": {
+      "file_id": "FILE-OPENAI-08",
+      "case_id": "CASE-OPENAI-2026-12",
+      "relevant": true,
+      "role": "SUPPORTS_AMOUNT",
+      "in_universe": true,
+      "reason": "The only usage evidence for the month, and it is incomplete."
+    },
+    "FILE-OPENAI-09": {
+      "file_id": "FILE-OPENAI-09",
+      "case_id": "CASE-OPENAI-2026-12",
+      "relevant": false,
+      "role": "NOISE",
+      "in_universe": true,
+      "reason": "Engineering chatter about keys and evals with no accounting facts."
+    },
+    "FILE-OPENAI-10": {
+      "file_id": "FILE-OPENAI-10",
+      "case_id": "CASE-OPENAI-2026-12",
+      "relevant": false,
+      "role": "HARD_NEGATIVE",
+      "in_universe": true,
+      "reason": "Past invoices tempt a run-rate estimate, which policy allows only as an approved fallback."
+    },
+    "FILE-OPENAI-L1": {
+      "file_id": "FILE-OPENAI-L1",
+      "case_id": "CASE-OPENAI-2026-12",
+      "relevant": true,
+      "role": "LATE_ARRIVAL",
+      "in_universe": false,
+      "reason": "The real invoice arrives after the close and grades the accrual."
+    },
+    "FILE-OPENAI-L2": {
+      "file_id": "FILE-OPENAI-L2",
+      "case_id": "CASE-OPENAI-2026-12",
+      "relevant": true,
+      "role": "LATE_ARRIVAL",
+      "in_universe": false,
+      "reason": "An outreach reply that arrives after the close."
+    }
+  }
+}

@@ -18,7 +18,13 @@ CaseStatus = Literal[
     "Complete",
 ]
 Phase = Literal["DAY_ONE", "CLOSED", "JANUARY"]
-Decision = Literal["APPROVE", "REJECT", "REQUEST_MORE_EVIDENCE", "DISPUTE_WITH_VENDOR"]
+Decision = Literal[
+    "APPROVE",
+    "REJECT",
+    "REQUEST_MORE_EVIDENCE",
+    "DISPUTE_WITH_VENDOR",
+    "ASK_VENDOR_TO_EXPLAIN",
+]
 
 
 class Strict(BaseModel):
