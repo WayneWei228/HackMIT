@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "check:no-mock": "node scripts/check-no-mock.mjs",
-    "verify": "npm run check:no-mock && npm run lint && npm run build"
+    "verify": "npm run check:no-mock && npm run check:dead-controls && npm run lint && npm run build",
+    "check:dead-controls": "node scripts/check-dead-controls.mjs"
   },
   "dependencies": {
     "clsx": "^2.1.1",

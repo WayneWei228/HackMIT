@@ -10,17 +10,6 @@ type Props = SVGProps<SVGSVGElement>;
 
 const S = { stroke: "currentColor", strokeWidth: 1.1 } as const;
 
-/** Page with two ruled lines - the "View case notes" button. */
-export function CaseNotesIcon(props: Props) {
-  return (
-    <svg width="14" height="16" viewBox="0 0 14 16" fill="none" aria-hidden="true" {...props}>
-      <path d="M2.2 1.6h6.3L11.8 5v9.4H2.2z" {...S} strokeLinejoin="round" />
-      <path d="M8.5 1.6V5h3.3" {...S} strokeLinejoin="round" />
-      <path d="M4.4 8.2h5.2M4.4 10.6h3.6" {...S} strokeLinecap="round" />
-    </svg>
-  );
-}
-
 /** Tab glyph: a signed document - a contract, amendment or order. */
 export function AgreementIcon(props: Props) {
   return (

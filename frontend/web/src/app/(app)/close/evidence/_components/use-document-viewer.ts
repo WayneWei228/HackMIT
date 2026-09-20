@@ -16,14 +16,9 @@ import { useEvidenceData } from "./data-context";
 export type DocumentViewer = {
   doc: DocId;
   page: number;
-  maxPage: number;
-  pageLabel: string;
   zoom: Zoom;
   scale: number;
   thumbs: boolean;
-  search: boolean;
-  canPrev: boolean;
-  canNext: boolean;
   /** Whether `doc` names a tab that exists - false only on an empty strip. */
   hasDoc: boolean;
   /** Whether the backend cited a passage that is actually among the tabs. */
@@ -31,12 +26,9 @@ export type DocumentViewer = {
   /** Whether the cited passage is the one on screen right now. */
   onMatch: boolean;
   selectDoc: (id: DocId) => void;
-  prevPage: () => void;
-  nextPage: () => void;
   jumpToMatch: () => void;
   cycleZoom: () => void;
   toggleThumbs: () => void;
-  toggleSearch: () => void;
 };
 
 /** Page counts arrive from the API, so they are floored at a single page. */
@@ -61,9 +53,13 @@ function resolveMatch(
 }
 
 /**
- * Which document is on screen, at which page and zoom, plus the two toolbar
- * affordances that slide open. The cross-fade between documents is handled by
+ * Which document is on screen, at which page and zoom, plus whether the
+ * thumbnail rail is open. The cross-fade between documents is handled by
  * `AnimatePresence` in the viewer rather than by a `fade` flag here.
+ *
+ * There is no paging state to change: a document is one text rendering, so
+ * the page a document opens on is the only page it has. The page still
+ * travels because the cited passage names one, and the rail marks it.
  *
  * Nothing here assumes a fixed document set: the tab list is the case's own
  * documents, the selection is resolved against it on every render - a document
@@ -85,7 +81,6 @@ export function useDocumentViewer(): DocumentViewer {
   } | null>(null);
   const [zoomIndex, setZoomIndex] = useState(0);
   const [thumbs, setThumbs] = useState(true);
-  const [search, setSearch] = useState(false);
 
   /* Untouched, the viewer opens on the cited document, else on the first. */
   const wanted = selection ?? (match ? { doc: match.docId, page: match.page } : null);
@@ -99,24 +94,14 @@ export function useDocumentViewer(): DocumentViewer {
     maxPage,
   );
 
-  // Paging writes the resolved document back, so a selection the tab list
-  // dropped settles on the first interaction rather than staying unreachable.
-  const step = (delta: number) =>
-    setSelection({ doc, page: clampPage(page + delta, maxPage) });
-
   const zoom = ZOOMS[zoomIndex];
 
   return {
     doc,
     page,
-    maxPage,
-    pageLabel: `${page} / ${maxPage}`,
     zoom,
     scale: ZOOM_SCALES[zoom],
     thumbs,
-    search,
-    canPrev: page > 1,
-    canNext: page < maxPage,
     hasDoc: current !== undefined,
     hasMatch: match !== null,
     onMatch: match !== null && match.docId === doc && match.page === page,
@@ -124,14 +109,11 @@ export function useDocumentViewer(): DocumentViewer {
       if (id === doc) return;
       setSelection({ doc: id, page: openPage(tabs.find((t) => t.id === id)) });
     },
-    prevPage: () => step(-1),
-    nextPage: () => step(1),
     jumpToMatch: () => {
       if (!match) return;
       setSelection({ doc: match.docId, page: match.page });
     },
     cycleZoom: () => setZoomIndex((z) => (z + 1) % ZOOMS.length),
     toggleThumbs: () => setThumbs((t) => !t),
-    toggleSearch: () => setSearch((s) => !s),
   };
 }

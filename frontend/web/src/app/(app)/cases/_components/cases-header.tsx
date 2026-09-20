@@ -1,10 +1,8 @@
 import {
   Breadcrumb,
-  Button,
   PageSubtitle,
   PageTitle,
 } from "@/components/ui/primitives";
-import { PlusIcon } from "@/components/ui/icons";
 import { routes } from "@/lib/routes";
 import { ALL_PERIODS, infoLabel, periodLabel, type PeriodInfo } from "@/lib/period";
 import type { RunControls } from "@/lib/use-run-controls";
@@ -57,12 +55,9 @@ export function CasesHeader({
             Monitor vendor-related close workflows across {scope}.
           </PageSubtitle>
         </div>
-        <div className="flex flex-none items-center gap-3.5">
-          <Button variant="primary" className="flex-none text-[13.5px]/[1]">
-            <PlusIcon />
-            Create case
-          </Button>
-        </div>
+        {/* No "Create case" button: a case is what the Detection agent
+            makes when it finds a PO line owed for the period. There is no
+            hand-made case, so there is nothing here to offer. */}
       </div>
 
       {showRunStrip ? (

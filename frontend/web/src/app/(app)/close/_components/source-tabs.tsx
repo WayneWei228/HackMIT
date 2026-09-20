@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 
 import { cn } from "@/lib/cn";
-import { ChevronDownIcon, SearchIcon } from "@/components/ui/icons";
 import { transitions } from "@/lib/motion";
 
 import type { TabId } from "../_data";
@@ -87,22 +86,11 @@ export function SourceTabs({
         })}
       </div>
 
-      <div className="flex flex-none items-center gap-0.5">
-        <button
-          type="button"
-          aria-label="Search sources"
-          className="flex h-8 w-[34px] cursor-pointer items-center justify-center rounded-xl border border-transparent bg-transparent text-muted-5 transition-colors duration-[160ms] ease-[var(--ease-out-soft)] hover:bg-wash"
-        >
-          <SearchIcon size={16} />
-        </button>
-        <button
-          type="button"
-          className="flex cursor-pointer items-center gap-[7px] rounded-xl border border-transparent bg-transparent px-2.5 py-2 text-sm leading-none whitespace-nowrap text-muted transition-colors duration-[160ms] ease-[var(--ease-out-soft)] hover:bg-wash"
-        >
-          Sort: Relevance
-          <ChevronDownIcon size={11} className="text-faint-2" />
-        </button>
-      </div>
+      {/* The comp put a search glyph and a "Sort: Relevance" control here.
+          Neither was real: the sort had one option and the search opened
+          nothing. The grid is the case's own documents - a handful of cards,
+          already filtered by the tab row - so there was nothing for either to
+          do that the tabs do not. */}
     </div>
   );
 }

@@ -2,7 +2,6 @@
 
 import { motion } from "motion/react";
 
-import { MoreIcon } from "@/components/ui/icons";
 import { stagger, timing } from "../_motion";
 import { ConfirmIcon } from "./icons";
 import { useEstimationData } from "./data-context";
@@ -26,17 +25,10 @@ export function RecommendationPanel({
 
   return (
     <section className="min-h-full rounded-xl border border-divider bg-panel p-5 shadow-[var(--shadow-tile)]">
-      <div className="flex items-center justify-between gap-2.5 border-b border-divider-3 pb-3.5">
+      <div className="border-b border-divider-3 pb-3.5">
         <div className="font-display text-2xl leading-[normal] text-ink-deep">
           Recommended accrual
         </div>
-        <button
-          type="button"
-          aria-label="Recommendation actions"
-          className="-mr-1 flex h-[26px] w-[26px] cursor-pointer items-center justify-center rounded-md border border-transparent text-faint-3 transition-colors duration-[160ms] ease-[var(--ease-out-soft)] hover:bg-wash"
-        >
-          <MoreIcon className="text-body" />
-        </button>
       </div>
 
       <div className="mt-[18px] text-ui leading-[normal] text-ink-2">Accrual amount</div>

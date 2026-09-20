@@ -3,7 +3,6 @@
 import { AnimatePresence, motion } from "motion/react";
 
 import { cn } from "@/lib/cn";
-import { MoreIcon } from "@/components/ui/icons";
 import { easeOutSoft } from "@/lib/motion";
 import type { ControlView, ScanView } from "./types";
 import { ControlMark, ScanMark } from "./marks";
@@ -193,13 +192,6 @@ export function ControlChecksPanel({
         </div>
         <div className="flex flex-none items-center gap-2">
           <span className="text-ui text-ink-2 tabular-nums">{controlCount}</span>
-          <button
-            type="button"
-            aria-label="Control check options"
-            className="-mr-1 flex h-[26px] w-[26px] cursor-pointer items-center justify-center rounded-md border border-transparent text-faint-3 transition-colors duration-[160ms] ease-[var(--ease-out-soft)] hover:bg-wash"
-          >
-            <MoreIcon className="text-body" />
-          </button>
         </div>
       </div>
 

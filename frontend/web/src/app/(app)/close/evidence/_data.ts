@@ -38,7 +38,7 @@ export type DocTab = {
   label: string;
   /** The grey suffix in the tab strip. */
   meta: string;
-  /** Page count the pager clamps to. */
+  /** Page count a cited page is clamped to. */
   pages: number;
   /** Page the tab opens on. */
   openAt: number;

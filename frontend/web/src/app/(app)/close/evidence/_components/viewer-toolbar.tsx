@@ -1,14 +1,8 @@
 "use client";
 
-import { motion } from "motion/react";
-
-import {
-  CaretLeftIcon,
-  CaretRightIcon,
-  ChevronDownIcon,
-} from "@/components/ui/icons";
+import { ChevronDownIcon } from "@/components/ui/icons";
+import { API_BASE_URL } from "@/lib/api";
 import { cn } from "@/lib/cn";
-import { easeOutSoft } from "@/lib/motion";
 
 import type { Zoom } from "../_data";
 import { DownloadIcon, FocusIcon, ThumbnailsIcon } from "./evidence-icons";
@@ -16,28 +10,27 @@ import { DownloadIcon, FocusIcon, ThumbnailsIcon } from "./evidence-icons";
 const iconButton =
   "flex h-[30px] cursor-pointer items-center justify-center rounded-lg border border-transparent bg-transparent text-muted-2 transition-colors duration-[160ms] ease-[var(--ease-out-soft)] hover:bg-wash";
 
-/** Pager, zoom, document search and the two panel toggles. */
+/**
+ * The viewer's chrome: thumbnails, zoom, the source file and focus mode.
+ *
+ * Every control here does something the moment it is pressed. There is no
+ * pager and no page counter: a document arrives as one record and one text
+ * rendering, so there is no second page to move to and a "1 / 1" would only
+ * be furniture. There is no document search either - nothing on this screen
+ * can search the text, and a box that does not search is a lie.
+ */
 export function ViewerToolbar({
-  pageLabel,
+  docId,
   zoom,
-  canPrev,
-  canNext,
   thumbsOpen,
-  searchOpen,
-  onPrev,
-  onNext,
   onCycleZoom,
   onToggleThumbs,
   onToggleRail,
 }: {
-  pageLabel: string;
+  /** The document on screen, whose original file the download link points at. */
+  docId: string;
   zoom: Zoom;
-  canPrev: boolean;
-  canNext: boolean;
   thumbsOpen: boolean;
-  searchOpen: boolean;
-  onPrev: () => void;
-  onNext: () => void;
   onCycleZoom: () => void;
   onToggleThumbs: () => void;
   onToggleRail: () => void;
@@ -54,45 +47,13 @@ export function ViewerToolbar({
         <ThumbnailsIcon />
       </button>
 
-      <div className="mx-[9px] h-[18px] w-px bg-line" />
-
-      <button
-        type="button"
-        onClick={onPrev}
-        title="Previous page"
-        className={cn(
-          iconButton,
-          "w-[30px] transition-opacity duration-200",
-          canPrev ? "opacity-100" : "opacity-35",
-        )}
-      >
-        <CaretLeftIcon size={13} />
-      </button>
-
-      <div className="min-w-[58px] text-center text-ui text-ink-2 tabular-nums">
-        {pageLabel}
-      </div>
-
-      <button
-        type="button"
-        onClick={onNext}
-        title="Next page"
-        className={cn(
-          iconButton,
-          "w-[30px] transition-opacity duration-200",
-          canNext ? "opacity-100" : "opacity-35",
-        )}
-      >
-        <CaretRightIcon size={13} />
-      </button>
-
       <button
         type="button"
         onClick={onCycleZoom}
         title="Zoom"
         className={cn(
           iconButton,
-          "ml-2.5 h-auto w-auto gap-2 px-2.5 py-[7px] leading-none text-ink-2",
+          "ml-[7px] h-auto w-auto gap-2 px-2.5 py-[7px] leading-none text-ink-2",
         )}
       >
         <span className="text-ui tabular-nums">{zoom}</span>
@@ -101,22 +62,20 @@ export function ViewerToolbar({
 
       <div className="flex-1" />
 
-      <motion.div
-        className="overflow-hidden"
-        initial={false}
-        animate={{ width: searchOpen ? 196 : 0, opacity: searchOpen ? 1 : 0 }}
-        transition={{ duration: 0.3, ease: easeOutSoft }}
-      >
-        <input
-          placeholder="Search document"
-          tabIndex={searchOpen ? 0 : -1}
-          className="w-[186px] rounded-lg border border-line-warm bg-panel-hover px-[11px] py-[7px] text-sm leading-[1.2] text-ink outline-none"
-        />
-      </motion.div>
-
-      <button type="button" title="Download" className={cn(iconButton, "w-8")}>
-        <DownloadIcon />
-      </button>
+      {/* Only once a document is on screen: with an empty strip there is no
+          file to fetch, so the link is absent rather than broken. */}
+      {docId && (
+        <a
+          href={`${API_BASE_URL}/api/documents/${encodeURIComponent(docId)}/file`}
+          target="_blank"
+          rel="noopener noreferrer"
+          title="Open the source file"
+          aria-label="Open the source file"
+          className={cn(iconButton, "w-8")}
+        >
+          <DownloadIcon />
+        </a>
+      )}
 
       <button
         type="button"

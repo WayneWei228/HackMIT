@@ -186,7 +186,6 @@ function EvidenceWorkspace() {
             doc={viewer.doc}
             hasMatch={viewer.hasMatch}
             onSelect={viewer.selectDoc}
-            onToggleSearch={viewer.toggleSearch}
             onJumpToMatch={viewer.jumpToMatch}
           />
         </div>

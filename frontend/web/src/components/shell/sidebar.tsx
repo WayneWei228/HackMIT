@@ -12,7 +12,6 @@ import {
   DocIcon,
   HomeIcon,
   InsightsIcon,
-  SearchIcon,
   SettingsIcon,
   VendorsIcon,
 } from "@/components/ui/icons";
@@ -28,7 +27,7 @@ type NavLeaf = { label: string; href?: string };
 const CLOSE_CHILDREN: NavLeaf[] = [
   { label: "Active cases", href: "/close" },
   { label: "All cases", href: "/cases" },
-  { label: "Journals" },
+  { label: "Journals", href: "/journals" },
   { label: "Reconciliations" },
 ];
 
@@ -106,21 +105,17 @@ export function Sidebar() {
   const isCloseSection =
     pathname.startsWith("/close") ||
     pathname.startsWith("/cases") ||
+    pathname.startsWith("/journals") ||
     pathname.startsWith("/agents");
 
   return (
     <aside className="flex w-[232px] flex-none flex-col border-r border-line bg-rail pt-[22px] pb-[18px]">
-      <div className="flex items-center justify-between px-5 pb-6">
+      {/* The wordmark had a search glyph beside it that searched nothing.
+          There is no search endpoint, so there is no search. */}
+      <div className="px-5 pb-6">
         <div className="text-ui font-semibold tracking-brand text-ink">
           TRUEUP
         </div>
-        <button
-          type="button"
-          aria-label="Search"
-          className="text-muted-5 transition-colors duration-[160ms] hover:text-ink"
-        >
-          <SearchIcon />
-        </button>
       </div>
 
       <nav className="flex flex-col gap-px px-3">
@@ -140,9 +135,11 @@ export function Sidebar() {
             active={
               item.href === "/cases"
                 ? pathname === "/cases"
-                : item.href === "/close"
-                  ? pathname.startsWith("/close") || pathname.startsWith("/agents")
-                  : false
+                : item.href === "/journals"
+                  ? pathname.startsWith("/journals")
+                  : item.href === "/close"
+                    ? pathname.startsWith("/close") || pathname.startsWith("/agents")
+                    : false
             }
           />
         ))}
@@ -155,7 +152,12 @@ export function Sidebar() {
           href="/vendors"
           active={pathname.startsWith("/vendors")}
         />
-        <TopRow icon={<DocIcon />} label="Documents" />
+        <TopRow
+          icon={<DocIcon />}
+          label="Documents"
+          href="/documents"
+          active={pathname.startsWith("/documents")}
+        />
         <TopRow icon={<InsightsIcon />} label="Insights" />
         <TopRow icon={<SettingsIcon />} label="Settings" />
       </nav>

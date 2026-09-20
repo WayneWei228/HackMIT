@@ -2,8 +2,6 @@
 
 import { motion } from "motion/react";
 
-import { cn } from "@/lib/cn";
-import { Button } from "@/components/ui/primitives";
 import { easeOutSoft } from "@/lib/motion";
 import { useControlsData } from "./data-context";
 import { FinalMark } from "./marks";
@@ -143,30 +141,23 @@ export function FinalStatusPanel({
         </div>
       </motion.div>
 
+      {/* The comp closed this panel with "Approve and post journal" and
+          "Request changes". Neither exists: the backend books the accrual
+          itself at the cutoff, and there is no approval step to grant or
+          withhold. A button for a capability the product does not have is a
+          promise it cannot keep, so what closes the panel now is a statement
+          of what already happened, read off the journal lines above. */}
       <motion.div
         initial={false}
         animate={{ opacity: complete ? 1 : 0, y: complete ? 0 : 8 }}
         transition={SETTLE}
-        className={cn(
-          "mt-[18px] flex flex-col gap-2",
-          !complete && "pointer-events-none",
-        )}
+        className="mt-[18px] border-t border-wash-deep pt-3 text-meta leading-[1.6] text-faint"
       >
-        {/* text-[13.5px]: `cn` reads the custom `text-ui` token as a colour and
-            drops it against the variant's own text colour. Restating the size in
-            turn drops `leading-none`, so both come back here. */}
-        <Button
-          variant="solid"
-          className="w-full justify-center border border-accent px-3.5 text-[13.5px] leading-none hover:bg-accent-deep"
-        >
-          Approve and post journal
-        </Button>
-        <Button
-          variant="secondary"
-          className="w-full justify-center px-3.5 text-[13.5px] leading-none"
-        >
-          Request changes
-        </Button>
+        {JOURNAL_LINES.length > 0
+          ? `Posted automatically at the cutoff · ${JOURNAL_LINES.length} journal ${
+              JOURNAL_LINES.length === 1 ? "line" : "lines"
+            }`
+          : "Posted automatically at the cutoff."}
       </motion.div>
     </section>
   );

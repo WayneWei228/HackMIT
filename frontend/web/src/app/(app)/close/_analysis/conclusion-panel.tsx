@@ -2,7 +2,6 @@
 
 import { motion } from "motion/react";
 
-import { MoreIcon } from "@/components/ui/icons";
 import { easeOutSoft, transitions } from "@/lib/motion";
 import { useAnalysisData } from "./data-context";
 import { AMOUNT_AT, ROWS_AT } from "./types";
@@ -44,15 +43,8 @@ export function ConclusionPanel({
 
   return (
     <Panel className="p-5">
-      <div className="flex items-center justify-between gap-2.5 border-b border-divider-3 pb-3.5">
+      <div className="border-b border-divider-3 pb-3.5">
         <PanelHeading>Provisional conclusion</PanelHeading>
-        <button
-          type="button"
-          aria-label="Conclusion actions"
-          className="-mr-1 flex h-[26px] w-[26px] cursor-pointer items-center justify-center rounded-md border border-transparent bg-transparent text-faint-3 transition-colors duration-[160ms] ease-[var(--ease-out-soft)] hover:bg-wash"
-        >
-          <MoreIcon className="text-body" />
-        </button>
       </div>
 
       <div className="mt-[18px] text-ui text-ink-2">

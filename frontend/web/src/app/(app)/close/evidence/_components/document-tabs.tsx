@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 
-import { ChevronRightIcon, SearchIcon } from "@/components/ui/icons";
+import { ChevronRightIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/cn";
 import { transitions } from "@/lib/motion";
 
@@ -42,14 +42,12 @@ export function DocumentTabs({
   doc,
   hasMatch,
   onSelect,
-  onToggleSearch,
   onJumpToMatch,
 }: {
   doc: DocId;
   /** Whether the backend cited a passage to jump to - see `useDocumentViewer`. */
   hasMatch: boolean;
   onSelect: (id: DocId) => void;
-  onToggleSearch: () => void;
   onJumpToMatch: () => void;
 }) {
   const tabs = useEvidenceData().tabs;
@@ -117,29 +115,19 @@ export function DocumentTabs({
         })}
       </div>
 
-      <div className="flex flex-none items-center gap-[2px]">
+      {/* Only offered when the backend named a document and page to jump
+          to. With nothing cited the affordance is simply absent rather than
+          a button that goes nowhere. */}
+      {hasMatch && (
         <button
           type="button"
-          onClick={onToggleSearch}
-          aria-label="Search document"
-          className="flex h-8 w-[34px] cursor-pointer items-center justify-center rounded-xl border border-transparent bg-transparent text-muted-5 transition-colors duration-[160ms] ease-[var(--ease-out-soft)] hover:bg-wash"
+          onClick={onJumpToMatch}
+          className="flex flex-none cursor-pointer items-center gap-[7px] rounded-xl border border-transparent bg-transparent px-2.5 py-2 text-sm leading-none whitespace-nowrap text-muted transition-colors duration-[160ms] ease-[var(--ease-out-soft)] hover:bg-wash"
         >
-          <SearchIcon size={16} />
+          Jump to match
+          <ChevronRightIcon size={11} className="text-faint-2" />
         </button>
-        {/* Only offered when the backend named a document and page to jump
-            to. With nothing cited the affordance is simply absent rather than
-            a button that goes nowhere. */}
-        {hasMatch && (
-          <button
-            type="button"
-            onClick={onJumpToMatch}
-            className="flex cursor-pointer items-center gap-[7px] rounded-xl border border-transparent bg-transparent px-2.5 py-2 text-sm leading-none whitespace-nowrap text-muted transition-colors duration-[160ms] ease-[var(--ease-out-soft)] hover:bg-wash"
-          >
-            Jump to match
-            <ChevronRightIcon size={11} className="text-faint-2" />
-          </button>
-        )}
-      </div>
+      )}
     </div>
   );
 }

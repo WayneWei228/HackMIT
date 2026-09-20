@@ -31,14 +31,9 @@ export function DocumentViewer({
   return (
     <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-divider bg-panel shadow-[var(--shadow-tile)]">
       <ViewerToolbar
-        pageLabel={viewer.pageLabel}
+        docId={viewer.hasDoc ? viewer.doc : ""}
         zoom={viewer.zoom}
-        canPrev={viewer.canPrev}
-        canNext={viewer.canNext}
         thumbsOpen={viewer.thumbs}
-        searchOpen={viewer.search}
-        onPrev={viewer.prevPage}
-        onNext={viewer.nextPage}
         onCycleZoom={viewer.cycleZoom}
         onToggleThumbs={viewer.toggleThumbs}
         onToggleRail={onToggleRail}
@@ -48,10 +43,7 @@ export function DocumentViewer({
         <ThumbnailRail
           open={viewer.thumbs}
           page={viewer.page}
-          maxPage={viewer.maxPage}
           highlighted={highlighted}
-          onPrev={viewer.prevPage}
-          onNext={viewer.nextPage}
         />
 
         <div className="min-w-0 flex-1 overflow-auto pt-6 pb-9">
