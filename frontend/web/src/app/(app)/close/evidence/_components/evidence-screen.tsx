@@ -33,7 +33,13 @@ export function EvidenceScreen({ view }: { view: EvidenceScreenView }) {
   return (
     <CaseProvider obligationId={view.obligationId} version={view.trailVersion}>
       {/* Right after the reader ran the agent, its facts appear one at a time and each quote is shaded as it does. */}
-      <StageRevealProvider stage="evidence" total={view.facts.length} stepMs={520}>
+      <StageRevealProvider
+        stage="evidence"
+        total={view.facts.length}
+        pending={view.pending}
+        partial
+        stepMs={520}
+      >
         <EvidenceBody view={view} />
       </StageRevealProvider>
     </CaseProvider>
@@ -50,10 +56,14 @@ function EvidenceBody({ view }: { view: EvidenceScreenView }) {
     [revealing, facts, view.excerpts],
   );
   const newest = facts.length > 0 ? facts[facts.length - 1] : null;
-  const viewer = useDocumentViewer(
-    view,
-    revealing && newest?.docId ? { docId: newest.docId, page: newest.page } : null,
-  );
+  /* The pane follows the newest fact as it appears, and otherwise the document being read. */
+  const following =
+    revealing && newest?.docId
+      ? { docId: newest.docId, page: newest.page }
+      : view.reading
+        ? { docId: view.reading, page: 1 }
+        : null;
+  const viewer = useDocumentViewer(view, following);
   const rail = useRailResize();
 
   return (

@@ -6,8 +6,9 @@ import { useRouter } from "next/navigation";
 
 import { advanceObligation } from "./api";
 import type { FrontStage } from "./api-types";
+import { caseData, useCachedHeader } from "./case-data";
 import { useCaseRecord, useCaseStoreActions, type StageKey } from "./case-store";
-import { STAGES, screenOfAgent, stageLabelOf } from "./trail";
+import { STAGES, screenOfAgent, stageDone, stageLabelOf } from "./trail";
 
 /** A short beat between stages so a viewer can follow. It never reveals anything early. */
 const PAUSE_MS = 700;
@@ -120,6 +121,11 @@ export function CaseRunnerProvider({ children }: { children: ReactNode }) {
             }
           }
         }
+        /* Evidence reads one document per call: each batch of facts is revealed as it arrives. */
+        if (request.reveal && result.stage_run?.partial) store.setUi(id, "reveal.evidence", true);
+        /* The screens read this cache, so each one fills in the moment its call returns. */
+        caseData.putDetail(id, result.case);
+        void caseData.refreshClose();
         router.refresh();
         if (result.done || (target !== null && completed.includes(target as FrontStage))) {
           patch(id, { active: false, stage: null, agent: null, callStartedAt: null });
@@ -155,6 +161,7 @@ export function CaseRunnerProvider({ children }: { children: ReactNode }) {
     generation.current += 1;
     busy.current.clear();
     setRuns({});
+    caseData.clear();
   }, []);
 
   const value = useMemo(() => ({ runs, start, cancelAll }), [runs, start, cancelAll]);
@@ -193,9 +200,11 @@ export function formatDuration(ms: number | null): string {
  * is complete (frozen, never restarting), counting up live only while its call
  * is in flight, and nothing at all otherwise.
  */
-export function useStageClock(id: string | null, stage: StageKey, complete: boolean): number | null {
+export function useStageClock(id: string | null, stage: StageKey): number | null {
   const { record } = useCaseRecord(id);
   const run = useCaseRun(id);
+  const header = useCachedHeader(id);
+  const complete = header ? stageDone(header, stage) : false;
   const recorded = record?.durations[stage] ?? null;
   const live = run.active && run.stage === stage && run.callStartedAt !== null && !complete;
 
@@ -210,5 +219,5 @@ export function useStageClock(id: string | null, stage: StageKey, complete: bool
   if (live && run.callStartedAt !== null) {
     return (recorded ?? 0) + Math.max(0, (now || run.callStartedAt) - run.callStartedAt);
   }
-  return null;
+  return recorded;
 }

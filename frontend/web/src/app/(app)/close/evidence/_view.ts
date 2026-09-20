@@ -1,4 +1,5 @@
 import type { Header, ObligationDetail } from "@/lib/api-types";
+import { stageDone } from "@/lib/trail";
 
 import { KIND_LABELS } from "../_view";
 
@@ -39,6 +40,10 @@ export type EvidenceScreenView = {
   /** The document and page holding the first quoted fact. */
   match: { docId: string; page: number } | null;
   uncertainties: string[];
+  /** The Evidence agent has not read every selected document yet. */
+  pending: boolean;
+  /** The next document the agent will read, while it is still reading. */
+  reading: string | null;
 };
 
 /** Longer quotes are context, not evidence: they are not shaded on the page. */
@@ -73,6 +78,8 @@ export function excerptsOf(facts: readonly FactRow[]): Record<string, string[]> 
 
 export function buildEvidenceView(detail: ObligationDetail): EvidenceScreenView {
   const { evidence, header } = detail;
+  const pending = !stageDone(header, "evidence");
+  const read = new Set(evidence.read_files ?? []);
   const tabs = evidence.documents.map<DocTab>((doc) => ({
     id: doc.file_id,
     label: KIND_LABELS[doc.kind] ?? doc.kind,
@@ -128,6 +135,8 @@ export function buildEvidenceView(detail: ObligationDetail): EvidenceScreenView 
     facts,
     match: first ? { docId: first.file_id as string, page: first.page as number } : null,
     uncertainties: evidence.uncertainties,
+    pending,
+    reading: pending ? (evidence.documents.find((doc) => !read.has(doc.file_id))?.file_id ?? null) : null,
     trailVersion: `${header.log_count ?? 0}:${header.handoff_count ?? 0}`,
   };
 }

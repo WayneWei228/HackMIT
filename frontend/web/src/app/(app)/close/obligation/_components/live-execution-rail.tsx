@@ -2,6 +2,7 @@
 
 import type { MouseEvent } from "react";
 import Link from "next/link";
+import { StageStateLabel } from "@/components/close/stage-state-label";
 import { motion } from "motion/react";
 
 import { CaretLeftIcon, CaretRightIcon } from "@/components/ui/icons";
@@ -15,7 +16,6 @@ import { useNextStageOpen } from "@/lib/stage-status";
 import { handoff } from "../_data";
 import { useCaseHref } from "@/lib/case-context";
 import { PulseDot, SourceDocIcon } from "./glyphs";
-import { useRevealingStage } from "@/lib/stage-reveal";
 
 export type RailProps = {
   header: Header;
@@ -72,7 +72,6 @@ function MiniRail({ onToggle }: { onToggle: () => void }) {
 }
 
 function FullRail({ header, clock, width, dragging, onToggle, onResizeStart }: RailProps) {
-  const revealing = useRevealingStage() !== null;
   const caseHref = useCaseHref();
   const nextOpen = useNextStageOpen(header, "obligation");
 
@@ -112,7 +111,7 @@ function FullRail({ header, clock, width, dragging, onToggle, onResizeStart }: R
         <div className="mt-3.5 flex items-center justify-between">
           <div className="flex items-center gap-[11px]">
             <PulseDot halo pulsing={false} />
-            <span className="text-lead text-ink">{revealing ? "Running" : "Complete"}</span>
+            <StageStateLabel screen="obligation" className="text-lead text-ink" />
           </div>
           <div className="text-sm leading-[normal] text-faint tabular-nums">{clock}</div>
         </div>

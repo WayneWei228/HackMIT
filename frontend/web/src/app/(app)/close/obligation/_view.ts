@@ -58,11 +58,11 @@ export function buildObligationView(detail: ObligationDetail): ObligationScreenV
     source: [fact.file_name, fact.page ? `p. ${fact.page}` : null].filter(Boolean).join(" · "),
   }));
 
+  /* Nothing is asserted about the evidence until an agent has assessed it. */
   const confidence =
-    CONFIDENCE[obligation.evidence_status as keyof typeof CONFIDENCE] ??
-    (obligation.evidence_status === "SUFFICIENT"
-      ? CONFIDENCE.SUFFICIENT
-      : { value: "Low", width: "34%" });
+    obligation.evidence_status === "NOT_COLLECTED"
+      ? { value: "Not assessed", width: "0%" }
+      : (CONFIDENCE[obligation.evidence_status as keyof typeof CONFIDENCE] ?? { value: "Low", width: "34%" });
 
   return {
     obligationId: header.obligation_id,

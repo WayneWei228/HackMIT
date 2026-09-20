@@ -1,5 +1,6 @@
 "use client";
 
+import { StageStateLabel } from "@/components/close/stage-state-label";
 import { motion } from "motion/react";
 
 import { cn } from "@/lib/cn";
@@ -129,7 +130,7 @@ function FullRail({
         <div className="mt-3.5 flex items-center justify-between">
           <div className="flex items-center gap-[11px]">
             <span className="h-[9px] w-[9px] rounded-full bg-accent shadow-[var(--shadow-ring)]" />
-            <span className="text-lead text-ink">{revealing ? "Running" : "Complete"}</span>
+            <StageStateLabel screen="ingestion" className="text-lead text-ink" />
           </div>
           <div className="text-sm text-faint tabular-nums">{run.clock}</div>
         </div>

@@ -6,13 +6,13 @@ import { InlineHandoff } from "@/components/close/case-trail-panel";
 import { RailStages } from "@/components/close/rail-stages";
 import type { Header } from "@/lib/api-types";
 import { useNextStageOpen } from "@/lib/stage-status";
+import { StageStateLabel } from "@/components/close/stage-state-label";
 import { cn } from "@/lib/cn";
 import { useCaseHref } from "@/lib/case-context";
 import { HANDOFF } from "../_data";
 import type { RailResize } from "../_use-estimation-run";
 import { InputDocIcon, RailCollapseIcon } from "./icons";
 import { LiveDot } from "./markers";
-import { useRevealingStage } from "@/lib/stage-reveal";
 
 /**
  * The expanded live-execution rail: where this agent sits in the close chain,
@@ -27,7 +27,6 @@ export function ExecutionRail({
   clock: string;
   rail: RailResize;
 }) {
-  const revealing = useRevealingStage() !== null;
   const caseHref = useCaseHref();
   const nextOpen = useNextStageOpen(header, "estimation");
 
@@ -67,7 +66,7 @@ export function ExecutionRail({
         <div className="mt-3.5 flex items-center justify-between">
           <div className="flex items-center gap-[11px]">
             <LiveDot pulsing={false} halo />
-            <span className="text-lead leading-[normal] text-ink">{revealing ? "Running" : "Complete"}</span>
+            <StageStateLabel screen="estimation" className="text-lead leading-[normal] text-ink" />
           </div>
           <div className="text-sm leading-[normal] text-faint tabular-nums">{clock}</div>
         </div>

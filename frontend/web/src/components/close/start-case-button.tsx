@@ -5,48 +5,38 @@ import type { MouseEvent } from "react";
 
 import { Button } from "@/components/ui/primitives";
 import type { FrontStage } from "@/lib/api-types";
-import { useCaseRun, useCaseRunner } from "@/lib/case-runner";
-import type { StageKey } from "@/lib/case-store";
-import { STAGES } from "@/lib/trail";
+import { caseData } from "@/lib/case-data";
+import { useCaseRun } from "@/lib/case-runner";
 import { cn } from "@/lib/cn";
 
 /**
- * Runs a case up to `until` (by default the next stage that has not run, so Start
- * runs only the first agent and the reader watches the rest, one screen at a time). The
- * agents run one stage per backend call, and each screen shows a stage only once
- * its call has returned. `goTo` sends the reader to a screen straight away.
- * `compact` is the size that fits inside a table row.
+ * Opens a case on the screen of its next stage. Nothing runs from here: the screen
+ * draws its full layout at once and its agent starts working inside it. The case is
+ * read into the browser first, for at most a moment, so that layout is real from the
+ * first frame. `compact` is the size that fits inside a table row.
  */
 export function StartCaseButton({
   obligationId,
-  completed,
-  agent = null,
   goTo,
   compact = false,
   label = "Start",
-  until,
 }: {
   obligationId: string;
-  completed: readonly FrontStage[];
+  completed?: readonly FrontStage[];
   agent?: string | null;
-  goTo?: string;
+  goTo: string;
   compact?: boolean;
   label?: string;
-  until?: StageKey;
 }) {
   const router = useRouter();
-  const runner = useCaseRunner();
   const run = useCaseRun(obligationId);
   const busy = run.active || run.queued;
 
-  function start(event: MouseEvent<HTMLButtonElement>) {
-    /* Inside a row link: start the case without also opening it. */
+  function open(event: MouseEvent<HTMLButtonElement>) {
+    /* Inside a row link: open the case without also following the row. */
     event.preventDefault();
     event.stopPropagation();
-    /* Start runs the first agent; Continue runs the next stage that has not run. */
-    const target = until ?? STAGES.find((stage) => !completed.includes(stage.label))?.key;
-    runner.start([{ obligationId, completed, agent, until: target, reveal: true }]);
-    if (goTo) router.push(goTo);
+    void caseData.prefetch(obligationId).then(() => router.push(goTo));
   }
 
   return (
@@ -54,7 +44,7 @@ export function StartCaseButton({
       <Button
         variant="primary"
         disabled={busy}
-        onClick={start}
+        onClick={open}
         title={run.error ?? undefined}
         className={cn(
           compact ? "px-3 py-[7px] text-meta" : "text-[13.5px]/[1]",

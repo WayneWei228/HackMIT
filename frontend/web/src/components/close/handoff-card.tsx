@@ -62,7 +62,9 @@ export function HandoffCard({
         </div>
         <div className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1 text-tiny text-muted-4">
           <span className="font-mono">
-            {stageLabel(handoff.stage_from)} {"→"} {stageLabel(handoff.stage_to)}
+            {handoff.stage_from === handoff.stage_to
+              ? `Stays in ${stageLabel(handoff.stage_from)}`
+              : `${stageLabel(handoff.stage_from)} → ${stageLabel(handoff.stage_to)}`}
           </span>
           <span className="rounded-sm bg-wash px-1.5 py-[2px] font-mono text-nano text-muted-3">
             {handoff.payload_kind}

@@ -4,6 +4,7 @@ import { TrailPanel } from "@/components/close/case-trail-panel";
 import { Awaiting } from "@/components/close/awaiting";
 import { EscalationBanner } from "@/components/close/escalation-banner";
 import { StageRevealProvider, useRevealDone } from "@/lib/stage-reveal";
+import { stageDone } from "@/lib/trail";
 
 import { AgentStatusBar } from "./agent-status-bar";
 import { AnalysisPanel } from "./analysis-panel";
@@ -25,10 +26,12 @@ import { useObligationRun } from "./use-obligation-run";
  * All data is synthetic and every upstream system is simulated.
  */
 export function ObligationScreen() {
-  const { checks } = useObligationScreen();
+  const { checks, header } = useObligationScreen();
+  const pending = !stageDone(header, "obligation");
+  const resting = pending && header.started && header.current_agent === null;
   /* The checks resolve one at a time; the conclusion they support comes last. */
   return (
-    <StageRevealProvider stage="obligation" total={(checks?.length ?? 0) + 1}>
+    <StageRevealProvider stage="obligation" total={pending ? 0 : (checks?.length ?? 0) + 1} pending={pending} resting={resting}>
       <ObligationBody />
     </StageRevealProvider>
   );

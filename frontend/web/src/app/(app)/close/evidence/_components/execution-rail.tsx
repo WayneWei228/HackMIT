@@ -1,5 +1,6 @@
 "use client";
 
+import { StageStateLabel } from "@/components/close/stage-state-label";
 import { motion } from "motion/react";
 import type { MouseEvent as ReactMouseEvent } from "react";
 
@@ -75,7 +76,7 @@ export function ExecutionRail({
         <div className="mt-[14px] flex items-center justify-between">
           <div className="flex items-center gap-[11px]">
             <PulseDot pulsing={false} halo />
-            <span className="text-lead text-ink">{revealing ? "Running" : "Complete"}</span>
+            <StageStateLabel screen="evidence" className="text-lead text-ink" />
           </div>
           <div className="text-sm text-faint tabular-nums">{run.clock}</div>
         </div>

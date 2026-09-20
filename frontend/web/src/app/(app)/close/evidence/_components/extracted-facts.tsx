@@ -1,6 +1,7 @@
 "use client";
 
 import { SectionLabel } from "@/components/ui/primitives";
+import { useRevealingStage } from "@/lib/stage-reveal";
 
 import { RAIL } from "../_data";
 import type { FactRow } from "../_view";
@@ -11,6 +12,7 @@ import type { FactRow } from "../_view";
  * its label's height instead of drawing over it.
  */
 export function ExtractedFacts({ facts }: { facts: readonly FactRow[] }) {
+  const reading = useRevealingStage() === "evidence";
   return (
     <>
       <div className="mt-8 h-px bg-sunk" />
@@ -19,7 +21,13 @@ export function ExtractedFacts({ facts }: { facts: readonly FactRow[] }) {
       </SectionLabel>
 
       <div className="mt-3 flex flex-col gap-px">
-        {facts.length === 0 && (
+        {facts.length === 0 && reading && (
+          <div className="flex items-center gap-2.5 py-2 text-ui text-faint-2">
+            <span aria-hidden="true" className="h-[7px] w-[7px] flex-none animate-pulse rounded-full bg-accent" />
+            Reading the documents
+          </div>
+        )}
+        {facts.length === 0 && !reading && (
           <div className="py-2 text-ui text-faint-2">No facts were extracted.</div>
         )}
         {facts.map((fact) => (

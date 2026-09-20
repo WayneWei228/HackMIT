@@ -21,12 +21,12 @@ function AssertionRow({
   return (
     <div
       className={cn(
-        "flex items-start gap-3 py-[15px]",
+        "flex flex-wrap items-start gap-x-3 gap-y-1 py-[15px]",
         last ? "pt-[15px] pb-0" : "border-b border-wash-deep",
       )}
     >
       <AssertionMark state={assertion.state} />
-      <div className="min-w-0 flex-1">
+      <div className="min-w-[7.5rem] flex-1">
         <motion.div
           initial={false}
           animate={{ color: lit ? "#33362F" : "#9AA096" }}
@@ -50,7 +50,7 @@ function AssertionRow({
           color: assertion.state === "done" ? "#8E938A" : "#A8ADA3",
         }}
         transition={FADE}
-        className="mt-0.5 flex-none text-micro"
+        className="mt-0.5 ml-auto flex-none text-micro"
       >
         {assertion.tag}
       </motion.span>

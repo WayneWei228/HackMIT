@@ -1,4 +1,5 @@
 import type { Escalation, Header, ObligationDetail, Preview, SourceFile } from "@/lib/api-types";
+import { stageDone } from "@/lib/trail";
 
 import type { SourceGlyph, TabGlyph } from "./_data";
 
@@ -57,6 +58,8 @@ export type SourceTabData = { id: string; label: string; glyph: TabGlyph };
 export type CloseCaseView = {
   obligationId: string;
   header: Header;
+  /** The agent has not judged the files yet: the cards are laid out and queued. */
+  pending: boolean;
   cards: SourceCardData[];
   tabs: SourceTabData[];
   available: boolean;
@@ -80,9 +83,28 @@ export function trailVersion(header: Header): string {
   return `${header.log_count ?? 0}:${header.handoff_count ?? 0}`;
 }
 
+/** The files as they are before the agent has judged any of them. */
+function offeredFiles(detail: ObligationDetail): SourceFile[] {
+  return (detail.ingestion.offered ?? []).map((file) => ({
+    ...file,
+    selected: false,
+    user_removed: false,
+    reason: null,
+    preview: file.preview ?? {
+      card: "skeleton",
+      title: file.name,
+      subtitle: file.kind,
+      fields: [],
+      total: null,
+    },
+  }));
+}
+
 export function buildCloseView(detail: ObligationDetail): CloseCaseView {
   const { ingestion, header } = detail;
-  const cards = ingestion.files.map<SourceCardData>((file) => ({
+  const pending = !stageDone(header, "ingestion");
+  const files = ingestion.files.length > 0 && !pending ? ingestion.files : offeredFiles(detail);
+  const cards = files.map<SourceCardData>((file) => ({
     id: file.file_id,
     name: file.name,
     kind: file.kind,
@@ -115,10 +137,11 @@ export function buildCloseView(detail: ObligationDetail): CloseCaseView {
   return {
     obligationId: header.obligation_id,
     header,
+    pending,
     cards,
     tabs,
     available: ingestion.available,
-    filesLoaded: ingestion.files_loaded,
+    filesLoaded: pending ? cards.length : ingestion.files_loaded,
     judge: ingestion.judge,
     summary: ingestion.summary,
     escalation: detail.escalation ?? null,

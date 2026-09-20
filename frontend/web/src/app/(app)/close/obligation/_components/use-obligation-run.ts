@@ -15,7 +15,7 @@ import { RAIL_WIDTH } from "../_data";
  */
 export function useObligationRun() {
   const obligationId = useCaseId();
-  const clock = formatDuration(useStageClock(obligationId, "obligation", true));
+  const clock = formatDuration(useStageClock(obligationId, "obligation"));
 
   const [openCheck, setOpenCheck] = useCaseUi<string | null>(obligationId, "obligation.check", null);
   const [railOpen, setRailOpen] = useCaseUi(obligationId, "obligation.rail", true);

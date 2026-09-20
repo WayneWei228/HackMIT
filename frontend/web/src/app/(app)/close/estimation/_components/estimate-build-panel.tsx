@@ -2,7 +2,8 @@
 
 import { useCaseId } from "@/lib/case-context";
 import { useCaseUi } from "@/lib/case-store";
-import { useRevealSlice } from "@/lib/stage-reveal";
+import { PendingRows } from "@/components/close/pending-rows";
+import { useRevealSlice, useStagePending } from "@/lib/stage-reveal";
 
 import type { BuildStepView } from "../_view";
 import { AdjustmentChecks } from "./adjustment-checks";
@@ -18,6 +19,7 @@ import { useEstimationScreen } from "./screen-context";
 export function EstimateBuildPanel() {
   const { steps: all, openStep, obligationId } = useEstimationScreen();
   const { count, working } = useRevealSlice(0, all.length);
+  const pending = useStagePending();
   const steps = all.slice(0, count);
   const caseId = useCaseId() ?? obligationId;
   /** `undefined` until the reader chooses; then the key they chose, or "" for none. */
@@ -29,7 +31,8 @@ export function EstimateBuildPanel() {
       <div className="font-display text-2xl leading-[normal] text-ink-deep">Estimate build</div>
 
       <div className="mt-5">
-        {all.length === 0 && (
+        {pending && <PendingRows count={4} />}
+        {all.length === 0 && !pending && (
           <p className="text-sm text-faint-2">The workpaper recorded no build steps.</p>
         )}
         {steps.map((step, i) => (
@@ -46,7 +49,7 @@ export function EstimateBuildPanel() {
             <StepBody step={step} />
           </BuildStep>
         ))}
-        {working && (
+        {working && !pending && (
           <div className="flex items-center gap-2.5 pt-3 pl-[27px] text-sm text-faint-2">
             <span aria-hidden="true" className="h-[7px] w-[7px] flex-none animate-pulse rounded-full bg-accent" />
             Working on the next step...

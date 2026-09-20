@@ -1,6 +1,7 @@
 "use client";
 
 import { NarrationText, TrailToggle } from "@/components/close/case-trail-panel";
+import { StageRunControl } from "@/components/close/stage-run-control";
 import { useStageNarration } from "@/lib/stage-narration";
 
 import { LiveDot } from "./markers";
@@ -28,6 +29,7 @@ export function AgentBar() {
         </TrailToggle>
 
         <div className="flex flex-none items-center gap-3.5 text-sm leading-[normal]">
+          <StageRunControl screen="estimation" />
           <span className="whitespace-nowrap text-faint-2">{inputs.length} inputs</span>
         </div>
       </div>

@@ -153,6 +153,28 @@ function buildSteps(
   return steps;
 }
 
+/** Before Estimation has run, its inputs are what the Obligation agent handed over. */
+function handedOverInputs(detail: ObligationDetail): InputCardView[] {
+  const { obligation } = detail;
+  if (!obligation.available) return [];
+  return [
+    {
+      label: "Obligation basis",
+      value: obligation.purchase_type_label,
+      sub: obligation.rationale,
+      icon: "doc",
+      linkTo: LINKS["Obligation basis"],
+    },
+    {
+      label: "Coverage period",
+      value: obligation.service_period,
+      sub: null,
+      icon: "calendar",
+      linkTo: null,
+    },
+  ];
+}
+
 export function buildEstimationView(detail: ObligationDetail): EstimationScreenView {
   const { estimation, header } = detail;
   const has = estimation.available && estimation.amount !== null;
@@ -173,13 +195,16 @@ export function buildEstimationView(detail: ObligationDetail): EstimationScreenV
     obligationId: header.obligation_id,
     header,
     hasEstimate: has,
-    inputs: estimation.inputs.map<InputCardView>((input) => ({
-      label: input.label,
-      value: isMoney(input.value) ? formatMoney(input.value) : input.value,
-      sub: input.sub,
-      icon: input.label === "Coverage period" ? "calendar" : "doc",
-      linkTo: LINKS[input.label] ?? null,
-    })),
+    inputs:
+      estimation.inputs.length > 0
+        ? estimation.inputs.map<InputCardView>((input) => ({
+            label: input.label,
+            value: isMoney(input.value) ? formatMoney(input.value) : input.value,
+            sub: input.sub,
+            icon: input.label === "Coverage period" ? "calendar" : "doc",
+            linkTo: LINKS[input.label] ?? null,
+          }))
+        : handedOverInputs(detail),
     footnote: has && estimation.method_label ? `Basis: ${estimation.method_label}` : null,
     calc: {
       done: has ? `${estimation.expression} = ${amount}.` : noEstimate,

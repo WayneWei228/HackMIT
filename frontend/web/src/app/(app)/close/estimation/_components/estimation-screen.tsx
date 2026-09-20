@@ -4,6 +4,7 @@ import { TrailPanel } from "@/components/close/case-trail-panel";
 import { Awaiting } from "@/components/close/awaiting";
 import { EscalationBanner } from "@/components/close/escalation-banner";
 import { StageRevealProvider, useRevealDone } from "@/lib/stage-reveal";
+import { stageDone } from "@/lib/trail";
 import { ReceivedStrip, StageChecks } from "@/components/close/stage-checks";
 
 import { AgentBar } from "./agent-bar";
@@ -23,12 +24,16 @@ import { useEstimationRun, useRailResize } from "../_use-estimation-run";
  * once the backend has run the agent, and every figure on it is the workpaper's.
  */
 export function EstimationScreen() {
-  const { steps, stageChecks } = useEstimationScreen();
+  const { steps, stageChecks, header } = useEstimationScreen();
+  const pending = !stageDone(header, "estimation");
+  const resting = pending && header.started && header.current_agent === null;
   /* The rungs resolve one at a time, then the checks; the accrual they add up to comes last. */
   return (
     <StageRevealProvider
       stage="estimation"
-      total={steps.length + (stageChecks?.length ?? 0) + 1}
+      total={pending ? 0 : steps.length + (stageChecks?.length ?? 0) + 1}
+      pending={pending}
+      resting={resting}
       stepMs={520}
     >
       <EstimationBody />

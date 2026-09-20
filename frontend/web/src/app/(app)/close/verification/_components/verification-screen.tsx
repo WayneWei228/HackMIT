@@ -4,6 +4,7 @@ import { TrailPanel } from "@/components/close/case-trail-panel";
 import { Awaiting } from "@/components/close/awaiting";
 import { EscalationBanner } from "@/components/close/escalation-banner";
 import { StageRevealProvider, useRevealDone, useRevealSlice } from "@/lib/stage-reveal";
+import { stageDone } from "@/lib/trail";
 import { ReceivedStrip, StageChecks } from "@/components/close/stage-checks";
 
 import { AgentStatusBar } from "./agent-status-bar";
@@ -25,13 +26,17 @@ import { useVerificationRun } from "./use-verification-run";
  * simulated.
  */
 export function VerificationScreen() {
-  const { data, stageChecks } = useVerificationScreen();
+  const { data, stageChecks, header } = useVerificationScreen();
   const run = useVerificationRun({ data });
+  const pending = !stageDone(header, "verification");
+  const resting = pending && header.started && header.current_agent === null;
   /* The controls tick one at a time, then the checks; the decision they support comes last. */
   return (
     <StageRevealProvider
       stage="verification"
-      total={run.view.controls.length + (stageChecks?.length ?? 0) + 1}
+      total={pending ? 0 : run.view.controls.length + (stageChecks?.length ?? 0) + 1}
+      pending={pending}
+      resting={resting}
       stepMs={420}
     >
       <VerificationBody run={run} />

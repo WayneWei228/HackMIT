@@ -132,6 +132,8 @@ export type OfferedFile = {
   kind: string;
   format: string;
   size_label: string;
+  /** What the file looks like, so its card can be laid out before it is judged. */
+  preview?: Preview;
 };
 
 export type IngestionView = {
@@ -174,6 +176,8 @@ export type EvidenceView = {
   /** The checks this stage ran, one row per real check (present once it has run). */
   stage_checks?: StageCheck[];
   summary: string | null;
+  /** The selected files the agent has read so far, in the order it read them. */
+  read_files?: string[];
   documents: EvidenceDocument[];
   facts: EvidenceFact[];
   uncertainties: string[];
@@ -589,6 +593,8 @@ export type StageRun = {
   duration_ms: number;
   log_seqs: number[];
   handoff_seqs: number[];
+  /** True while Evidence has read some of its selected documents and more remain. */
+  partial?: boolean;
 };
 
 export type AdvanceResult = {

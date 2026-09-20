@@ -3,7 +3,9 @@
 import { AnimatePresence, motion } from "motion/react";
 
 import { cn } from "@/lib/cn";
+import { PendingRows } from "@/components/close/pending-rows";
 import { MoreIcon } from "@/components/ui/icons";
+import { useStagePending } from "@/lib/stage-reveal";
 import { easeOutSoft } from "@/lib/motion";
 import type { ControlView, ScanView } from "../_data";
 import { ControlMark, ScanMark } from "./marks";
@@ -185,6 +187,7 @@ export function ControlChecksPanel({
   openControl: number;
   onToggle: (index: number) => void;
 }) {
+  const pending = useStagePending();
   return (
     <section className="min-h-full rounded-xl border border-divider bg-panel px-[22px] pt-5 pb-[22px] shadow-[var(--shadow-tile)]">
       <div className="flex items-start justify-between gap-3">
@@ -209,6 +212,7 @@ export function ControlChecksPanel({
       </div>
 
       <div className="mt-5">
+        {pending && <PendingRows count={4} />}
         {controls.map((control, i) => (
           <ControlRow
             key={control.index}

@@ -192,9 +192,15 @@ export const VERDICT_STYLES: Record<
   },
 };
 
-/** A stage edge written for reading: "SEARCHING_AP" -> "Searching AP". */
+/**
+ * A workflow state written for reading: "SEARCHING_AP/SEARCH_AP" becomes
+ * "Searching ap: search ap" - the stage, then the action that is due in it.
+ */
 export function stageLabel(stage: string | null): string {
   if (!stage) return "-";
-  const words = stage.toLowerCase().replace(/_/g, " ");
-  return words.charAt(0).toUpperCase() + words.slice(1);
+  const [state, action] = stage.split("/");
+  const words = (text: string) => text.toLowerCase().replace(/_/g, " ").replace(/\bap\b/g, "AP");
+  const named = words(state);
+  const head = named.charAt(0).toUpperCase() + named.slice(1);
+  return action ? `${head} · ${words(action)}` : head;
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { StageStateLabel } from "@/components/close/stage-state-label";
 import { motion } from "motion/react";
 
 import { InlineHandoff } from "@/components/close/case-trail-panel";
@@ -99,7 +100,7 @@ export function ExecutionRail({
         <div className="mt-[14px] flex items-center justify-between">
           <div className="flex items-center gap-[11px]">
             <LiveDot pulse={false} />
-            <span className="text-lead text-ink">{revealing ? "Running" : "Complete"}</span>
+            <StageStateLabel screen="verification" className="text-lead text-ink" />
           </div>
           <div className="text-sm text-faint tabular-nums">{clock}</div>
         </div>

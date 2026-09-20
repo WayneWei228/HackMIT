@@ -4,7 +4,7 @@ import type { FrontStage, Header } from "./api-types";
 import { useCaseId } from "./case-context";
 import { useCaseRun } from "./case-runner";
 import type { StageKey } from "./case-store";
-import { useRevealingStage } from "./stage-reveal";
+import { useRevealingStage, useStagePending } from "./stage-reveal";
 import { shownStatus } from "./status-styles";
 import { STAGES, stageDone } from "./trail";
 
@@ -49,13 +49,16 @@ export function useShownHeader<T extends Header>(header: T): T {
   const run = useCaseRun(useCaseId());
   /* While a stage's results are still being revealed, what they add up to is not shown yet. */
   const revealing = useRevealingStage();
+  /* A stage that has produced nothing yet is not running: only its results arriving are. */
+  const pending = useStagePending();
+  const arriving = revealing !== null && !pending;
   const estimated = stageDone(header, "estimation") && revealing !== "estimation";
   return {
     ...header,
     previous_accrual: estimated ? header.previous_accrual : null,
     supported: estimated ? header.supported : null,
     difference: estimated ? header.difference : null,
-    status: run.active || revealing !== null
+    status: run.active || arriving
       ? "Running"
       : shownStatus(header.status, header.stages_completed, header.current_agent),
   };
@@ -77,6 +80,13 @@ const NEXT: Record<StageKey, StageKey | null> = {
  */
 export function useNextStageOpen(header: HeaderLike, current: StageKey): boolean {
   const statuses = useStageStatuses(header);
+  const revealing = useRevealingStage();
   const next = NEXT[current];
-  return next !== null && statuses[next] !== "Waiting";
+  /* The handoff is offered once this stage has run and its results are all on screen. */
+  return (
+    next !== null &&
+    statuses[current] === "Complete" &&
+    revealing === null &&
+    statuses[next] !== "Waiting"
+  );
 }

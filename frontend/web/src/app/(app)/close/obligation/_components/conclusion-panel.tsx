@@ -56,7 +56,7 @@ export function ConclusionPanel() {
       {conclusion.note && (
         <div className="mt-5 flex items-start gap-[11px] rounded-lg bg-accent-tint px-3.5 py-[13px]">
           <NoteInfoIcon className="mt-px flex-none" />
-          <p className="text-meta leading-[1.65] text-pretty text-accent-slate">{conclusion.note}</p>
+          <p className="min-w-0 text-meta leading-[1.65] text-pretty break-words text-accent-slate">{conclusion.note}</p>
         </div>
       )}
     </Panel>

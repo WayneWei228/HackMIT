@@ -6,7 +6,7 @@ import type { ReactNode } from "react";
 import type { StageKey } from "./case-store";
 import { useReveal } from "./reveal";
 
-type Reveal = { stage: StageKey; shown: number; total: number };
+type Reveal = { stage: StageKey; shown: number; total: number; pending: boolean; resting: boolean };
 
 const RevealContext = createContext<Reveal | null>(null);
 
@@ -19,15 +19,29 @@ export function StageRevealProvider({
   stage,
   total,
   stepMs = 480,
+  pending = false,
+  resting = false,
+  partial = false,
   children,
 }: {
   stage: StageKey;
   total: number;
   stepMs?: number;
+  /** The stage has not finished: the screen is unfinished, with results still to come. */
+  pending?: boolean;
+  /** Nothing more will run on this case: it waits on someone else, so what is missing is not coming from this stage. */
+  resting?: boolean;
+  /** While pending, items are already arriving (Evidence reads a document at a time) and are shown. */
+  partial?: boolean;
   children: ReactNode;
 }) {
-  const shown = useReveal(stage, total, stepMs);
-  return <RevealContext value={{ stage, shown, total }}>{children}</RevealContext>;
+  const revealed = useReveal(stage, total, stepMs);
+  const value = !pending
+    ? { stage, shown: revealed, total, pending: false, resting: false }
+    : partial
+      ? { stage, shown: revealed, total: total + 1, pending: true, resting }
+      : { stage, shown: 0, total: Math.max(total, 1), pending: true, resting };
+  return <RevealContext value={value}>{children}</RevealContext>;
 }
 
 /** How many items of a slice that starts at `offset` are revealed, and whether the next one is being worked on. */
@@ -48,4 +62,14 @@ export function useRevealDone(): boolean {
 export function useRevealingStage(): StageKey | null {
   const reveal = useContext(RevealContext);
   return reveal && reveal.shown < reveal.total ? reveal.stage : null;
+}
+
+/** True while the stage has produced nothing yet: its panels are laid out and waiting for the agent. */
+export function useStagePending(): boolean {
+  return useContext(RevealContext)?.pending ?? false;
+}
+
+/** True when the stage has produced nothing and nothing more will run here: the case waits on someone else. */
+export function useStageResting(): boolean {
+  return useContext(RevealContext)?.resting ?? false;
 }

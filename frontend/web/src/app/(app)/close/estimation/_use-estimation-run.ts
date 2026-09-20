@@ -14,7 +14,7 @@ export type EstimationRun = {
 /** The screen renders only once the backend has run the agent, so there is no timeline to play. */
 export function useEstimationRun(): EstimationRun {
   const obligationId = useCaseId();
-  const clock = formatDuration(useStageClock(obligationId, "estimation", true));
+  const clock = formatDuration(useStageClock(obligationId, "estimation"));
   return { clock };
 }
 

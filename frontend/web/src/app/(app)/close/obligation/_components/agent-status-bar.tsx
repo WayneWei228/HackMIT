@@ -1,6 +1,7 @@
 "use client";
 
 import { NarrationText, TrailToggle } from "@/components/close/case-trail-panel";
+import { StageRunControl } from "@/components/close/stage-run-control";
 import { useStageNarration } from "@/lib/stage-narration";
 
 import { PulseDot } from "./glyphs";
@@ -24,6 +25,7 @@ export function AgentStatusBar() {
       </TrailToggle>
 
       <div className="flex flex-none items-center gap-3.5 text-sm leading-[normal]">
+        <StageRunControl screen="obligation" />
         <span className="whitespace-nowrap text-faint-2">{evidenceInputsLabel}</span>
         {checks && (
           <>

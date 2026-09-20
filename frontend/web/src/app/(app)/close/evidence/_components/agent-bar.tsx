@@ -1,6 +1,7 @@
 "use client";
 
 import { NarrationText, TrailToggle } from "@/components/close/case-trail-panel";
+import { StageRunControl } from "@/components/close/stage-run-control";
 import { useStageNarration } from "@/lib/stage-narration";
 
 import { AGENT_LABEL } from "../_data";
@@ -29,6 +30,7 @@ export function AgentBar({
       </TrailToggle>
 
       <div className="flex flex-none items-center gap-[14px] text-sm">
+        <StageRunControl screen="evidence" />
         <span className="whitespace-nowrap text-faint-2">{sourceCount} sources</span>
         <span className="text-line-mute" aria-hidden="true">
           |

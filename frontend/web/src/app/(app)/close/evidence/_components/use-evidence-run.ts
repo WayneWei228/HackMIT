@@ -11,6 +11,6 @@ export type EvidenceRun = {
 /** The screen renders only once the backend has run the agent, so there is no timeline to play. */
 export function useEvidenceRun(): EvidenceRun {
   const obligationId = useCaseId();
-  const clock = formatDuration(useStageClock(obligationId, "evidence", true));
+  const clock = formatDuration(useStageClock(obligationId, "evidence"));
   return { clock };
 }

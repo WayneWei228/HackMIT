@@ -3,6 +3,7 @@
 import { motion } from "motion/react";
 
 import { NarrationText, TrailToggle } from "@/components/close/case-trail-panel";
+import { StageRunControl } from "@/components/close/stage-run-control";
 import { transitions } from "@/lib/motion";
 import { useStageNarration } from "@/lib/stage-narration";
 
@@ -42,6 +43,7 @@ export function AgentStatusBar({
       </TrailToggle>
 
       <div className="flex flex-none items-center gap-3.5 text-sm">
+        <StageRunControl screen="ingestion" />
         <span className="text-faint-2">{filesLoaded} files loaded</span>
         <span aria-hidden="true" className="text-line-mute">
           |

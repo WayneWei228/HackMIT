@@ -40,7 +40,12 @@ export function CloseCaseScreen(props: CloseCaseScreenProps) {
   return (
     <CaseProvider obligationId={props.view.obligationId} version={props.view.trailVersion}>
       {/* Right after the reader ran the agent, its decisions resolve one file at a time. */}
-      <StageRevealProvider stage="ingestion" total={props.view.cards.length} stepMs={340}>
+      <StageRevealProvider
+        stage="ingestion"
+        total={props.view.pending ? 0 : props.view.cards.length}
+        pending={props.view.pending}
+        stepMs={340}
+      >
         <CloseCaseBody {...props} />
       </StageRevealProvider>
     </CaseProvider>

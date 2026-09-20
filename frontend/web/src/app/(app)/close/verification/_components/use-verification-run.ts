@@ -39,7 +39,7 @@ export type VerificationRun = {
  */
 export function useVerificationRun({ data }: Options): VerificationRun {
   const obligationId = useCaseId();
-  const clock = formatDuration(useStageClock(obligationId, "verification", true));
+  const clock = formatDuration(useStageClock(obligationId, "verification"));
 
   // The accordion follows the running check until the reader takes it over.
   const [accordion, setAccordion] = useState<{

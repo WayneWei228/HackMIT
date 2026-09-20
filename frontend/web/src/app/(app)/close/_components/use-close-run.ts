@@ -22,7 +22,7 @@ export type CloseRun = {
  */
 export function useCloseRun({ view }: { view: CloseCaseView }): CloseRun {
   const obligationId = useCaseId();
-  const clock = formatDuration(useStageClock(obligationId, "ingestion", true));
+  const clock = formatDuration(useStageClock(obligationId, "ingestion"));
 
   const selected = useMemo(
     () => view.cards.filter((card) => card.picked).map((card) => card.id),

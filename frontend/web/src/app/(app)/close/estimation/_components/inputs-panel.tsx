@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 
+import { PendingRows } from "@/components/close/pending-rows";
 import { cn } from "@/lib/cn";
+import { useStagePending } from "@/lib/stage-reveal";
 import { useCaseHref } from "@/lib/case-context";
 import type { InputCardView } from "../_view";
 import { ConfirmIcon, InputCalendarIcon, InputDocIcon } from "./icons";
@@ -11,12 +13,14 @@ import { useEstimationScreen } from "./screen-context";
 /** Left column: the facts the estimate is built from, as the workpaper recorded them. */
 export function InputsPanel() {
   const { inputs, footnote } = useEstimationScreen();
+  const pending = useStagePending();
   return (
     <section className="flex min-h-full flex-col rounded-xl border border-divider bg-panel px-5 pt-5 pb-[18px] shadow-[var(--shadow-tile)]">
       <div className="font-display border-b border-divider-3 pb-3.5 text-2xl leading-[normal] text-ink-deep">
         Inputs
       </div>
 
+      {pending && inputs.length === 0 && <PendingRows count={2} className="mt-5" />}
       {inputs.map((input, i) => (
         <InputCard
           key={input.label}

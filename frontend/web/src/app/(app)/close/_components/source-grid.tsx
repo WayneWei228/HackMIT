@@ -147,11 +147,19 @@ function SourceCard({
         )}
       </AnimatePresence>
 
-      <div className={cn("px-3.5 pt-[29px]", card.removed && "line-through decoration-[#D6A43C]/60")}>
+      {/* The preview gets the room above the file row and fades out before it, so no line of it
+          ever runs into the name. */}
+      <div
+        className={cn(
+          "min-h-0 flex-1 overflow-hidden px-3.5 pt-[29px]",
+          "[-webkit-mask-image:linear-gradient(to_bottom,#000_calc(100%-26px),transparent)] [mask-image:linear-gradient(to_bottom,#000_calc(100%-26px),transparent)]",
+          card.removed && "line-through decoration-[#D6A43C]/60",
+        )}
+      >
         <PreviewBody preview={card.preview} />
       </div>
 
-      <div className="absolute right-0 bottom-0 left-0 flex items-center gap-[9px] bg-[linear-gradient(to_bottom,rgba(255,255,255,0),#FFFFFF_26%)] px-3.5 pt-5 pb-[13px]">
+      <div className="flex min-h-[86px] flex-none items-start gap-[9px] bg-panel px-3.5 pt-2.5 pb-[13px]">
         <SourceGlyphIcon glyph={card.glyph} className="flex-none text-faint-3" />
         <div className="min-w-0">
           <div className="truncate text-meta text-ink">{card.name}</div>

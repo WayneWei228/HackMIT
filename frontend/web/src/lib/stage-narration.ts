@@ -6,6 +6,7 @@ import type { LogEntry } from "./api-types";
 import { useCaseRun } from "./case-runner";
 import { useCaseId } from "./case-context";
 import { useCaseTrail } from "./case-trail";
+import { useStageFlow } from "./stage-flow";
 import type { StageKey } from "./case-store";
 import { agentLabel, agentsOn, screenOfAgent } from "./trail";
 
@@ -29,6 +30,7 @@ export function useStageNarration(screen: StageKey): Narration {
   const trail = useCaseTrail();
   const run = useCaseRun(id);
   const running = run.active && run.stage === screen && run.callStartedAt !== null;
+  const flow = useStageFlow(screen);
 
   const entries = useMemo(() => {
     const mine = new Set(agentsOn(screen));
@@ -40,6 +42,18 @@ export function useStageNarration(screen: StageKey): Narration {
   if (running) {
     const agent = run.agent && screenOfAgent(run.agent) === screen ? agentLabel(run.agent) : null;
     return { phase: "ready", entries, running, text: `${agent ?? "Agent"} running` };
+  }
+  if (flow.phase === "waiting") {
+    return { phase: "empty", entries, running, text: `Waiting for the ${flow.waitingFor ?? "previous agent"}` };
+  }
+  if (flow.phase === "starting") {
+    return { phase: "empty", entries, running, text: "Starting" };
+  }
+  if (flow.phase === "failed") {
+    return { phase: "error", entries, running, text: flow.error ?? "The last call failed" };
+  }
+  if (flow.phase === "rest") {
+    return { phase: "empty", entries, running, text: "Nothing more runs here: the case is waiting on someone else" };
   }
   if (trail.status === "loading") {
     return { phase: "loading", entries, running, text: "Reading the run log" };

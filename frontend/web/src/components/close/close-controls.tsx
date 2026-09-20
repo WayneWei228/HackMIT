@@ -26,7 +26,10 @@ export function CloseControls({
   const store = useCaseStoreActions();
   const { actions, phase } = close;
   const running = Object.values(runs).some((state) => state.active || state.queued);
-  const startable = close.cases.filter((row) => row.can_start && row.status === "Pending");
+  /* Every case with an agent still due: the Pending ones, and any already part-way through. */
+  const startable = close.cases.filter(
+    (row) => row.current_agent != null && (row.status !== "Pending" || row.can_start),
+  );
 
   function startAll() {
     runner.start(
