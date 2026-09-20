@@ -35,6 +35,7 @@ from trueup.close_orchestrator import CloseRun, CloseSettings, FileOverride, Ste
 from trueup.gateway import llm
 from trueup.ingest.manifest import CaseEntry, FileUniverse
 from trueup.service.readmodels import is_pending
+from trueup.service.timeline import Moments
 from trueup.simulator.simulator import Simulator
 from trueup.store import enums as e
 from trueup.store import models as m
@@ -48,6 +49,12 @@ JANUARY_AT = datetime(2027, 1, 31, 12, 0, tzinfo=UTC)
 VENDOR_REPLY_MOMENTS = (
     datetime(2027, 2, 2, 12, 0, tzinfo=UTC),
     datetime(2027, 2, 3, 12, 0, tzinfo=UTC),
+)
+MOMENTS = Moments(
+    close=CLOSE_AT,
+    owner_replies=REPLIES_AT,
+    invoices=JANUARY_AT,
+    vendor_reply=VENDOR_REPLY_MOMENTS[-1],
 )
 SEED_DIR = Path(__file__).resolve().parents[2] / "seed"
 DEMO_USER = "demo user"

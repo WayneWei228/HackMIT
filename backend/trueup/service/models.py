@@ -60,6 +60,19 @@ class CloseActions(Strict):
     can_advance_to_vendor_reply: bool = False
 
 
+ClockState = Literal["DONE", "CURRENT", "UPCOMING"]
+
+
+class ClockStop(Strict):
+    """One moment on the demo calendar: the current one is the latest the demo has reached."""
+
+    key: Literal["CLOSE_STARTS", "ACCRUALS_POSTED", "INVOICES_ARRIVE", "VENDORS_REPLY"]
+    label: str
+    date_label: str
+    state: ClockState
+    detail: str
+
+
 class Person(Strict):
     person_id: str
     name: str
@@ -78,6 +91,7 @@ class CloseView(Strict):
     queue_count: int
     pending_rules: int
     actions: CloseActions
+    timeline: list[ClockStop]
 
 
 # ---- one obligation, screen by screen -----------------------------------------------------------
@@ -353,6 +367,29 @@ class VerificationView(StageExtras):
     outreach: list[OutreachMessage]
 
 
+RibbonKey = Literal["ACCRUAL", "INVOICE", "VARIANCE", "DIAGNOSIS", "CONTROLLER", "LEARNING"]
+RibbonState = Literal["DONE", "CURRENT", "UPCOMING", "SKIPPED"]
+RibbonTone = Literal["NEUTRAL", "OK", "WARN", "BAD"]
+
+
+class RibbonFigure(Strict):
+    label: str
+    amount: str
+
+
+class RibbonStep(Strict):
+    """One step of a case's story over time. A step is filled only once it has happened."""
+
+    key: RibbonKey
+    label: str
+    state: RibbonState
+    tone: RibbonTone
+    headline: str
+    detail: str
+    at: str | None
+    figures: list[RibbonFigure]
+
+
 class Escalation(Strict):
     reason: Literal["INSUFFICIENT_INFORMATION"]
     missing: list[str]
@@ -417,6 +454,7 @@ class ObligationDetail(Strict):
     timeline: list[TimelineEntry]
     escalation: Escalation | None = None
     outreach_threads: list[OutreachThread] = Field(default_factory=list)
+    ribbon: list[RibbonStep] = Field(default_factory=list)
 
 
 # ---- the run log and the handoffs ----------------------------------------------------------------

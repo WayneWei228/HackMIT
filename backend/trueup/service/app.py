@@ -68,6 +68,7 @@ def create_app() -> FastAPI:
                     phase=state.phase,
                     now=_aware(state.sim.now()),
                     universe=universe,
+                    moments=demo.MOMENTS,
                 )
 
     @app.post("/api/close/run", response_model=v.ActionResult)

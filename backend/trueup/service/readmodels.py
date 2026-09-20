@@ -28,7 +28,7 @@ from trueup.ingest.manifest import CaseEntry, FileEntry, FileUniverse
 from trueup.ingest.readers import UnsupportedFile, read_text
 from trueup.learning.rules import CandidateRule
 from trueup.service import models as v
-from trueup.service import outreach_threads, runlog, stagechecks
+from trueup.service import outreach_threads, ribbon, runlog, stagechecks, timeline
 from trueup.store import enums as e
 from trueup.store import models as m
 from trueup.store.types import coerce_money
@@ -235,8 +235,35 @@ def _vendor(session: Session, vendor_id: str) -> m.CompanyVendor:
 # ---- the close ----------------------------------------------------------------------------------
 
 
+def _clock_counts(session: Session, obligations: list[m.TrueUpObligation]) -> timeline.Counts:
+    posted = {e.AccrualStatus.POSTED_SIMULATED, e.AccrualStatus.TRUE_UP_COMPLETE}
+    graded = disputes = settled = 0
+    for ob in obligations:
+        wp = _workpaper(session, ob)
+        inputs = (wp.calculation_inputs_json or {}) if wp else {}
+        graded += bool(inputs.get("reconciliation"))
+        dispute = inputs.get("dispute")
+        if dispute:
+            disputes += 1
+            settled += dispute.get("status") == "RESOLVED"
+    return timeline.Counts(
+        total=len(obligations),
+        started=sum(not is_pending(ob) for ob in obligations),
+        posted=sum(ob.accrual_status in posted for ob in obligations),
+        graded=graded,
+        disputes=disputes,
+        disputes_settled=settled,
+    )
+
+
 def close_view(
-    session: Session, *, period: str, phase: v.Phase, now: datetime, universe: FileUniverse
+    session: Session,
+    *,
+    period: str,
+    phase: v.Phase,
+    now: datetime,
+    universe: FileUniverse,
+    moments: timeline.Moments,
 ) -> v.CloseView:
     people = _config(session, "people") or []
     names = {p["person_id"]: p["name"] for p in people}
@@ -263,6 +290,9 @@ def close_view(
             can_run_close=phase != "JANUARY" and any(is_pending(ob) for ob in obligations),
             can_advance_to_january=phase == "CLOSED",
             can_advance_to_vendor_reply=phase == "JANUARY" and _has_open_request(session),
+        ),
+        timeline=timeline.clock_stops(
+            phase=phase, now=now, moments=moments, counts=_clock_counts(session, obligations)
         ),
     )
 
@@ -378,6 +408,16 @@ def obligation_detail(
         else [_timeline(r) for r in runs if r.agent_name not in LOG_ONLY_AGENTS],
         escalation=escalation_of(session, ob),
         outreach_threads=outreach_threads.threads_for(session, ob, runs, now=now),
+        ribbon=ribbon.build(
+            session,
+            ob,
+            wp,
+            status=header.status,
+            estimation=estimation,
+            verification=verification,
+            cards=cards,
+            names={p["person_id"]: p["name"] for p in _config(session, "people") or []},
+        ),
     )
 
 
