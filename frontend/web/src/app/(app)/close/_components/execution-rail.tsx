@@ -12,6 +12,7 @@ import { ExecutionStages } from "./execution-stages";
 import { RailHandoff } from "./rail-handoff";
 import { RailLabel } from "./rail-label";
 import { useRailResize, type RailResize } from "./use-rail-resize";
+import { useRevealingStage } from "@/lib/stage-reveal";
 
 /**
  * The live execution rail.
@@ -91,6 +92,7 @@ function FullRail({
   onToggle: () => void;
   resize: RailResize;
 }) {
+  const revealing = useRevealingStage() !== null;
   const { width, dragging, startResize } = resize;
 
   return (
@@ -127,14 +129,16 @@ function FullRail({
         <div className="mt-3.5 flex items-center justify-between">
           <div className="flex items-center gap-[11px]">
             <span className="h-[9px] w-[9px] rounded-full bg-accent shadow-[var(--shadow-ring)]" />
-            <span className="text-lead text-ink">Complete</span>
+            <span className="text-lead text-ink">{revealing ? "Running" : "Complete"}</span>
           </div>
           <div className="text-sm text-faint tabular-nums">{run.clock}</div>
         </div>
 
         <ExecutionStages header={header} obligationId={obligationId} />
 
-        <RailHandoff files={run.selectedFiles} obligationId={obligationId} header={header} />
+        {!revealing && (
+          <RailHandoff files={run.selectedFiles} obligationId={obligationId} header={header} />
+        )}
       </div>
     </motion.aside>
   );

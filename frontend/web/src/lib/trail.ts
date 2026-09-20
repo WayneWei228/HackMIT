@@ -1,5 +1,6 @@
 import type { FrontStage, GateVerdict, Handoff, LogEntry } from "./api-types";
 import type { StageKey } from "./case-store";
+import { routes } from "./routes";
 
 /** The five stages of a close, in the order the agents run them. */
 export const STAGES: readonly { key: StageKey; label: FrontStage }[] = [
@@ -9,6 +10,15 @@ export const STAGES: readonly { key: StageKey; label: FrontStage }[] = [
   { key: "estimation", label: "Estimation" },
   { key: "verification", label: "Verification" },
 ];
+
+/** The screen that shows each stage. */
+export const STAGE_ROUTES: Record<StageKey, string> = {
+  ingestion: routes.closeCase,
+  evidence: routes.evidence,
+  obligation: routes.obligation,
+  estimation: routes.estimation,
+  verification: routes.verification,
+};
 
 export function stageLabelOf(key: StageKey): FrontStage {
   return STAGES.find((stage) => stage.key === key)?.label ?? "Ingestion";
@@ -100,16 +110,42 @@ export function latestFor(screen: StageKey, entries: readonly LogEntry[]): LogEn
   return latest;
 }
 
-/** How many formal-verification controls passed across the whole trail. */
-export function verificationTotals(entries: readonly LogEntry[]): { passed: number; total: number } {
-  let passed = 0;
-  let total = 0;
-  for (const entry of entries) {
-    if (!entry.verification) continue;
-    passed += entry.verification.passed;
-    total += entry.verification.total;
+/**
+ * The screen a handoff belongs to: the one its producing agent works on. The
+ * agents that run before Ingestion (Detection, Invoice lookup) count with it,
+ * and an agent with no screen inherits the one before it.
+ */
+function gateScreenIndex(agent: string): number | null {
+  if (agent === "detection" || agent === "invoice_lookup") return 0;
+  const screen = screenOfAgent(agent);
+  return screen ? STAGES.findIndex((stage) => stage.key === screen) : null;
+}
+
+/**
+ * The formal-verification controls that have run up to the screen being viewed:
+ * `here` is the gate at the handoff leaving this screen, `soFar` adds every gate
+ * before it. Later screens never count, so the tally cannot include work the
+ * reader has not reached.
+ */
+export function verificationThrough(
+  screen: StageKey,
+  handoffs: readonly Handoff[],
+): { here: { passed: number; total: number } | null; soFar: { passed: number; total: number } } {
+  const limit = STAGES.findIndex((stage) => stage.key === screen);
+  const outgoing = outgoingHandoff(screen, handoffs);
+  const soFar = { passed: 0, total: 0 };
+  let current = 0;
+  for (const handoff of [...handoffs].sort((a, b) => a.seq - b.seq)) {
+    current = gateScreenIndex(handoff.from_agent) ?? current;
+    if (current > limit) break;
+    if (!handoff.verification) continue;
+    soFar.passed += handoff.verification.passed;
+    soFar.total += handoff.verification.total;
   }
-  return { passed, total };
+  const here = outgoing?.verification
+    ? { passed: outgoing.verification.passed, total: outgoing.verification.total }
+    : null;
+  return { here, soFar };
 }
 
 /** The handoff that leaves this screen's agents for the next screen's, if it has happened. */

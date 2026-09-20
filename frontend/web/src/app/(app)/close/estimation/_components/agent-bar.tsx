@@ -19,7 +19,7 @@ export function AgentBar() {
     <>
       <div className="h-px flex-none bg-line" />
       <div className="flex flex-none items-center justify-between gap-5 px-[34px] py-[9px]">
-        <TrailToggle>
+        <TrailToggle screen="estimation">
           <LiveDot pulsing={running} />
           <span className="text-ui leading-[normal] font-medium whitespace-nowrap text-ink">
             Estimation agent

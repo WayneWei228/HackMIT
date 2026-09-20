@@ -3,6 +3,7 @@
 import type { Received, StageCheck } from "@/lib/api-types";
 import { useCaseId } from "@/lib/case-context";
 import { useCaseUi } from "@/lib/case-store";
+import { useRevealSlice } from "@/lib/stage-reveal";
 import { cn } from "@/lib/cn";
 import { agentLabel } from "@/lib/trail";
 
@@ -49,12 +50,23 @@ const MARK: Record<StageCheck["status"], { ring: string; glyph: string; label: s
  * body, the log entry it came from and the evidence it rests on. The set differs
  * by purchase type, so nothing here assumes how many there are.
  */
-export function StageChecks({ checks, scope }: { checks: StageCheck[]; scope: string }) {
+export function StageChecks({
+  checks: all,
+  scope,
+  offset = 0,
+}: {
+  checks: StageCheck[];
+  scope: string;
+  /** Where this list starts in the screen's reveal order. */
+  offset?: number;
+}) {
   const id = useCaseId();
   const links = useTrailLinks();
   const [openId, setOpenId] = useCaseUi<string | null>(id, `checks.${scope}`, null);
+  const { count, working } = useRevealSlice(offset, all.length);
+  const checks = all.slice(0, count);
 
-  if (checks.length === 0) {
+  if (all.length === 0) {
     return <p className="text-sm text-faint-2">This stage recorded no checks.</p>;
   }
 
@@ -63,7 +75,7 @@ export function StageChecks({ checks, scope }: { checks: StageCheck[]; scope: st
       {checks.map((check, index) => {
         const open = openId === check.check_id;
         const mark = MARK[check.status];
-        const last = index === checks.length - 1;
+        const last = index === checks.length - 1 && !working;
         return (
           <li key={check.check_id} className={cn("relative pl-10", last ? "pb-0" : "pb-[20px]")}>
             {!last && <div className="absolute top-[22px] bottom-0 left-2 w-px bg-line" />}
@@ -120,6 +132,17 @@ export function StageChecks({ checks, scope }: { checks: StageCheck[]; scope: st
           </li>
         );
       })}
+      {working && (
+        <li className="relative pl-10">
+          <span
+            aria-hidden="true"
+            className="absolute top-[2px] left-0 flex h-[17px] w-[17px] items-center justify-center rounded-full border border-rule"
+          >
+            <span className="h-[6px] w-[6px] animate-pulse rounded-full bg-accent" />
+          </span>
+          <span className="text-sm text-faint-2">Checking...</span>
+        </li>
+      )}
     </ol>
   );
 }

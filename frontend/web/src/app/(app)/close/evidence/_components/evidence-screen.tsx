@@ -1,9 +1,12 @@
 "use client";
 
+import { useMemo } from "react";
+
 import { TrailPanel } from "@/components/close/case-trail-panel";
 import { CaseProvider } from "@/lib/case-context";
+import { StageRevealProvider, useRevealSlice } from "@/lib/stage-reveal";
 
-import type { EvidenceScreenView } from "../_view";
+import { excerptsOf, type EvidenceScreenView } from "../_view";
 import { AgentBar } from "./agent-bar";
 import { CaseHeader } from "./case-header";
 import { CaseStats } from "./case-stats";
@@ -29,14 +32,28 @@ import { useRailResize } from "./use-rail-resize";
 export function EvidenceScreen({ view }: { view: EvidenceScreenView }) {
   return (
     <CaseProvider obligationId={view.obligationId} version={view.trailVersion}>
-      <EvidenceBody view={view} />
+      {/* Right after the reader ran the agent, its facts appear one at a time and each quote is shaded as it does. */}
+      <StageRevealProvider stage="evidence" total={view.facts.length} stepMs={520}>
+        <EvidenceBody view={view} />
+      </StageRevealProvider>
     </CaseProvider>
   );
 }
 
 function EvidenceBody({ view }: { view: EvidenceScreenView }) {
   const run = useEvidenceRun();
-  const viewer = useDocumentViewer(view);
+  const { count: revealed } = useRevealSlice(0, view.facts.length);
+  const revealing = revealed < view.facts.length;
+  const facts = useMemo(() => view.facts.slice(0, revealed), [view.facts, revealed]);
+  const excerpts = useMemo(
+    () => (revealing ? excerptsOf(facts) : view.excerpts),
+    [revealing, facts, view.excerpts],
+  );
+  const newest = facts.length > 0 ? facts[facts.length - 1] : null;
+  const viewer = useDocumentViewer(
+    view,
+    revealing && newest?.docId ? { docId: newest.docId, page: newest.page } : null,
+  );
   const rail = useRailResize();
 
   return (
@@ -56,13 +73,13 @@ function EvidenceBody({ view }: { view: EvidenceScreenView }) {
 
         <div className="h-px flex-none bg-line" />
 
-        <AgentBar sourceCount={view.tabs.length} factCount={view.facts.length} />
+        <AgentBar sourceCount={view.tabs.length} factCount={facts.length} />
         <TrailPanel />
 
         <div className="flex min-h-0 flex-1 px-[34px] pb-[26px]">
           <DocumentViewer
             tabs={view.tabs}
-            excerpts={view.excerpts}
+            excerpts={excerpts}
             viewer={viewer}
             onToggleRail={rail.toggle}
           />
@@ -72,7 +89,7 @@ function EvidenceBody({ view }: { view: EvidenceScreenView }) {
       {rail.open ? (
         <ExecutionRail
           run={run}
-          facts={view.facts}
+          facts={facts}
           width={rail.width}
           dragging={rail.dragging}
           header={view.header}

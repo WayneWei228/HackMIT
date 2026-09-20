@@ -125,8 +125,19 @@ export type SourceFile = {
   preview: Preview;
 };
 
+/** A file the Ingestion agent can see, listed before it has judged any of them. */
+export type OfferedFile = {
+  file_id: string;
+  name: string;
+  kind: string;
+  format: string;
+  size_label: string;
+};
+
 export type IngestionView = {
   available: boolean;
+  /** The case's files in the order the agent reads them; absent on a backend that predates it. */
+  offered?: OfferedFile[];
   judge: string | null;
   files_loaded: number;
   selected_count: number;

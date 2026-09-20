@@ -31,11 +31,19 @@ export type DocumentViewer = {
  * `AnimatePresence` in the viewer rather than by a `fade` flag here. It opens
  * on the page that holds the first quoted fact.
  */
-export function useDocumentViewer(view: EvidenceScreenView): DocumentViewer {
-  const [doc, setDoc] = useState<string | null>(
+export function useDocumentViewer(
+  view: EvidenceScreenView,
+  following: { docId: string; page: number | null } | null = null,
+): DocumentViewer {
+  const [docState, setDoc] = useState<string | null>(
     view.match?.docId ?? view.tabs[0]?.id ?? null,
   );
-  const [page, setPage] = useState(view.match?.page ?? 1);
+  const [pageState, setPage] = useState(view.match?.page ?? 1);
+  /* While facts are being revealed the pane follows the newest one, until the reader steers it. */
+  const [steered, setSteered] = useState(false);
+  const followed = following && !steered ? following : null;
+  const doc = followed ? followed.docId : docState;
+  const page = followed ? (followed.page ?? 1) : pageState;
   const [zoomIndex, setZoomIndex] = useState(0);
   const [thumbs, setThumbs] = useState(true);
   const [search, setSearch] = useState(false);
@@ -48,6 +56,7 @@ export function useDocumentViewer(view: EvidenceScreenView): DocumentViewer {
 
   const selectDoc = useCallback(
     (id: string) => {
+      setSteered(true);
       if (id === doc) return;
       setDoc(id);
       setPage(1);
@@ -55,14 +64,20 @@ export function useDocumentViewer(view: EvidenceScreenView): DocumentViewer {
     [doc],
   );
 
-  const prevPage = useCallback(() => setPage((p) => Math.max(1, p - 1)), []);
-  const nextPage = useCallback(
-    () => setPage((p) => Math.min(pagesFor(doc), p + 1)),
-    [doc, pagesFor],
-  );
+  const prevPage = useCallback(() => {
+    setSteered(true);
+    setDoc(doc);
+    setPage(Math.max(1, page - 1));
+  }, [doc, page]);
+  const nextPage = useCallback(() => {
+    setSteered(true);
+    setDoc(doc);
+    setPage(Math.min(pagesFor(doc), page + 1));
+  }, [doc, page, pagesFor]);
 
   const jumpToMatch = useCallback(() => {
     if (!view.match) return;
+    setSteered(true);
     setDoc(view.match.docId);
     setPage(view.match.page);
   }, [view.match]);

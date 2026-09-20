@@ -22,7 +22,7 @@ export function AgentBar({
 
   return (
     <div className="flex flex-none items-center justify-between gap-5 px-[34px] py-[9px]">
-      <TrailToggle>
+      <TrailToggle screen="evidence">
         <PulseDot pulsing={running} />
         <span className="text-ui font-medium whitespace-nowrap text-ink">{AGENT_LABEL}</span>
         <NarrationText screen="evidence" />

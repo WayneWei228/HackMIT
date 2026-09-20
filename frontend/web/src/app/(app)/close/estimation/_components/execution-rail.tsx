@@ -12,6 +12,7 @@ import { HANDOFF } from "../_data";
 import type { RailResize } from "../_use-estimation-run";
 import { InputDocIcon, RailCollapseIcon } from "./icons";
 import { LiveDot } from "./markers";
+import { useRevealingStage } from "@/lib/stage-reveal";
 
 /**
  * The expanded live-execution rail: where this agent sits in the close chain,
@@ -26,6 +27,7 @@ export function ExecutionRail({
   clock: string;
   rail: RailResize;
 }) {
+  const revealing = useRevealingStage() !== null;
   const caseHref = useCaseHref();
   const nextOpen = useNextStageOpen(header, "estimation");
 
@@ -65,7 +67,7 @@ export function ExecutionRail({
         <div className="mt-3.5 flex items-center justify-between">
           <div className="flex items-center gap-[11px]">
             <LiveDot pulsing={false} halo />
-            <span className="text-lead leading-[normal] text-ink">Complete</span>
+            <span className="text-lead leading-[normal] text-ink">{revealing ? "Running" : "Complete"}</span>
           </div>
           <div className="text-sm leading-[normal] text-faint tabular-nums">{clock}</div>
         </div>
@@ -99,7 +101,7 @@ export function ExecutionRail({
             href={caseHref(HANDOFF.href)}
             className="relative block w-full overflow-hidden rounded-xl border border-accent bg-accent px-3.5 py-[11px] text-center text-ui leading-[normal] font-medium text-accent-on transition-colors duration-[160ms] ease-[var(--ease-out-soft)] hover:bg-accent-deep hover:text-accent-on"
           >
-            <span className="relative z-[2]">Hand off to Verification</span>
+            <span className="relative z-[2]">Continue to Verification</span>
           </Link>
         </div>
         )}

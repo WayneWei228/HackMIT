@@ -24,7 +24,7 @@ export default async function VerificationPage({
   const { close, detail } = await loadCase(searchParams);
   if (!detail) return <NoCases close={close} />;
   if (!stageDone(detail.header, "verification")) {
-    return <NotStarted close={close} header={detail.header} stage="verification" />;
+    return <NotStarted close={close} detail={detail} stage="verification" />;
   }
   const audit = await getAudit(detail.header.obligation_id);
   return (

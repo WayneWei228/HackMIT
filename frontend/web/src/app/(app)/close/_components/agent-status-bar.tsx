@@ -26,7 +26,7 @@ export function AgentStatusBar({
 
   return (
     <div className="flex flex-none items-center justify-between gap-5 px-[34px] py-[9px]">
-      <TrailToggle>
+      <TrailToggle screen="ingestion">
         <span className="relative h-[9px] w-[9px] flex-none">
           <span className="absolute inset-0 rounded-full bg-accent" />
           <motion.span

@@ -21,6 +21,7 @@ import { PreviewBody } from "./source-cards";
  */
 export function SourceGrid({
   cards,
+  reading,
   tab,
   onRemove,
   onRestore,
@@ -28,6 +29,8 @@ export function SourceGrid({
   compactCards = false,
 }: {
   cards: readonly SourceCardData[];
+  /** Files the agent has not resolved yet: shown as being read, with no decision drawn. */
+  reading: ReadonlySet<string>;
   tab: string;
   onRemove: (id: string) => void;
   onRestore: (id: string) => void;
@@ -49,6 +52,7 @@ export function SourceGrid({
             <SourceCard
               key={card.id}
               card={card}
+              reading={reading.has(card.id)}
               busy={busy}
               onToggle={() => (card.removed ? onRestore(card.id) : card.picked ? onRemove(card.id) : undefined)}
               compact={compactCards}
@@ -62,16 +66,18 @@ export function SourceGrid({
 
 function SourceCard({
   card,
+  reading,
   busy,
   onToggle,
   compact,
 }: {
   card: SourceCardData;
+  reading: boolean;
   busy: boolean;
   onToggle: () => void;
   compact: boolean;
 }) {
-  const actionable = card.picked || card.removed;
+  const actionable = !reading && (card.picked || card.removed);
   const hint = card.removed
     ? "Removed by you. Click to restore this file."
     : card.picked
@@ -98,9 +104,22 @@ function SourceCard({
         card.picked && "border-[#4F9A64] shadow-[0_0_0_1px_#4F9A64]",
         card.removed && "border-dashed border-[#D6A43C] opacity-60",
         !card.picked && !card.removed && "border-divider",
+        reading && "opacity-60",
+        !reading && !card.picked && !card.removed && "opacity-90",
         busy && "opacity-70",
       )}
     >
+      {reading && (
+        <div className="absolute top-2.5 right-[11px] z-10 flex items-center gap-1.5 rounded-sm bg-wash px-1.5 py-1 text-nano font-semibold tracking-caps text-faint-2">
+          <span aria-hidden="true" className="h-[6px] w-[6px] animate-pulse rounded-full bg-accent" />
+          READING
+        </div>
+      )}
+      {!reading && !card.picked && !card.removed && (
+        <div className="absolute top-2.5 right-[11px] z-10 rounded-sm bg-wash px-1.5 py-1 text-nano font-semibold tracking-caps text-faint-2">
+          NOT SELECTED
+        </div>
+      )}
       <AnimatePresence>
         {card.picked && (
           <motion.div
@@ -139,6 +158,9 @@ function SourceCard({
           <div className="mt-[3px] text-tiny text-faint-3">
             {card.format} &nbsp;·&nbsp; {card.detail}
           </div>
+          {!reading && card.reason && (
+            <div className="mt-1 line-clamp-2 text-tiny leading-[1.35] text-muted-4">{card.reason}</div>
+          )}
         </div>
       </div>
     </motion.button>

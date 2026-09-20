@@ -4,6 +4,9 @@ import { EscalationBanner } from "@/components/close/escalation-banner";
 import { TrailPanel } from "@/components/close/case-trail-panel";
 import { CaseProvider, useCaseId } from "@/lib/case-context";
 import { useCaseUi } from "@/lib/case-store";
+import { StageRevealProvider, useRevealSlice } from "@/lib/stage-reveal";
+
+import { useMemo } from "react";
 
 import type { CloseCaseView } from "../_view";
 import { AgentStatusBar } from "./agent-status-bar";
@@ -36,13 +39,30 @@ export type CloseCaseScreenProps = {
 export function CloseCaseScreen(props: CloseCaseScreenProps) {
   return (
     <CaseProvider obligationId={props.view.obligationId} version={props.view.trailVersion}>
-      <CloseCaseBody {...props} />
+      {/* Right after the reader ran the agent, its decisions resolve one file at a time. */}
+      <StageRevealProvider stage="ingestion" total={props.view.cards.length} stepMs={340}>
+        <CloseCaseBody {...props} />
+      </StageRevealProvider>
     </CaseProvider>
   );
 }
 
-function CloseCaseBody({ view, showExecutionPanel = true, compactCards = false }: CloseCaseScreenProps) {
+function CloseCaseBody({ view: full, showExecutionPanel = true, compactCards = false }: CloseCaseScreenProps) {
   const obligationId = useCaseId();
+  const { count: revealed } = useRevealSlice(0, full.cards.length);
+  const reading = useMemo(
+    () => new Set(full.cards.slice(revealed).map((card) => card.id)),
+    [full.cards, revealed],
+  );
+  const view = useMemo(
+    () => ({
+      ...full,
+      cards: full.cards.map((card) =>
+        reading.has(card.id) ? { ...card, picked: false, removed: false, reason: null } : card,
+      ),
+    }),
+    [full, reading],
+  );
   const [tab, setTab] = useCaseUi(obligationId, "ingestion.tab", "all");
   const [railOpen, setRailOpen] = useCaseUi(obligationId, "ingestion.rail", true);
   const run = useCloseRun({ view });
@@ -77,6 +97,7 @@ function CloseCaseBody({ view, showExecutionPanel = true, compactCards = false }
 
         <SourceGrid
           cards={view.cards}
+          reading={reading}
           tab={tab}
           onRemove={files.remove}
           onRestore={files.restore}

@@ -1,7 +1,9 @@
 "use client";
 
 import { TrailPanel } from "@/components/close/case-trail-panel";
+import { Awaiting } from "@/components/close/awaiting";
 import { EscalationBanner } from "@/components/close/escalation-banner";
+import { StageRevealProvider, useRevealDone } from "@/lib/stage-reveal";
 
 import { AgentStatusBar } from "./agent-status-bar";
 import { AnalysisPanel } from "./analysis-panel";
@@ -23,8 +25,19 @@ import { useObligationRun } from "./use-obligation-run";
  * All data is synthetic and every upstream system is simulated.
  */
 export function ObligationScreen() {
+  const { checks } = useObligationScreen();
+  /* The checks resolve one at a time; the conclusion they support comes last. */
+  return (
+    <StageRevealProvider stage="obligation" total={(checks?.length ?? 0) + 1}>
+      <ObligationBody />
+    </StageRevealProvider>
+  );
+}
+
+function ObligationBody() {
   const run = useObligationRun();
   const { escalation, header } = useObligationScreen();
+  const done = useRevealDone();
 
   return (
     <>
@@ -46,7 +59,7 @@ export function ObligationScreen() {
           <div className="grid min-h-full grid-cols-[minmax(0,0.82fr)_minmax(0,1.28fr)_minmax(0,0.9fr)] items-start gap-3.5">
             <FactsPanel />
             <AnalysisPanel />
-            <ConclusionPanel />
+            {done ? <ConclusionPanel /> : <Awaiting title="Provisional conclusion" />}
           </div>
         </div>
       </main>

@@ -9,9 +9,10 @@ import { useCaseId } from "@/lib/case-context";
 import { useCaseTrail } from "@/lib/case-trail";
 import { useCaseUi, type StageKey } from "@/lib/case-store";
 import { cn } from "@/lib/cn";
+import { useRevealingStage } from "@/lib/stage-reveal";
 import { useStageNarration } from "@/lib/stage-narration";
 import { formatStamp } from "@/lib/time";
-import { VERDICT_STYLES, agentLabel, outgoingHandoff, verificationTotals } from "@/lib/trail";
+import { VERDICT_STYLES, agentLabel, outgoingHandoff, verificationThrough } from "@/lib/trail";
 
 import { GateChecklist, GateTally, FormalVerificationBadge, VerdictChip } from "./gate";
 import { HandoffCard, HandoffFlow, useOpenHandoffs } from "./handoff-card";
@@ -48,10 +49,10 @@ export function NarrationText({ screen }: { screen: StageKey }) {
  * log beneath it. It also carries the running tally of formal-verification
  * controls, so a viewer sees them before opening anything.
  */
-export function TrailToggle({ children }: { children: ReactNode }) {
+export function TrailToggle({ screen, children }: { screen: StageKey; children: ReactNode }) {
   const { open, setOpen } = usePanelState();
-  const { log } = useCaseTrail();
-  const totals = useMemo(() => verificationTotals(log?.entries ?? []), [log]);
+  const { handoffs } = useCaseTrail();
+  const gates = useMemo(() => verificationThrough(screen, handoffs?.handoffs ?? []), [screen, handoffs]);
 
   return (
     <button
@@ -62,9 +63,14 @@ export function TrailToggle({ children }: { children: ReactNode }) {
       className="group flex min-w-0 cursor-pointer items-center gap-[11px] rounded-lg py-1 pr-2 text-left transition-colors duration-[160ms] hover:bg-wash"
     >
       {children}
-      {totals.total > 0 && (
-        <span className="flex-none rounded-sm bg-accent-tint px-1.5 py-[3px] text-nano leading-none font-semibold whitespace-nowrap text-accent-deep ring-1 ring-accent-line-2 ring-inset">
-          {totals.passed}/{totals.total} verification checks passed
+      {gates.soFar.total > 0 && (
+        <span
+          title="Each handoff between agents runs a gate of controls before the next agent may start. This counts the gates up to this screen only."
+          className="flex-none rounded-sm bg-accent-tint px-1.5 py-[3px] text-nano leading-none font-semibold whitespace-nowrap text-accent-deep ring-1 ring-accent-line-2 ring-inset"
+        >
+          {gates.here
+            ? `${gates.here.passed}/${gates.here.total} checks passed at this handoff, ${gates.soFar.passed}/${gates.soFar.total} so far`
+            : `${gates.soFar.passed}/${gates.soFar.total} checks passed so far`}
         </span>
       )}
       <ChevronDownIcon
@@ -347,8 +353,9 @@ export function TrailPanel() {
 export function InlineHandoff({ screen }: { screen: StageKey }) {
   const { handoffs } = useCaseTrail();
   const [open, toggle] = useOpenHandoffs();
+  const revealing = useRevealingStage() !== null;
   const handoff = outgoingHandoff(screen, handoffs?.handoffs ?? []);
-  if (!handoff) return null;
+  if (!handoff || revealing) return null;
   return (
     <div className="mt-[22px]">
       <div className="mb-2 text-eyebrow font-medium tracking-caps-lg text-faint">HANDOFF PAYLOAD</div>

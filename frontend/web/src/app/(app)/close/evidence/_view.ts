@@ -21,6 +21,8 @@ export type FactRow = {
   citation: string;
   docId: string | null;
   page: number | null;
+  /** The quoted span, shaded on the page once the fact has been revealed. */
+  excerpt: string | null;
 };
 
 export type EvidenceScreenView = {
@@ -58,6 +60,17 @@ function dedupe<T extends { label: string; value: string | null; file_id: string
   });
 }
 
+/** The quoted spans to shade, by document, for just these facts. */
+export function excerptsOf(facts: readonly FactRow[]): Record<string, string[]> {
+  const excerpts: Record<string, string[]> = {};
+  for (const fact of facts) {
+    if (fact.docId && fact.excerpt && fact.excerpt.length <= MAX_HIGHLIGHT_CHARS) {
+      (excerpts[fact.docId] ??= []).push(fact.excerpt);
+    }
+  }
+  return excerpts;
+}
+
 export function buildEvidenceView(detail: ObligationDetail): EvidenceScreenView {
   const { evidence, header } = detail;
   const tabs = evidence.documents.map<DocTab>((doc) => ({
@@ -86,6 +99,7 @@ export function buildEvidenceView(detail: ObligationDetail): EvidenceScreenView 
       .join(" · "),
     docId: fact.file_id,
     page: fact.page,
+    excerpt: fact.excerpt,
   }));
 
   const rank = (fileId: string | null) => {

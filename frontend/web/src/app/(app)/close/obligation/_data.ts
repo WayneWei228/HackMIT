@@ -12,5 +12,5 @@ export const handoff = {
   from: "Obligation",
   to: "Estimation",
   href: routes.estimation,
-  idleLabel: "Hand off to Estimation",
+  idleLabel: "Continue to Estimation",
 } as const;

@@ -29,7 +29,7 @@ export default async function CloseCasePage({
   const { close, detail } = await loadCase(searchParams);
   if (!detail) return <NoCases close={close} />;
   if (!stageDone(detail.header, "ingestion")) {
-    return <NotStarted close={close} header={detail.header} stage="ingestion" />;
+    return <NotStarted close={close} detail={detail} stage="ingestion" />;
   }
   return <CloseCaseScreen view={buildCloseView(detail)} />;
 }

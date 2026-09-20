@@ -22,7 +22,7 @@ export default async function EvidencePage({
   const { close, detail } = await loadCase(searchParams);
   if (!detail) return <NoCases close={close} />;
   if (!stageDone(detail.header, "evidence")) {
-    return <NotStarted close={close} header={detail.header} stage="evidence" />;
+    return <NotStarted close={close} detail={detail} stage="evidence" />;
   }
   return <EvidenceScreen view={buildEvidenceView(detail)} />;
 }

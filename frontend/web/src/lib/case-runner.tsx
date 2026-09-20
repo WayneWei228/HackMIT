@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { advanceObligation } from "./api";
 import type { FrontStage } from "./api-types";
 import { useCaseRecord, useCaseStoreActions, type StageKey } from "./case-store";
-import { STAGES, screenOfAgent } from "./trail";
+import { STAGES, screenOfAgent, stageLabelOf } from "./trail";
 
 /** A short beat between stages so a viewer can follow. It never reveals anything early. */
 const PAUSE_MS = 700;
@@ -40,6 +40,10 @@ export type RunRequest = {
   /** Stages the backend already reports as completed, so a run resumes and never replays. */
   completed: readonly FrontStage[];
   agent?: string | null;
+  /** Stop once this stage is complete. Without it the run goes straight through to a resting state. */
+  until?: StageKey;
+  /** The reader is watching: each stage this run completes plays its reveal once. */
+  reveal?: boolean;
 };
 
 type Runner = {
@@ -79,7 +83,12 @@ export function CaseRunnerProvider({ children }: { children: ReactNode }) {
       const id = request.obligationId;
       let completed = request.completed;
       let agent = request.agent ?? null;
+      const target = request.until ? stageLabelOf(request.until) : null;
       while (gen === generation.current) {
+        if (target !== null && completed.includes(target as FrontStage)) {
+          patch(id, { active: false, stage: null, agent: null, callStartedAt: null });
+          return;
+        }
         /* The screen a viewer is waiting on is the first one not yet complete, whichever agent runs. */
         const stage = nextStage(completed);
         patch(id, { active: true, queued: false, stage, agent, callStartedAt: performance.now() });
@@ -101,10 +110,18 @@ export function CaseRunnerProvider({ children }: { children: ReactNode }) {
           const ran = screenOfAgent(result.stage_run.agent) ?? stage;
           if (ran) store.addDuration(id, ran, result.stage_run.duration_ms);
         }
+        const before = completed;
         completed = result.case.header.stages_completed ?? completed;
         agent = result.case.header.current_agent ?? null;
+        if (request.reveal) {
+          for (const finished of STAGES) {
+            if (completed.includes(finished.label) && !before.includes(finished.label)) {
+              store.setUi(id, `reveal.${finished.key}`, true);
+            }
+          }
+        }
         router.refresh();
-        if (result.done) {
+        if (result.done || (target !== null && completed.includes(target as FrontStage))) {
           patch(id, { active: false, stage: null, agent: null, callStartedAt: null });
           return;
         }

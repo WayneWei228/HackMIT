@@ -2,6 +2,7 @@
 
 import { useCaseId } from "@/lib/case-context";
 import { useCaseUi } from "@/lib/case-store";
+import { useRevealSlice } from "@/lib/stage-reveal";
 
 import type { BuildStepView } from "../_view";
 import { AdjustmentChecks } from "./adjustment-checks";
@@ -15,7 +16,9 @@ import { useEstimationScreen } from "./screen-context";
  * different steps. Which one is open is kept when the reader leaves and returns.
  */
 export function EstimateBuildPanel() {
-  const { steps, openStep, obligationId } = useEstimationScreen();
+  const { steps: all, openStep, obligationId } = useEstimationScreen();
+  const { count, working } = useRevealSlice(0, all.length);
+  const steps = all.slice(0, count);
   const caseId = useCaseId() ?? obligationId;
   /** `undefined` until the reader chooses; then the key they chose, or "" for none. */
   const [chosen, setChosen] = useCaseUi<string | undefined>(caseId, "estimation.open", undefined);
@@ -26,7 +29,7 @@ export function EstimateBuildPanel() {
       <div className="font-display text-2xl leading-[normal] text-ink-deep">Estimate build</div>
 
       <div className="mt-5">
-        {steps.length === 0 && (
+        {all.length === 0 && (
           <p className="text-sm text-faint-2">The workpaper recorded no build steps.</p>
         )}
         {steps.map((step, i) => (
@@ -36,13 +39,19 @@ export function EstimateBuildPanel() {
             title={step.title}
             status={step.status}
             open={open === step.key}
-            last={i === steps.length - 1}
+            last={i === steps.length - 1 && !working}
             tallBody={step.kind !== "text"}
             onToggle={() => setChosen(open === step.key ? "" : step.key)}
           >
             <StepBody step={step} />
           </BuildStep>
         ))}
+        {working && (
+          <div className="flex items-center gap-2.5 pt-3 pl-[27px] text-sm text-faint-2">
+            <span aria-hidden="true" className="h-[7px] w-[7px] flex-none animate-pulse rounded-full bg-accent" />
+            Working on the next step...
+          </div>
+        )}
       </div>
     </section>
   );

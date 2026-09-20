@@ -23,7 +23,7 @@ export default async function ObligationPage({
   const { close, detail } = await loadCase(searchParams);
   if (!detail) return <NoCases close={close} />;
   if (!stageDone(detail.header, "obligation")) {
-    return <NotStarted close={close} header={detail.header} stage="obligation" />;
+    return <NotStarted close={close} detail={detail} stage="obligation" />;
   }
   return (
     <ObligationScreenProvider view={buildObligationView(detail)}>

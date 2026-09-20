@@ -11,6 +11,7 @@ import { CaretLeftIcon, CaretRightIcon, PageIcon } from "@/components/ui/icons";
 import { transitions } from "@/lib/motion";
 import { routes } from "@/lib/routes";
 import { LiveDot } from "./marks";
+import { useRevealingStage } from "@/lib/stage-reveal";
 
 /** The 56px rail the panel collapses into. */
 function MiniRail({ onExpand }: { onExpand: () => void }) {
@@ -58,6 +59,7 @@ export function ExecutionRail({
   /** The status the Policy stage returned, e.g. Blocked or Close-ready. */
   outcome: string;
 }) {
+  const revealing = useRevealingStage() !== null;
   return (
     <motion.aside
       initial={{ opacity: 0 }}
@@ -97,7 +99,7 @@ export function ExecutionRail({
         <div className="mt-[14px] flex items-center justify-between">
           <div className="flex items-center gap-[11px]">
             <LiveDot pulse={false} />
-            <span className="text-lead text-ink">Complete</span>
+            <span className="text-lead text-ink">{revealing ? "Running" : "Complete"}</span>
           </div>
           <div className="text-sm text-faint tabular-nums">{clock}</div>
         </div>
@@ -106,26 +108,30 @@ export function ExecutionRail({
 
         <div className="mt-8 h-px bg-sunk" />
 
-        <div className="mt-[22px] text-eyebrow font-medium tracking-caps-lg text-faint">
-          OUTCOME
-        </div>
-        <div className="mt-[13px] flex items-start gap-3">
-          <PageIcon size={15} className="mt-0.5 flex-none text-faint-3" />
-          <div className="min-w-0 flex-1">
-            <div className="text-body text-ink">Policy decision: {outcome}</div>
-          </div>
-        </div>
+        {!revealing && (
+          <>
+            <div className="mt-[22px] text-eyebrow font-medium tracking-caps-lg text-faint">
+              OUTCOME
+            </div>
+            <div className="mt-[13px] flex items-start gap-3">
+              <PageIcon size={15} className="mt-0.5 flex-none text-faint-3" />
+              <div className="min-w-0 flex-1">
+                <div className="text-body text-ink">Policy decision: {outcome}</div>
+              </div>
+            </div>
 
-        <InlineHandoff screen="verification" />
+            <InlineHandoff screen="verification" />
 
-        <div className="mt-4">
-          <Link
-            href={routes.cases}
-            className="block w-full rounded-xl border border-accent bg-accent px-[14px] py-[11px] text-center text-ui font-medium text-accent-on transition-colors duration-[160ms] ease-[var(--ease-out-soft)] hover:bg-accent-deep hover:text-accent-on"
-          >
-            Return to case list
-          </Link>
-        </div>
+            <div className="mt-4">
+              <Link
+                href={routes.cases}
+                className="block w-full rounded-xl border border-accent bg-accent px-[14px] py-[11px] text-center text-ui font-medium text-accent-on transition-colors duration-[160ms] ease-[var(--ease-out-soft)] hover:bg-accent-deep hover:text-accent-on"
+              >
+                Return to case list
+              </Link>
+            </div>
+          </>
+        )}
       </div>
     </motion.aside>
   );

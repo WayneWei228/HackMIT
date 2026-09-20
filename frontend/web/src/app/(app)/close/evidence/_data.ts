@@ -24,7 +24,7 @@ export const RAIL = {
   handoffLabel: "NEXT HANDOFF",
   handoffFrom: "Evidence",
   handoffTo: "Obligation",
-  ctaIdle: "Hand off to Obligation",
+  ctaIdle: "Continue to Obligation",
   ctaAuto: "Opening Obligation...",
 } as const;
 

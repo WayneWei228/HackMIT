@@ -26,7 +26,7 @@ export function AgentStatusBar({
 
   return (
     <div className="flex flex-none items-center justify-between gap-5 px-[34px] py-[9px]">
-      <TrailToggle>
+      <TrailToggle screen="verification">
         <LiveDot pulse={running} ring={false} />
         <span className="text-ui font-medium whitespace-nowrap text-ink">Verification agent</span>
         <NarrationText screen="verification" />

@@ -16,6 +16,7 @@ import { PulseDot } from "./pulse-dot";
 import type { Header } from "@/lib/api-types";
 import type { FactRow } from "../_view";
 import type { EvidenceRun } from "./use-evidence-run";
+import { useRevealingStage } from "@/lib/stage-reveal";
 
 /**
  * The live execution rail. It is resizable between 288 and 620px by dragging
@@ -38,6 +39,7 @@ export function ExecutionRail({
   onResizeStart: (event: ReactMouseEvent) => void;
   onCollapse: () => void;
 }) {
+  const revealing = useRevealingStage() !== null;
   return (
     <motion.aside
       initial={{ opacity: 0 }}
@@ -73,7 +75,7 @@ export function ExecutionRail({
         <div className="mt-[14px] flex items-center justify-between">
           <div className="flex items-center gap-[11px]">
             <PulseDot pulsing={false} halo />
-            <span className="text-lead text-ink">Complete</span>
+            <span className="text-lead text-ink">{revealing ? "Running" : "Complete"}</span>
           </div>
           <div className="text-sm text-faint tabular-nums">{run.clock}</div>
         </div>
@@ -82,7 +84,7 @@ export function ExecutionRail({
 
         <ExtractedFacts facts={facts} />
 
-        <NextHandoff header={header} />
+        {!revealing && <NextHandoff header={header} />}
       </div>
     </motion.aside>
   );

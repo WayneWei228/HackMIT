@@ -18,7 +18,7 @@ export const AGENT_NAME = "Ingestion agent";
 
 export const HANDOFF_FROM = "Ingestion";
 export const HANDOFF_TO = "Evidence";
-export const CTA_IDLE_LABEL = "Run evidence agent";
+export const CTA_IDLE_LABEL = "Continue to Evidence";
 
 /* -------------------------------------------------------------------------- */
 /* Rail geometry                                                               */

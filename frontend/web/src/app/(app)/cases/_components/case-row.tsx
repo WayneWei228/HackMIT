@@ -9,7 +9,8 @@ import { MoreIcon } from "@/components/ui/icons";
 import { formatMoney } from "@/lib/money";
 import { easeOutSoft } from "@/lib/motion";
 import { StartCaseButton } from "@/components/close/start-case-button";
-import { agentLabel } from "@/lib/trail";
+import { caseHref } from "@/lib/case-nav";
+import { agentLabel, STAGE_ROUTES, STAGES } from "@/lib/trail";
 
 import { CASE_GRID } from "./case-grid";
 import { CaseStatusDot } from "./case-status-dot";
@@ -112,12 +113,18 @@ export function CaseRow({
       </div>
 
       <div className="flex justify-end">
-        {row.canStart || row.running || (started && hasNextAgent) ? (
+        {row.canStart || row.running || (started && hasNextAgent && !row.stagesCompleted?.includes("Verification")) ? (
           <StartCaseButton
             obligationId={row.obligationId}
             completed={row.stagesCompleted ?? []}
             agent={row.currentAgent}
             label={started ? "Continue" : "Start"}
+            goTo={caseHref(
+              STAGE_ROUTES[
+                STAGES.find((stage) => !(row.stagesCompleted ?? []).includes(stage.label))?.key ?? "verification"
+              ],
+              row.obligationId,
+            )}
             compact
           />
         ) : (

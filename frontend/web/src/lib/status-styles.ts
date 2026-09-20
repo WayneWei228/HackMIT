@@ -28,6 +28,8 @@ export function shownStatus(
   currentAgent?: string | null,
 ): CaseStatus {
   if (!stagesCompleted) return status;
+  /* Running is what the runner shows while a call is in flight. A case waiting for the reader to run its next agent is In progress. */
+  if (status === "Running") return stagesCompleted.length === 0 ? "Pending" : "In progress";
   if (!AFTER_POLICY.includes(status)) return status;
   if (stagesCompleted.includes("Verification")) return status;
   if (currentAgent === null && stagesCompleted.length > 0) return status;

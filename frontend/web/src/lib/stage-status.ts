@@ -4,6 +4,7 @@ import type { FrontStage, Header } from "./api-types";
 import { useCaseId } from "./case-context";
 import { useCaseRun } from "./case-runner";
 import type { StageKey } from "./case-store";
+import { useRevealingStage } from "./stage-reveal";
 import { shownStatus } from "./status-styles";
 import { STAGES, stageDone } from "./trail";
 
@@ -46,13 +47,15 @@ export function useStageStatuses(header: HeaderLike): Record<StageKey, StageStat
  */
 export function useShownHeader<T extends Header>(header: T): T {
   const run = useCaseRun(useCaseId());
-  const estimated = stageDone(header, "estimation");
+  /* While a stage's results are still being revealed, what they add up to is not shown yet. */
+  const revealing = useRevealingStage();
+  const estimated = stageDone(header, "estimation") && revealing !== "estimation";
   return {
     ...header,
     previous_accrual: estimated ? header.previous_accrual : null,
     supported: estimated ? header.supported : null,
     difference: estimated ? header.difference : null,
-    status: run.active
+    status: run.active || revealing !== null
       ? "Running"
       : shownStatus(header.status, header.stages_completed, header.current_agent),
   };

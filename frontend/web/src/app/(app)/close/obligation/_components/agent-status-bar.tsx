@@ -17,7 +17,7 @@ export function AgentStatusBar() {
 
   return (
     <div className="flex flex-none items-center justify-between gap-5 px-[34px] py-[9px]">
-      <TrailToggle>
+      <TrailToggle screen="obligation">
         <PulseDot pulsing={running} />
         <span className="text-ui font-medium whitespace-nowrap text-ink">Obligation agent</span>
         <NarrationText screen="obligation" />

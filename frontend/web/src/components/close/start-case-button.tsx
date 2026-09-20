@@ -6,14 +6,16 @@ import type { MouseEvent } from "react";
 import { Button } from "@/components/ui/primitives";
 import type { FrontStage } from "@/lib/api-types";
 import { useCaseRun, useCaseRunner } from "@/lib/case-runner";
+import type { StageKey } from "@/lib/case-store";
+import { STAGES } from "@/lib/trail";
 import { cn } from "@/lib/cn";
 
 /**
- * Starts a case, or continues one that stopped part way. The agents run one
- * stage per backend call, and the screen shows each stage only once its call has
- * returned. `goTo` sends the reader to a screen straight away, so a case started
- * from a stage screen opens at the top of the chain. `compact` is the size that
- * fits inside a table row.
+ * Runs a case up to `until` (by default the next stage that has not run, so Start
+ * runs only the first agent and the reader watches the rest, one screen at a time). The
+ * agents run one stage per backend call, and each screen shows a stage only once
+ * its call has returned. `goTo` sends the reader to a screen straight away.
+ * `compact` is the size that fits inside a table row.
  */
 export function StartCaseButton({
   obligationId,
@@ -22,6 +24,7 @@ export function StartCaseButton({
   goTo,
   compact = false,
   label = "Start",
+  until,
 }: {
   obligationId: string;
   completed: readonly FrontStage[];
@@ -29,6 +32,7 @@ export function StartCaseButton({
   goTo?: string;
   compact?: boolean;
   label?: string;
+  until?: StageKey;
 }) {
   const router = useRouter();
   const runner = useCaseRunner();
@@ -39,7 +43,9 @@ export function StartCaseButton({
     /* Inside a row link: start the case without also opening it. */
     event.preventDefault();
     event.stopPropagation();
-    runner.start([{ obligationId, completed, agent }]);
+    /* Start runs the first agent; Continue runs the next stage that has not run. */
+    const target = until ?? STAGES.find((stage) => !completed.includes(stage.label))?.key;
+    runner.start([{ obligationId, completed, agent, until: target, reveal: true }]);
     if (goTo) router.push(goTo);
   }
 
