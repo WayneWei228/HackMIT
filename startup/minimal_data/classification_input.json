@@ -8,6 +8,29 @@
       "vendor_name": "Mintlify",
       "documents": [
         {
+          "document_type": "PURCHASE_ORDER",
+          "document_id": "PO-001",
+          "folder": "2026-09",
+          "issue_date": "2026-09-01",
+          "order_type": "FO",
+          "validity_start": "2026-09-01",
+          "validity_end": "2027-08-31",
+          "requester": "sam.lee",
+          "cost_center_owner": "priya.shah",
+          "contract_id": "CTR-001",
+          "approval_date": "August 28, 2026",
+          "lines": [
+            {
+              "po_line_id": "PO-001-001",
+              "item_category": "P",
+              "description": "Team documentation platform subscription, billed monthly",
+              "unit_price": 1200.0,
+              "unit_basis": "per month",
+              "gr_required": false
+            }
+          ]
+        },
+        {
           "document_type": "CONTRACT",
           "document_id": "CTR-001",
           "text": "Tem adocumentation plan for a 12-month term. Fee is $1,200 per month, billed monthly."
@@ -52,6 +75,28 @@
       "vendor_id": "V002",
       "vendor_name": "OpenAI",
       "documents": [
+        {
+          "document_type": "PURCHASE_ORDER",
+          "document_id": "PO-002",
+          "folder": "2026-09",
+          "issue_date": "2026-09-01",
+          "order_type": "FO",
+          "validity_start": "2026-09-01",
+          "validity_end": "2027-08-31",
+          "requester": "dana.kim",
+          "cost_center_owner": "raj.patel",
+          "contract_id": "CTR-002",
+          "approval_date": "August 28, 2026",
+          "lines": [
+            {
+              "po_line_id": "PO-002-001",
+              "item_category": "B",
+              "description": "AI API usage, billed monthly on metered units",
+              "overall_limit": 300000.0,
+              "gr_required": false
+            }
+          ]
+        },
         {
           "document_type": "CONTRACT",
           "document_id": "CTR-002",
@@ -131,10 +176,21 @@
           "document_type": "PURCHASE_ORDER",
           "document_id": "PO-003",
           "issue_date": "2026-12-10",
-          "description": "One-time purchase of 25 laptop packages for new engineers",
-          "ordered_quantity": 25,
-          "fixed_order_total": 40000.0,
-          "expected_delivery_date": "2026-12-28"
+          "order_type": "NB",
+          "requester": "alex.chen",
+          "cost_center_owner": "priya.shah",
+          "expected_delivery_date": "2026-12-28",
+          "approval_date": "December 10, 2026",
+          "lines": [
+            {
+              "po_line_id": "PO-003-001",
+              "item_category": "",
+              "description": "Laptop packages for new hires",
+              "quantity_ordered": 25,
+              "unit_price": 1600.0,
+              "gr_required": true
+            }
+          ]
         },
         {
           "document_type": "GOODS_RECEIPT",
@@ -156,9 +212,23 @@
           "document_id": "CAMPAIGN-004",
           "start_date": "2026-12-01",
           "end_date": "2026-12-31",
-          "description": "One-time product-launch advertising campaign",
-          "maximum_budget": 30000.0,
-          "pricing_text": "Final charge is based on advertising actually delivered during the campaign."
+          "order_type": "NB",
+          "validity_start": "2026-12-01",
+          "validity_end": "2026-12-31",
+          "requester": "maria.gomez",
+          "cost_center_owner": "tom.baker",
+          "approved_by": "Avery Patel, VP Marketing",
+          "approval_date": "November 28, 2026",
+          "pricing_text": "Final charge is based on advertising actually delivered during the campaign.",
+          "lines": [
+            {
+              "po_line_id": "CAMPAIGN-004-001",
+              "item_category": "B",
+              "description": "Product-launch advertising campaign, charged on delivery",
+              "overall_limit": 30000.0,
+              "gr_required": false
+            }
+          ]
         },
         {
           "document_type": "DELIVERY_REPORT",

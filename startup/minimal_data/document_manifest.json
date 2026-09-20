@@ -1,11 +1,13 @@
 {
   "document_root": "output/pdf/startup_minimal_data",
   "documents": [
+    {"document_id": "PO-001", "pdf": "output/pdf/startup_minimal_data/2026-09/PO-001.pdf"},
     {"document_id": "CTR-001", "pdf": "output/pdf/startup_minimal_data/2026-09/CTR-001.pdf"},
     {"document_id": "INV-MINTLIFY-SEP", "pdf": "output/pdf/startup_minimal_data/2026-09/INV-MINTLIFY-SEP.pdf"},
     {"document_id": "INV-MINTLIFY-OCT", "pdf": "output/pdf/startup_minimal_data/2026-10/INV-MINTLIFY-OCT.pdf"},
     {"document_id": "INV-MINTLIFY-NOV", "pdf": "output/pdf/startup_minimal_data/2026-11/INV-MINTLIFY-NOV.pdf"},
     {"document_id": "INV-MINTLIFY-DEC", "pdf": "output/pdf/startup_minimal_data/2026-12/afterclose/INV-MINTLIFY-DEC.pdf"},
+    {"document_id": "PO-002", "pdf": "output/pdf/startup_minimal_data/2026-09/PO-002.pdf"},
     {"document_id": "CTR-002", "pdf": "output/pdf/startup_minimal_data/2026-09/CTR-002.pdf"},
     {"document_id": "INV-OPENAI-SEP", "pdf": "output/pdf/startup_minimal_data/2026-09/INV-OPENAI-SEP.pdf"},
     {"document_id": "INV-OPENAI-OCT", "pdf": "output/pdf/startup_minimal_data/2026-10/INV-OPENAI-OCT.pdf"},

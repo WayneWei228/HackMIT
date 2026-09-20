@@ -2,3 +2,6 @@ typesafe-sdk
 openai
 python-dotenv
 pytest
+fastapi
+uvicorn
+httpx

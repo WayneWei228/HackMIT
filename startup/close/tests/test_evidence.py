@@ -24,14 +24,35 @@ def llm():
     return FakeLLM(extract=lambda v: RECORDS[v["DOC_ID"]])
 
 
+PO_DOC = {
+    "document_type": "PURCHASE_ORDER", "vendor_name": "Mintlify", "po_number": "PO-100",
+    "order_type": "FO - framework order", "validity_start": "2026-09-01", "validity_end": "2027-08-31",
+    "requester": "sam.lee", "cost_center_owner": "priya.shah", "contract_id": "CTR-100",
+    "lines": [{"po_line_id": "PO-100-001", "item_category": "P - service", "gr_required": "no",
+               "unit_price": "1,200.00", "line_description": "Documentation platform subscription"}],
+}
+
+
+def index(ws, docs):
+    write_world(ws, "documents/index", [{"doc_id": d, "file": f"{d}.txt", "available_at": at} for d, at in docs])
+    for d, _ in docs:
+        write_document(ws, f"{d}.txt", f"text of {d}")
+
+
 def world(tmp_path, docs, as_of="2027-01-05T12:00:00Z"):
+    """A world with the optional ERP feeds present, to prove they still win where they exist."""
     ws = make_ws(tmp_path, as_of=as_of)
     write_world(ws, "vendors", VENDORS)
     write_world(ws, "po_headers", HEADERS)
     write_world(ws, "po_lines", LINES)
-    write_world(ws, "documents/index", [{"doc_id": d, "file": f"{d}.txt", "available_at": at} for d, at in docs])
-    for d, _ in docs:
-        write_document(ws, f"{d}.txt", f"text of {d}")
+    index(ws, docs)
+    return ws
+
+
+def bare_world(tmp_path, docs, as_of="2027-01-05T12:00:00Z"):
+    """No feeds at all: every table has to come out of the documents."""
+    ws = make_ws(tmp_path, as_of=as_of)
+    index(ws, docs)
     return ws
 
 
@@ -57,11 +78,60 @@ def test_future_documents_are_invisible_then_replace(tmp_path):
     assert rows["USG-DEC"]["replaced_by"] == "USG-DEC-FINAL" and rows["USG-DEC-FINAL"]["quantity"] == 930000.0
 
 
-def test_unknown_vendor_and_unresolved_line(tmp_path):
+def test_a_new_vendor_is_created_and_only_the_line_is_missing(tmp_path):
     RECORDS["USG-X"] = {"document_type": "USAGE_REPORT", "vendor_name": "Nobody LLC", "service_period": "2026-12", "quantity": 5}
     ws = world(tmp_path, [("USG-X", "2026-12-30")])
     (doc,) = evidence.run(ws, llm(), "2026-12")
-    assert doc["reasons"] == ["UNKNOWN_VENDOR", "UNRESOLVED_PO_LINE"] and store.load_table(ws, "activity") == []
+    assert doc["reasons"] == ["UNRESOLVED_PO_LINE"] and store.load_table(ws, "activity") == []
+    created = next(v for v in store.load_table(ws, "vendors") if v["vendor_name"] == "Nobody LLC")
+    assert (created["vendor_id"], created["aliases"], created["source_doc"]) == ("V-NOBODY-LLC", [], "USG-X")
+    assert doc["vendor_id"] == "V-NOBODY-LLC"
+
+
+def test_a_purchase_order_builds_the_vendor_the_header_and_the_lines(tmp_path):
+    RECORDS["PO-100"] = PO_DOC
+    ws = bare_world(tmp_path, [("PO-100", "2026-09-01")])
+    (doc,) = evidence.run(ws, llm(), "2026-09")
+    assert (doc["quality"], doc["applied_to"], doc["po_line_id"]) == ("OK", "po_headers", "PO-100-001")
+    (vendor,) = store.load_table(ws, "vendors")
+    assert (vendor["vendor_id"], vendor["vendor_name"], vendor["aliases"]) == ("V-MINTLIFY", "Mintlify", [])
+    (header,) = store.load_table(ws, "po_headers")
+    assert header == {"po_number": "PO-100", "vendor_id": "V-MINTLIFY", "vendor_name": "Mintlify", "entity_id": None,
+                      "order_type": "FO", "validity_start": "2026-09-01", "validity_end": "2027-08-31",
+                      "requester": "sam.lee", "cost_center_owner": "priya.shah", "status": "Open",
+                      "source_doc": "PO-100", "available_at": "2026-09-01"}
+    (line,) = store.load_table(ws, "po_lines")
+    assert line == {"po_line_id": "PO-100-001", "po_number": "PO-100", "item_category": "P", "contract_id": "CTR-100",
+                    "gr_required": False, "quantity_ordered": None, "unit_price": 1200.0, "overall_limit": None,
+                    "quantity_received": None, "quantity_billed": 0,
+                    "line_description": "Documentation platform subscription", "source_doc": "PO-100",
+                    "available_at": "2026-09-01"}
+
+
+def test_an_invoice_listed_before_its_purchase_order_still_resolves(tmp_path):
+    RECORDS["PO-100"] = PO_DOC
+    RECORDS["INV-A"] = {"document_type": "INVOICE", "vendor_name": "Mintlify, Inc.", "service_period": "2026-09",
+                        "amount": 1200, "invoice_number": "ML-1", "invoice_date": "2026-09-30"}
+    ws = bare_world(tmp_path, [("INV-A", "2026-09-30"), ("PO-100", "2026-09-30")])  # the invoice sorts first
+    done = evidence.run(ws, llm(), "2026-09")
+    assert [d["doc_id"] for d in done] == ["PO-100", "INV-A"]  # applied in dependency order
+    (invoice,) = store.load_table(ws, "invoices")
+    assert (invoice["po_line_id"], invoice["vendor_id"]) == ("PO-100-001", "V-MINTLIFY")  # the alias resolved too
+    assert len(store.load_table(ws, "vendors")) == 1
+
+
+def test_a_changed_purchase_order_replaces_its_rows(tmp_path):
+    RECORDS["PO-100"] = PO_DOC
+    ws = bare_world(tmp_path, [("PO-100", "2026-09-01")])
+    evidence.run(ws, llm(), "2026-09")
+    RECORDS["PO-100"] = {**PO_DOC, "requester": "dana.kim",
+                         "lines": [{"po_line_id": "PO-100-002", "item_category": "", "gr_required": True,
+                                    "quantity_ordered": 4, "unit_price": 500, "line_description": "Extra seats"}]}
+    write_document(ws, "PO-100.txt", "text of PO-100, revision 2")
+    evidence.run(ws, llm(), "2026-09")
+    (line,) = store.load_table(ws, "po_lines")
+    assert (line["po_line_id"], line["quantity_ordered"], line["gr_required"]) == ("PO-100-002", 4.0, True)
+    assert store.load_table(ws, "po_headers")[0]["requester"] == "dana.kim"
 
 
 def test_feeds_are_time_gated(tmp_path):
@@ -116,7 +186,7 @@ def test_rerunning_an_earlier_month_does_not_see_later_receipts(tmp_path):
     assert store.load_table(ws, "goods_receipts")[0]["available_at"] == "2026-12-01"
     for as_of, earlier in (("2026-10-05T12:00:00Z", "2026-09"), ("2026-12-05T12:00:00Z", "2026-11")):  # Nov closes after Dec 1
         evidence.run(ws.at(as_of), llm(), earlier)
-        assert "quantity_received" not in {l["po_line_id"]: l for l in store.load_table(ws, "po_lines")}["PO-002-001"]
+        assert {l["po_line_id"]: l for l in store.load_table(ws, "po_lines")}["PO-002-001"].get("quantity_received") is None
 
 
 def test_hash_cache_and_missing_fields(tmp_path):

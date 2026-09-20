@@ -349,32 +349,83 @@ def make_usage_report(vendor: str, doc: dict, path: Path):
     document(path, "MONTHLY USAGE REPORT", f"{vendor}  |  {doc['document_id']}", story)
 
 
-def make_purchase_order(vendor: str, doc: dict, path: Path):
-    per_unit = doc["fixed_order_total"] / doc["ordered_quantity"]
+ORDER_TYPE_LABEL = {"FO": "FO - framework order", "NB": "NB - standard order"}
+ITEM_CATEGORY_LABEL = {"P": "P - service", "B": "B - limit", "E": "E - limit", "": "standard"}
+
+
+def order_header_fields(doc: dict, vendor: str, id_label: str) -> list[tuple[str, str]]:
+    """The labelled fields procurement puts on the order itself. Empty values are dropped."""
+    fields = [
+        (id_label, doc["document_id"]),
+        ("Vendor", vendor),
+        ("Order type", ORDER_TYPE_LABEL.get(doc.get("order_type", ""), doc.get("order_type") or "")),
+        ("Issue date", doc.get("issue_date", "")),
+        ("Validity start", doc.get("validity_start", "")),
+        ("Validity end", doc.get("validity_end", "")),
+        ("Requester", doc.get("requester", "")),
+        ("Cost center owner", doc.get("cost_center_owner", "")),
+        ("Linked contract", doc.get("contract_id", "")),
+        ("Expected delivery", doc.get("expected_delivery_date", "")),
+        ("Customer", "Orbit Labs, Inc.\n85 Main Street\nCambridge, MA 02142"),
+        ("Buyer", doc.get("buyer", "Morgan Chen, Procurement")),
+    ]
+    return [(label, value) for label, value in fields if value]
+
+
+def order_line_table(doc: dict):
+    rows = [["Line", "Item category", "Description", "Qty ordered", "Unit price", "Overall limit", "GR required"]]
+    for line in doc["lines"]:
+        rows.append([
+            line["po_line_id"],
+            ITEM_CATEGORY_LABEL.get(line.get("item_category", ""), line.get("item_category") or "standard"),
+            line["description"],
+            "" if line.get("quantity_ordered") is None else f"{line['quantity_ordered']:,}",
+            money(line.get("unit_price")),
+            money(line.get("overall_limit")),
+            "yes" if line.get("gr_required") else "no",
+        ])
+    return standard_table(
+        rows,
+        [1.45 * inch, 0.90 * inch, 1.55 * inch, 0.62 * inch, 0.78 * inch, 0.83 * inch, 0.75 * inch],
+        right_cols=(3, 4, 5),
+    )
+
+
+def make_order(vendor: str, doc: dict, path: Path, *, title: str, id_label: str, extra: list | None = None):
+    """One renderer for every buyer-issued order: it prints exactly the fields the close needs."""
+    notes = []
+    for line in doc["lines"]:
+        if line.get("unit_basis"):
+            notes.append(f"{line['po_line_id']}: unit price {money(line['unit_price'])} {line['unit_basis']}.")
+        if line.get("overall_limit") is not None:
+            notes.append(f"{line['po_line_id']}: overall limit {money(line['overall_limit'])} is a spending cap for the line, "
+                         "not a guaranteed charge.")
     story = [
-        info_grid([
-            ("Purchase order", doc["document_id"]),
-            ("Issue date", doc["issue_date"]),
-            ("Vendor", vendor),
-            ("Expected delivery", doc["expected_delivery_date"]),
-            ("Ship to", "Orbit Labs, Inc.\n85 Main Street\nCambridge, MA 02142"),
-            ("Buyer", "Morgan Chen, IT Procurement"),
-        ]),
+        info_grid(order_header_fields(doc, vendor, id_label)),
         Spacer(1, 14),
-        standard_table([
-            ["Description", "Quantity", "Unit price", "Order total"],
-            [doc["description"], f"{doc['ordered_quantity']}", money(per_unit), money(doc["fixed_order_total"])],
-        ], [3.55 * inch, 0.8 * inch, 1.15 * inch, 1.3 * inch], right_cols=(1, 2, 3)),
-        Spacer(1, 14),
+        p("ORDER LINES", "Section"),
+        order_line_table(doc),
+        Spacer(1, 10),
+    ]
+    for note in notes:
+        story.append(p(note))
+    story += (extra or [])
+    story += [
+        Spacer(1, 12),
         p("DELIVERY AND INVOICING", "Section"),
-        p("Orbit Labs records only units received and accepted. Vendor must reference this PO on the invoice. Partial shipments may be invoiced only for accepted units."),
+        p("Orbit Labs records only what is received, used or delivered. Vendor must reference this order and the line on "
+          "every invoice. A line marked GR required is recognised on goods receipt only."),
         Spacer(1, 18),
         info_grid([
-            ("Approved by", "Jordan Lee, VP Finance"),
-            ("Approval date", "December 10, 2026"),
+            ("Approved by", doc.get("approved_by", "Jordan Lee, VP Finance")),
+            ("Approval date", doc.get("approval_date", "")),
         ]),
     ]
-    document(path, "PURCHASE ORDER", f"Orbit Labs, Inc.  |  {doc['document_id']}", story)
+    document(path, title, f"Orbit Labs, Inc.  |  {doc['document_id']}", story)
+
+
+def make_purchase_order(vendor: str, doc: dict, path: Path):
+    make_order(vendor, doc, path, title="PURCHASE ORDER", id_label="Purchase order")
 
 
 def make_goods_receipt(vendor: str, doc: dict, path: Path):
@@ -407,30 +458,15 @@ def make_goods_receipt(vendor: str, doc: dict, path: Path):
 
 
 def make_campaign_order(vendor: str, doc: dict, path: Path):
-    story = [
-        info_grid([
-            ("Campaign order", doc["document_id"]),
-            ("Vendor", vendor),
-            ("Campaign start", doc["start_date"]),
-            ("Campaign end", doc["end_date"]),
-            ("Customer", "Orbit Labs, Inc."),
-            ("Maximum budget", money(doc["maximum_budget"])),
-        ]),
-        Spacer(1, 14),
-        p("CAMPAIGN", "Section"),
-        p(doc["description"]),
+    """A campaign order is a purchase order with a campaign window: same fields, same line table."""
+    extra = [
         Spacer(1, 8),
         p("PRICING", "Section"),
         p(doc["pricing_text"]),
-        Spacer(1, 8),
-        p("The maximum budget is a spending limit and does not represent a guaranteed charge. Final billing will reflect delivered advertising shown in the campaign delivery report."),
-        Spacer(1, 18),
-        info_grid([
-            ("Approved by", "Avery Patel, VP Marketing"),
-            ("Approval date", "November 28, 2026"),
-        ]),
+        p("The overall limit is a spending limit and does not represent a guaranteed charge. Final billing will reflect "
+          "delivered advertising shown in the campaign delivery report."),
     ]
-    document(path, "CAMPAIGN ORDER", f"Orbit Labs, Inc. and {vendor}  |  {doc['document_id']}", story)
+    make_order(vendor, doc, path, title="CAMPAIGN ORDER", id_label="Campaign order", extra=extra)
 
 
 def make_delivery_report(vendor: str, doc: dict, path: Path):
@@ -499,8 +535,8 @@ def main() -> None:
             else:
                 raise ValueError(f"Unsupported document type: {kind}")
             generated.append(path)
-    if len(generated) != 15:
-        raise RuntimeError(f"Expected 15 PDFs, generated {len(generated)}")
+    if len(generated) != 17:
+        raise RuntimeError(f"Expected 17 PDFs, generated {len(generated)}")
     print(f"generated={len(generated)} output={OUTPUT}")
 
 

@@ -41,11 +41,15 @@ startup/close/
   evidence.py  detection.py  invoice_lookup.py  classifier.py
   estimation.py  rules.py  outreach.py  journal.py  settlement.py  learning.py
   engine.py             state machine + CLI (python -m close.engine close 2026-12)
+  runner.py             the close as a library: periods, workspace, index_documents, run_close, run_settlement, status, reset
+  try_run.py            a thin CLI over runner.py
   tests/                __init__.py fakes.py test_*.py
 ```
 
 Run tests from `startup/`: `../.venv/bin/python -m pytest close/tests -q`. `startup/` has no `__init__.py`; `close/` and `close/tests/` do.
-Do not touch `startup/system/`, `startup/minimal_data/`, or `output/`.
+Do not touch `startup/system/`. `startup/minimal_data/generate_pdfs.py` + `classification_input.json` own the fixture
+PDFs under `output/pdf/startup_minimal_data/`: change a document there only by changing that input and regenerating,
+and restore the months you did not mean to change (every regeneration rewrites the timestamp inside the file).
 
 ## Workspace, time, store
 
@@ -226,9 +230,55 @@ Money is rounded to 2 decimals when stored.
 9. `learning.run(ws, jev, llm, period)` - Jev root-cause Choice; LLM drafts rule text; code backtests on prior periods; rule saved `DRAFT` in `state/rules.json` (+ rendered `improvements.md`); only `approve(rule_id)` makes it `ACTIVE`. `LEARNED`.
 10. `engine.py` - the state machine: `run_close(ws, jev, llm, period)`, `run_settlement(...)`, CLI, and a demo printer that surfaces the Jev moments.
 
+## Everything starts from the PDFs
+
+There is no seed. A run begins with an empty db and a folder of month folders; every table below is built by the
+Evidence worker out of the documents in them, in this order within one run (all of the month's new documents are
+extracted first - one LLM call each, hash-cached - and only then applied):
+
+```text
+PURCHASE_ORDER   -> vendors (on first sight), po_headers, po_lines      the campaign order is a purchase order
+CONTRACT         -> contracts v1                AMENDMENT -> contracts v2+ (renumbered, latest Active)
+TERMINATION_NOTICE -> terminations
+GOODS_RECEIPT    -> goods_receipts, and po_lines.quantity_received via sync_received
+USAGE_REPORT / DELIVERY_REPORT / TIMESHEET -> activity
+INVOICE          -> invoices (QUEUE; only an ERP feed says POSTED)
+OTHER            -> nothing; the document row is the evidence
+```
+
+Applying purchase orders first is what lets an invoice filed beside its own order resolve its PO line in the same
+run. A document that needs a PO line and cannot resolve one stays `NEEDS_REVIEW` (`UNRESOLVED_PO_LINE`); a document
+is never rejected for naming an unknown vendor, because `resolve_vendor` matches case-insensitively either way round
+on the name and aliases and otherwise CREATES the vendor (`vendor_id` deterministic from the name: `V-MINTLIFY`).
+
+A `PURCHASE_ORDER` record carries the header fields (`order_type` FO/NB, `validity_start`, `validity_end`,
+`requester`, `cost_center_owner`) and a `lines` array (`po_line_id`, `item_category` P/B/E/"", `contract_id`,
+`gr_required`, `quantity_ordered`, `unit_price`, `overall_limit`, `line_description`); a flat single line is
+accepted too. It writes one `po_headers` row (`status` "Open", `entity_id` null, `source_doc`, `available_at`) and
+its `po_lines` rows (`quantity_received` null, `quantity_billed` 0), and re-ingesting a changed order document
+replaces the rows that document wrote. `pull_feeds` still copies structured world feeds where a world directory
+happens to carry them - and reads and writes nothing when it does not.
+
+`runner.py` is the whole close as a library, and holds no business data at all:
+
+```python
+periods(pdf_dir) -> ["2026-09", ...]                 # the month folders, sorted
+workspace(root, as_of) -> Workspace                  # root/db, root/state, root/out, root/world
+index_documents(root, pdf_dir) -> [{doc_id, file, period, available_at}]
+run_close(root, pdf_dir, period, llm) -> {period, accrued_total, cases, tickets}
+run_settlement(root, pdf_dir, period, llm) -> {period, settled, true_up_total}
+status(root, pdf_dir) -> [{period, state: NOT_RUN|CLOSED|SETTLED, cases, accrued_total, true_up_total, documents}]
+reset(root) -> None                                  # wipe db / state / out / world
+```
+
+`run_close` refuses (`ValueError`) while an earlier month folder is unclosed - earlier months build the purchase
+tables - and is safe to re-run: documents are hash-cached, Detection keeps CLOSED/SETTLED cases, and the cutoff
+re-reports the same accruals. `state/runs.json` records `closed_at` / `settled_at` per month. `try_run.py` is a thin
+CLI over it (`--fresh` = `runner.reset`).
+
 ## Closing the loop (built after the five workers)
 
-Time in a close. The runner (`try_run.py`) runs every month in TWO passes and a settlement in two more; `<next>` is the following month:
+Time in a close. The runner (`runner.py`, driven by `try_run.py`) runs every month in TWO passes and a settlement in two more; `<next>` is the following month:
 
 ```text
 <next>-02T12:00Z  close pass 1   evidence -> detection -> invoice_lookup -> classifier -> estimation -> outreach (opens tickets)
@@ -264,4 +314,4 @@ message, blocking, deadline, state OPEN|ANSWERED|EXPIRED, opened_at, answered_at
    - A `SETTLED` case with `explained: false` whose ticket is `ANSWERED`: if a contract version in effect for the period now has a rate equal to the actual and became
      available after the close, `explained: true` with a one-line `explanation` naming the version and its source document.
    - `case["settlement"] = {actual, accrued, true_up, settled_by, cause, within_tolerance, recheck, ticket_id, explained, explanation}`; `CLOSED -> SETTLED`.
-8. `try_run.close_out(ws, period)` - `ESTIMATED -> JOURNALED -> CLOSED`, `INVOICED -> CLOSED`, writes `out/<period>/accruals.json`; settlement passes write `out/<period>/trueups.json`.
+8. `runner.close_out(ws, period)` - `ESTIMATED -> JOURNALED -> CLOSED`, `INVOICED -> CLOSED`, writes `out/<period>/accruals.json`; settlement passes write `out/<period>/trueups.json`.

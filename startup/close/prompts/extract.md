@@ -11,7 +11,8 @@ delivered in a period is a USAGE_REPORT or DELIVERY_REPORT.
 Return ONE JSON object with exactly these keys. Use null when the document does not state the fact.
 
 - document_type: one of the allowed values
-- vendor_name: the seller or service provider (use the matching known vendor name when it is the same company)
+- vendor_name: the seller or service provider (use the matching known vendor name when it is the same company).
+  Never the buyer: Orbit Labs, Inc. is the customer on every document, never the vendor
 - contract_id: the agreement identifier. For an amendment or termination this is the ORIGINAL agreement being changed, not the amendment's own id
 - po_number: purchase order or campaign order number
 - po_line_id: purchase order line identifier, only if printed
@@ -29,6 +30,23 @@ Return ONE JSON object with exactly these keys. Use null when the document does 
 - replaces: id of an earlier document this one replaces
 - invoice_number: the vendor's invoice number, only on an invoice
 - invoice_date: "YYYY-MM-DD" the invoice was issued
+
+On a PURCHASE_ORDER (a purchase order or a campaign order: a buyer-issued order) also fill these, copying the
+printed labels. Leave them null on every other document.
+
+- order_type: "FO" when the order is a framework order, "NB" when it is a standard order
+- validity_start / validity_end: "YYYY-MM-DD" the order's validity window, null when the order states none
+- requester: the person who requested the order, as printed (e.g. "sam.lee")
+- cost_center_owner: the cost-center owner, as printed
+- lines: the order's line table, one object per printed line, each with exactly these keys:
+  - po_line_id: the line identifier as printed (e.g. "PO-001-001"); a wrapped id is still one id
+  - item_category: "P" for a service line, "B" or "E" for a limit line, "" for a standard line
+  - contract_id: the contract linked to this line, else the order's linked contract, else null
+  - gr_required: true when the line says a goods receipt is required, false when it says it is not
+  - quantity_ordered: the quantity ordered on the line (number), null when the line states none
+  - unit_price: the price per unit or the fixed fee per period on the line (number), null when none
+  - overall_limit: the line's overall limit / spending cap / maximum budget (number), null when none
+  - line_description: the line's description, copied word for word
 
 Document:
 <<<

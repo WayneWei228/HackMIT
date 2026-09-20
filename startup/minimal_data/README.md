@@ -120,6 +120,20 @@ vendor's reply to a question the system sent out after close.
   campaign delivery report) is only available after the books close.
   `2026-12/CAMPAIGN-004.pdf` (the campaign order itself) remains available during the month.
 
+## The purchase orders carry the procurement facts
+
+Nothing about a vendor, a purchase order or a PO line is seeded anywhere: the four order documents
+(`2026-09/PO-001.pdf`, `2026-09/PO-002.pdf`, `2026-12/PO-003.pdf`, `2026-12/CAMPAIGN-004.pdf`) are the
+only source of the purchase tables, and a vendor is created the first time a document names it. Each
+order prints, as labelled fields, everything procurement would hand over: the order number, the vendor,
+the order type (`FO - framework order` or `NB - standard order`), the validity window when the order has
+one, the requester and the cost-center owner (whom the close asks when data is missing), the linked
+contract id, and a line table with the line id, the item category (`P - service`, `B - limit`, or
+`standard`), the description, the quantity ordered, the unit price, the overall limit for a limit line
+and whether a goods receipt is required. A campaign order is rendered by the same maker as a purchase
+order, so `CAMPAIGN-004` carries exactly the same fields. Adding a line to an order means adding an entry
+to that document's `"lines"` array in `classification_input.json` and regenerating.
+
 These placements are driven by an optional `"folder"` field on a document entry in
 `classification_input.json` (e.g. `"folder": "2026-12/afterclose"`), which
 `generate_pdfs.py`'s `month_of()` honors ahead of the default month-of-service-period
