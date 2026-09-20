@@ -95,6 +95,10 @@ export function VendorDetail({
         </button>
       </div>
 
+      <Link className="mt-4 inline-block text-sm text-accent-deep hover:underline" href={`/close/story?vendor=${encodeURIComponent(vendor.id)}`}>
+        View vendor story →
+      </Link>
+
       <RailSection title="Accounting profile" className="mt-[22px]">
         <div className="mt-[14px] grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-[13px]">
           <span className="text-ui text-muted-4">Category</span>

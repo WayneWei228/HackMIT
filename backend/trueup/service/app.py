@@ -10,10 +10,9 @@ from __future__ import annotations
 import importlib
 from datetime import UTC, datetime
 from decimal import Decimal, InvalidOperation
-from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 from trueup.agents.controller_workspace import (
@@ -24,14 +23,15 @@ from trueup.agents.controller_workspace import (
 from trueup.agents.ingestion import load_universe
 from trueup.agents.learning_agent import LearningError
 from trueup.service import demo_state as demo
+from trueup.service import documents, outreach_threads, reports, runlog
 from trueup.service import models as v
-from trueup.service import outreach_threads, runlog
 from trueup.service import readmodels as rm
 from trueup.store import models as m
 from trueup.store.workflow import IllegalTransitionError
 
-SEED_DIR = Path(__file__).resolve().parents[2] / "seed"
-ORIGINS = ["http://localhost:3000", "http://127.0.0.1:3000"]
+SEED_DIR = demo.SEED_DIR
+ORIGINS =["http://localhost:3000", "http://127.0.0.1:3000"]
+PERIOD_PATTERN = r"^[1-9][0-9]{3}-(0[1-9]|1[0-2])$"
 
 
 def _aware(moment: datetime) -> datetime:
@@ -51,24 +51,62 @@ def create_app() -> FastAPI:
     app.add_middleware(
         CORSMiddleware, allow_origins=ORIGINS, allow_methods=["*"], allow_headers=["*"]
     )
-    universe = load_universe(SEED_DIR)
+    universe = load_universe(demo.SEED_DIR)
 
     @app.get("/api/health")
     def health() -> dict[str, str]:
         return {"status": "ok", "phase": demo.current().phase}
 
+    @app.get("/api/periods", response_model=reports.PeriodsView)
+    def periods() -> reports.PeriodsView:
+        with demo.locked():
+            state = demo.current()
+            with state.session() as session:
+                return reports.periods_view(
+                    session, active_period=demo.PERIOD, now=_aware(state.sim.now())
+                )
+
+    @app.get("/api/reports/journals", response_model=reports.JournalsView)
+    def journal_report(period: str | None = Query(default=None, pattern=PERIOD_PATTERN)):
+        with demo.locked():
+            state = demo.current()
+            with state.session() as session:
+                return reports.journals_view(session, period=period, now=_aware(state.sim.now()))
+
+    @app.get("/api/reports/documents", response_model=reports.DocumentsView)
+    def document_report(period: str | None = Query(default=None, pattern=PERIOD_PATTERN)):
+        with demo.locked():
+            state = demo.current()
+            with state.session() as session:
+                return reports.documents_view(
+                    session, universe=universe, period=period, now=_aware(state.sim.now())
+                )
+
+    @app.get("/api/vendors/{vendor_id}/story", response_model=reports.StoryView)
+    def story(vendor_id: str, through: str | None = Query(default=None, pattern=PERIOD_PATTERN)):
+        with demo.locked():
+            state = demo.current()
+            with state.session() as session:
+                result = reports.story_view(
+                    session, vendor_id=vendor_id, through=through, now=_aware(state.sim.now())
+                )
+        if result is None:
+            raise HTTPException(status_code=404, detail=f"No vendor {vendor_id}.")
+        return result
+
     @app.get("/api/close", response_model=v.CloseView)
-    def close() -> v.CloseView:
+    def close(period: str | None = Query(default=None, pattern=PERIOD_PATTERN)) -> v.CloseView:
         with demo.locked():
             state = demo.current()
             with state.session() as session:
                 return rm.close_view(
                     session,
-                    period=demo.PERIOD,
+                    period=period or demo.PERIOD,
                     phase=state.phase,
                     now=_aware(state.sim.now()),
                     universe=universe,
                     moments=demo.MOMENTS,
+                    archived=period is not None and period != demo.PERIOD,
                 )
 
     @app.post("/api/close/run", response_model=v.ActionResult)
@@ -146,7 +184,7 @@ def create_app() -> FastAPI:
                 session,
                 obligation_id,
                 universe=universe,
-                seed_dir=SEED_DIR,
+                seed_dir=demo.SEED_DIR,
                 now=_aware(state.sim.now()),
                 durations=state.durations,
             )
@@ -308,6 +346,7 @@ def create_app() -> FastAPI:
             with demo.current().session() as session:
                 return rm.vendors_view(session, period=demo.PERIOD)
 
+    documents.register(app)
     _register_audit(app)
     return app
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { motion } from "motion/react";
 
 import {
@@ -16,9 +17,21 @@ import { DownloadIcon, FocusIcon, ThumbnailsIcon } from "./evidence-icons";
 const iconButton =
   "flex h-[30px] cursor-pointer items-center justify-center rounded-lg border border-transparent bg-transparent text-muted-2 transition-colors duration-[160ms] ease-[var(--ease-out-soft)] hover:bg-wash";
 
-/** Pager, zoom, document search and the two panel toggles. */
+/** The 1-based pages whose extracted text mentions the query, ignoring case and line breaks. */
+export function pagesMentioning(pages: readonly string[], query: string): number[] {
+  const needle = query.trim().toLowerCase().split(/\s+/).join(" ");
+  if (!needle) return [];
+  return pages.flatMap((text, index) =>
+    text.toLowerCase().split(/\s+/).join(" ").includes(needle) ? [index + 1] : [],
+  );
+}
+
+/** Pager, zoom, document search, the original file and the two panel toggles. */
 export function ViewerToolbar({
   pageLabel,
+  page,
+  pages,
+  fileHref,
   zoom,
   canPrev,
   canNext,
@@ -26,11 +39,17 @@ export function ViewerToolbar({
   searchOpen,
   onPrev,
   onNext,
+  onGoToPage,
   onCycleZoom,
   onToggleThumbs,
   onToggleRail,
 }: {
   pageLabel: string;
+  page: number;
+  /** The open document's extracted text, one entry per page. */
+  pages: readonly string[];
+  /** Where the backend serves the open document's bytes, or null with no document open. */
+  fileHref: string | null;
   zoom: Zoom;
   canPrev: boolean;
   canNext: boolean;
@@ -38,10 +57,14 @@ export function ViewerToolbar({
   searchOpen: boolean;
   onPrev: () => void;
   onNext: () => void;
+  onGoToPage: (page: number) => void;
   onCycleZoom: () => void;
   onToggleThumbs: () => void;
   onToggleRail: () => void;
 }) {
+  const [query, setQuery] = useState("");
+  const hits = useMemo(() => pagesMentioning(pages, query), [pages, query]);
+
   return (
     <div className="flex flex-none items-center gap-[3px] border-b border-[#EEEEE8] px-3 py-[9px]">
       <button
@@ -101,6 +124,11 @@ export function ViewerToolbar({
 
       <div className="flex-1" />
 
+      {searchOpen && query.trim() && (
+        <span className="mr-2 flex-none text-meta text-faint-2 tabular-nums">
+          {hits.length === 0 ? "No match" : `${hits.length} of ${pages.length} pages`}
+        </span>
+      )}
       <motion.div
         className="overflow-hidden"
         initial={false}
@@ -108,15 +136,32 @@ export function ViewerToolbar({
         transition={{ duration: 0.3, ease: easeOutSoft }}
       >
         <input
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          onKeyDown={(event) => {
+            /* Enter walks the pages that mention the text, wrapping after the last. */
+            if (event.key !== "Enter" || hits.length === 0) return;
+            onGoToPage(hits.find((hit) => hit > page) ?? hits[0]);
+          }}
           placeholder="Search document"
+          aria-label="Search document"
           tabIndex={searchOpen ? 0 : -1}
           className="w-[186px] rounded-lg border border-line-warm bg-panel-hover px-[11px] py-[7px] text-sm leading-[1.2] text-ink outline-none"
         />
       </motion.div>
 
-      <button type="button" title="Download" className={cn(iconButton, "w-8")}>
-        <DownloadIcon />
-      </button>
+      {fileHref && (
+        <a
+          href={fileHref}
+          target="_blank"
+          rel="noreferrer"
+          title="Open original file"
+          aria-label="Open original file"
+          className={cn(iconButton, "w-8")}
+        >
+          <DownloadIcon />
+        </a>
+      )}
 
       <button
         type="button"

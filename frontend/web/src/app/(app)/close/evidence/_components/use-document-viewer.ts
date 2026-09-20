@@ -19,6 +19,7 @@ export type DocumentViewer = {
   selectDoc: (id: string) => void;
   prevPage: () => void;
   nextPage: () => void;
+  goToPage: (page: number) => void;
   jumpToMatch: () => void;
   cycleZoom: () => void;
   toggleThumbs: () => void;
@@ -75,6 +76,15 @@ export function useDocumentViewer(
     setPage(Math.min(pagesFor(doc), page + 1));
   }, [doc, page, pagesFor]);
 
+  const goToPage = useCallback(
+    (target: number) => {
+      setSteered(true);
+      setDoc(doc);
+      setPage(Math.min(pagesFor(doc), Math.max(1, target)));
+    },
+    [doc, pagesFor],
+  );
+
   const jumpToMatch = useCallback(() => {
     if (!view.match) return;
     setSteered(true);
@@ -103,11 +113,12 @@ export function useDocumentViewer(
       selectDoc,
       prevPage,
       nextPage,
+      goToPage,
       jumpToMatch,
       cycleZoom,
       toggleThumbs,
       toggleSearch,
     }),
-    [doc, page, maxPage, zoom, thumbs, search, selectDoc, prevPage, nextPage, jumpToMatch, cycleZoom, toggleThumbs, toggleSearch],
+    [doc, page, maxPage, zoom, thumbs, search, selectDoc, prevPage, nextPage, goToPage, jumpToMatch, cycleZoom, toggleThumbs, toggleSearch],
   );
 }

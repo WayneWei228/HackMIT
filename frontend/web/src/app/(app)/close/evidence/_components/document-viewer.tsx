@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion } from "motion/react";
 
+import { documentFileUrl } from "@/lib/api";
 import { crossFade, easeOutSoft } from "@/lib/motion";
 
 import type { DocTab } from "../_view";
@@ -31,6 +32,9 @@ export function DocumentViewer({
     <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-divider bg-panel shadow-[var(--shadow-tile)]">
       <ViewerToolbar
         pageLabel={viewer.pageLabel}
+        page={viewer.page}
+        pages={tab?.pages ?? []}
+        fileHref={tab ? documentFileUrl(tab.id) : null}
         zoom={viewer.zoom}
         canPrev={viewer.canPrev}
         canNext={viewer.canNext}
@@ -38,6 +42,7 @@ export function DocumentViewer({
         searchOpen={viewer.search}
         onPrev={viewer.prevPage}
         onNext={viewer.nextPage}
+        onGoToPage={viewer.goToPage}
         onCycleZoom={viewer.cycleZoom}
         onToggleThumbs={viewer.toggleThumbs}
         onToggleRail={onToggleRail}

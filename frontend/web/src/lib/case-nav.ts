@@ -2,5 +2,10 @@
 export const CASE_PARAM = "o";
 
 export function caseHref(route: string, obligationId: string | null | undefined): string {
-  return obligationId ? `${route}?${CASE_PARAM}=${encodeURIComponent(obligationId)}` : route;
+  if (!obligationId) return route;
+  const [path, hash] = route.split("#", 2);
+  const [pathname, query] = path.split("?", 2);
+  const params = new URLSearchParams(query);
+  params.set(CASE_PARAM, obligationId);
+  return `${pathname}?${params}${hash === undefined ? "" : `#${hash}`}`;
 }

@@ -2,15 +2,11 @@
 
 import { motion } from "motion/react";
 
-import { Button } from "@/components/ui/primitives";
-import { MoreIcon } from "@/components/ui/icons";
 import type { Header } from "@/lib/api-types";
 import { riseIn, staggerParent } from "@/lib/motion";
 
-import { NoteIcon } from "./close-icons";
-
 /**
- * Vendor, period and the two case-level actions.
+ * Vendor and period.
  *
  * The title is two serif lines rather than one wrapped heading - the vendor at
  * 46px and the close item at 36px - so it is built here instead of using the
@@ -61,26 +57,9 @@ export function CaseHeader({ header }: { header: Header }) {
           </motion.div>
         </div>
 
-        <motion.div
-          variants={riseIn}
-          className="flex flex-none items-center gap-2.5 pt-1.5"
-        >
-          {/* `text-[13.5px]`, not `text-ui`: tailwind-merge groups every
-              `text-*` together, so the shared Button's own `text-ui` is
-              already eaten by its `text-ink-2`. An arbitrary length is read
-              as a font size and survives the merge. */}
-          <Button className="gap-[9px] px-3.5 py-[9px] text-[13.5px] leading-none shadow-[var(--shadow-hairline)]">
-            <NoteIcon className="text-muted-3" />
-            View case notes
-          </Button>
-          <button
-            type="button"
-            aria-label="More case actions"
-            className="flex h-9 w-[38px] cursor-pointer items-center justify-center rounded-xl border border-transparent bg-transparent text-muted-3 transition-colors duration-[160ms] ease-[var(--ease-out-soft)] hover:bg-wash"
-          >
-            <MoreIcon className="text-lead" />
-          </button>
-        </motion.div>
+        {/* The comp's "View case notes" and "..." actions opened screens
+            that have no backend behind them, so they are not drawn: an
+            affordance that leads nowhere is worse than none. */}
       </div>
     </motion.div>
   );

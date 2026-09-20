@@ -11,9 +11,14 @@ import type {
   StartResult,
   VendorsView,
 } from "./api-types";
+import type { DocumentsView, JournalsView, PeriodsView, StoryView } from "./report-types";
 
 /** Where the backend listens. Override with NEXT_PUBLIC_API_URL. */
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
+/** The file itself, served by id: the backend resolves the path, the UI never sees one. */
+export const documentFileUrl = (fileId: string) =>
+  `${API_URL}/api/documents/${encodeURIComponent(fileId)}/content`;
 
 /** The backend did not answer, as opposed to answering with an error. */
 export class BackendUnreachableError extends Error {
@@ -57,7 +62,16 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return (await response.json()) as T;
 }
 
-export const getClose = () => request<CloseView>("/api/close");
+const periodQuery = (period?: string | null) => period ? `?period=${encodeURIComponent(period)}` : "";
+
+export const getClose = (period?: string | null) => request<CloseView>(`/api/close${periodQuery(period)}`);
+export const getPeriods = () => request<PeriodsView>("/api/periods");
+export const getJournals = (period?: string | null) =>
+  request<JournalsView>(`/api/reports/journals${periodQuery(period)}`);
+export const getDocuments = (period?: string | null) =>
+  request<DocumentsView>(`/api/reports/documents${periodQuery(period)}`);
+export const getVendorStory = (vendor: string, through?: string | null) =>
+  request<StoryView>(`/api/vendors/${encodeURIComponent(vendor)}/story${through ? `?through=${encodeURIComponent(through)}` : ""}`);
 export const getObligation = (id: string) =>
   request<ObligationDetail>(`/api/obligations/${encodeURIComponent(id)}`);
 /** The Auditor's report for one obligation, or null when this build has no Auditor. */

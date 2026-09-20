@@ -20,7 +20,7 @@ export function CasesHeader({ close }: { close: CloseView }) {
               is merged alongside them (see the note in the port report). */}
           <PageTitle className="text-[46px]/[1.05]">All cases</PageTitle>
           <PageSubtitle>
-            Monitor vendor-related close workflows across the December close.
+            Monitor vendor-related close workflows for {close.period_label}.
           </PageSubtitle>
         </div>
         <CloseControls close={close} />

@@ -1,4 +1,5 @@
 import { getClose } from "@/lib/api";
+import type { SearchParams } from "@/lib/load-case";
 
 import { CasesHeader } from "./_components/cases-header";
 import { CasesWorkspace } from "./_components/cases-workspace";
@@ -21,12 +22,16 @@ export const metadata = {
  * stat captions - about 13px down the page. Belongs on `body` in globals.css;
  * see the report.
  */
-export default async function CasesPage() {
-  const close = await getClose();
+export default async function CasesPage({ searchParams }: { searchParams: SearchParams }) {
+  const params = await searchParams;
+  const close = await getClose(typeof params.period === "string" ? params.period : undefined);
   return (
     <main className="flex min-w-[900px] flex-1 flex-col overflow-hidden leading-[normal]">
       <CasesHeader close={close} />
-      <CasesWorkspace cases={toCaseRecords(close.cases)} />
+      <CasesWorkspace
+        cases={toCaseRecords(close.cases)}
+        periodLabel={close.period_label}
+      />
     </main>
   );
 }

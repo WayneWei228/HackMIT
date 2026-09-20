@@ -23,7 +23,12 @@ export type CaseStatus =
   | "Complete";
 
 export type Phase = "DAY_ONE" | "CLOSED" | "JANUARY";
-export type Decision = "APPROVE" | "REJECT" | "REQUEST_MORE_EVIDENCE";
+export type Decision =
+  | "APPROVE"
+  | "REJECT"
+  | "REQUEST_MORE_EVIDENCE"
+  | "DISPUTE_WITH_VENDOR"
+  | "ASK_VENDOR_TO_EXPLAIN";
 
 export type Row = { label: string; value: string };
 export type Person = { person_id: string; name: string; role: string };
@@ -393,6 +398,22 @@ export type ObligationDetail = {
   escalation?: Escalation | null;
   /** The case's story over time; a step is filled only once it has happened. */
   ribbon?: RibbonStep[];
+  outreach_threads?: OutreachThread[];
+};
+
+export type OutreachThread = {
+  thread_id: string;
+  topic: string;
+  status: string;
+  waiting_on: { name: string; role: string; kind: string } | null;
+  messages: {
+    from: { name: string; role: string };
+    to: { name: string; role: string };
+    subject: string;
+    body: string;
+    at: string;
+    direction: "OUT" | "IN";
+  }[];
 };
 
 export type ReplayLine = {

@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 
 import { cn } from "@/lib/cn";
-import { ChevronDownIcon, SearchIcon } from "@/components/ui/icons";
 import { transitions } from "@/lib/motion";
 
 import type { SourceTabData } from "../_view";
@@ -86,22 +85,9 @@ export function SourceTabs({
         })}
       </div>
 
-      <div className="flex flex-none items-center gap-0.5">
-        <button
-          type="button"
-          aria-label="Search sources"
-          className="flex h-8 w-[34px] cursor-pointer items-center justify-center rounded-xl border border-transparent bg-transparent text-muted-5 transition-colors duration-[160ms] ease-[var(--ease-out-soft)] hover:bg-wash"
-        >
-          <SearchIcon size={16} />
-        </button>
-        <button
-          type="button"
-          className="flex cursor-pointer items-center gap-[7px] rounded-xl border border-transparent bg-transparent px-2.5 py-2 text-sm leading-none whitespace-nowrap text-muted transition-colors duration-[160ms] ease-[var(--ease-out-soft)] hover:bg-wash"
-        >
-          Sort: Relevance
-          <ChevronDownIcon size={11} className="text-faint-2" />
-        </button>
-      </div>
+      {/* The comp's "Search sources" and "Sort: Relevance" controls opened
+          behavior that has no backend behind it, so they are not drawn: an
+          affordance that leads nowhere is worse than none. */}
     </div>
   );
 }

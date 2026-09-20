@@ -2,16 +2,14 @@
 
 import { Fragment } from "react";
 
-import { Breadcrumb, Button, PageTitle } from "@/components/ui/primitives";
-import { MoreIcon } from "@/components/ui/icons";
+import { Breadcrumb, PageTitle } from "@/components/ui/primitives";
 import { useCaseHref } from "@/lib/case-context";
 import { routes } from "@/lib/routes";
-import { CaseNotesIcon } from "./icons";
 import { useEstimationScreen } from "./screen-context";
 import { SummaryStrip } from "./summary-strip";
 
 
-/** Breadcrumb, case title, the two header actions, and the summary numbers. */
+/** Breadcrumb, case title, and the summary numbers. */
 export function CaseHeader() {
   const { header } = useEstimationScreen();
   const caseHref = useCaseHref();
@@ -47,19 +45,9 @@ export function CaseHeader() {
           </div>
         </div>
 
-        <div className="flex flex-none items-center gap-2.5 pt-1.5">
-          <Button className="gap-[9px] px-3.5 py-[9px] text-[13.5px] leading-none shadow-[var(--shadow-hairline)]">
-            <CaseNotesIcon className="text-muted-3" />
-            View case notes
-          </Button>
-          <button
-            type="button"
-            aria-label="More case actions"
-            className="flex h-9 w-[38px] cursor-pointer items-center justify-center rounded-xl border border-transparent text-muted-3 transition-colors duration-[160ms] ease-[var(--ease-out-soft)] hover:bg-wash"
-          >
-            <MoreIcon className="text-lead" />
-          </button>
-        </div>
+        {/* The comp's "View case notes" and "..." actions opened screens
+            that have no backend behind them, so they are not drawn: an
+            affordance that leads nowhere is worse than none. */}
       </div>
 
       <SummaryStrip />

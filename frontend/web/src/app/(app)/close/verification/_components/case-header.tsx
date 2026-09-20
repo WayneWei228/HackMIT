@@ -4,35 +4,13 @@ import { useShownHeader } from "@/lib/stage-status";
 
 import { motion } from "motion/react";
 
-import { Breadcrumb, Button } from "@/components/ui/primitives";
-import { MoreIcon } from "@/components/ui/icons";
+import { Breadcrumb } from "@/components/ui/primitives";
 import { CaseStatusValue } from "@/components/close/case-status-value";
 import { useCaseHref } from "@/lib/case-context";
 import { formatMoney, formatSigned } from "@/lib/money";
 import { routes } from "@/lib/routes";
 import { riseIn, staggerParent, transitions } from "@/lib/motion";
 import { useVerificationScreen } from "./screen-context";
-
-/** A page-notes glyph: the shared PageIcon plus the two ruled lines. */
-function CaseNotesIcon() {
-  return (
-    <svg width="14" height="16" viewBox="0 0 14 16" fill="none" aria-hidden="true">
-      <path
-        d="M2.2 1.6h6.3L11.8 5v9.4H2.2z"
-        stroke="#6E736A"
-        strokeWidth={1.1}
-        strokeLinejoin="round"
-      />
-      <path d="M8.5 1.6V5h3.3" stroke="#6E736A" strokeWidth={1.1} strokeLinejoin="round" />
-      <path
-        d="M4.4 8.2h5.2M4.4 10.6h3.6"
-        stroke="#6E736A"
-        strokeWidth={1.1}
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
 
 export function CaseHeader() {
   const { header: backendHeader } = useVerificationScreen();
@@ -85,25 +63,9 @@ export function CaseHeader() {
           </div>
         </div>
 
-        <div className="flex flex-none items-center gap-2.5 pt-1.5">
-          {/* text-[13.5px] restates the comp's size: `cn` treats the custom
-              `text-ui` token as a colour and drops it against `text-ink-2`;
-              restating the size then drops `leading-none`, so restate that too. */}
-          <Button
-            variant="secondary"
-            className="gap-[9px] py-[9px] text-[13.5px] leading-none shadow-[var(--shadow-hairline)]"
-          >
-            <CaseNotesIcon />
-            View case notes
-          </Button>
-          <button
-            type="button"
-            aria-label="More case actions"
-            className="flex h-9 w-[38px] cursor-pointer items-center justify-center rounded-xl border border-transparent text-muted-3 transition-colors duration-[160ms] ease-[var(--ease-out-soft)] hover:bg-wash"
-          >
-            <MoreIcon className="text-lead" />
-          </button>
-        </div>
+        {/* The comp's "View case notes" and "..." actions opened screens
+            that have no backend behind them, so they are not drawn: an
+            affordance that leads nowhere is worse than none. */}
       </div>
 
       <motion.div

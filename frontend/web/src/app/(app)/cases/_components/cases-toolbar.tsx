@@ -1,7 +1,7 @@
 "use client";
 
-import { SearchField, StatStrip, Button } from "@/components/ui/primitives";
-import { CalendarIcon, ChevronDownIcon } from "@/components/ui/icons";
+import { SearchField, StatStrip } from "@/components/ui/primitives";
+import { CalendarIcon } from "@/components/ui/icons";
 
 import { StatusFilterMenu } from "./status-filter-menu";
 import type { StatusFilter } from "../_data";
@@ -18,6 +18,7 @@ export type CaseTotals = {
 export function CasesToolbar({
   query,
   onQueryChange,
+  periodLabel,
   status,
   statusCounts,
   statusMenuOpen,
@@ -27,6 +28,7 @@ export function CasesToolbar({
 }: {
   query: string;
   onQueryChange: (query: string) => void;
+  periodLabel: string;
   status: StatusFilter;
   statusCounts: Record<StatusFilter, number>;
   statusMenuOpen: boolean;
@@ -43,15 +45,17 @@ export function CasesToolbar({
           placeholder="Search vendors or close items..."
           aria-label="Search vendors or close items"
         />
-        <Button className="text-[13.5px]/[1]">
-          <span className="text-muted-3">
-            <CalendarIcon />
-          </span>
-          December 2026
-          <span className="flex text-faint-2">
-            <ChevronDownIcon size={11} />
-          </span>
-        </Button>
+        {/* Not a button: the comp's month picker opened a period switcher
+            with no backend behind it, so this only displays the close's
+            actual period from the API instead of offering a control. */}
+        {periodLabel && (
+          <div className="flex items-center gap-2.5 rounded-xl whitespace-nowrap border border-line-soft bg-panel px-3.5 py-[11px] text-[13.5px]/[1] text-ink-2">
+            <span className="text-muted-3">
+              <CalendarIcon />
+            </span>
+            {periodLabel}
+          </div>
+        )}
         <StatusFilterMenu
           value={status}
           counts={statusCounts}

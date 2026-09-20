@@ -15,11 +15,14 @@ export function CasesEmptyState({
   onClear,
   instant = false,
   noCases = false,
+  periodLabel,
 }: {
   onClear: () => void;
   instant?: boolean;
   /** The close has opened nothing yet, as opposed to filters hiding everything. */
   noCases?: boolean;
+  /** The month on screen, as the API names it ("January 2027"). */
+  periodLabel: string;
 }) {
   return (
     <motion.div
@@ -33,8 +36,9 @@ export function CasesEmptyState({
         {noCases ? "No cases yet" : "No cases match"}
       </div>
       <div className="text-ui text-faint">
+        {/* A month can hold ledger entries and still no case: January carries December's reversals. */}
         {noCases
-          ? "Run the December close to open one case for each vendor."
+          ? `No accrual case was opened for ${periodLabel}. What the ledger posted that month is under Journals.`
           : "Try a different search term or clear the filters."}
       </div>
       {/* `cn` drops the custom `text-ui` token when a colour merges over it,

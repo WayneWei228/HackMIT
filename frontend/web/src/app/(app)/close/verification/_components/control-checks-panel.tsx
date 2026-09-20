@@ -4,7 +4,6 @@ import { AnimatePresence, motion } from "motion/react";
 
 import { cn } from "@/lib/cn";
 import { PendingRows } from "@/components/close/pending-rows";
-import { MoreIcon } from "@/components/ui/icons";
 import { useStagePending } from "@/lib/stage-reveal";
 import { easeOutSoft } from "@/lib/motion";
 import type { ControlView, ScanView } from "../_data";
@@ -201,13 +200,9 @@ export function ControlChecksPanel({
         </div>
         <div className="flex flex-none items-center gap-2">
           <span className="text-ui text-ink-2 tabular-nums">{controlCount}</span>
-          <button
-            type="button"
-            aria-label="Control check options"
-            className="-mr-1 flex h-[26px] w-[26px] cursor-pointer items-center justify-center rounded-md border border-transparent text-faint-3 transition-colors duration-[160ms] ease-[var(--ease-out-soft)] hover:bg-wash"
-          >
-            <MoreIcon className="text-body" />
-          </button>
+          {/* The comp's "..." control check options opened a menu that has no
+              backend behind it, so it is not drawn: an affordance that leads
+              nowhere is worse than none. */}
         </div>
       </div>
 

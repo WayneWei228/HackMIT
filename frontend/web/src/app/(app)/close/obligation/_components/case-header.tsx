@@ -6,18 +6,15 @@ import { motion } from "motion/react";
 
 import {
   Breadcrumb,
-  Button,
   PageTitle,
   SectionLabel,
 } from "@/components/ui/primitives";
-import { MoreIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/cn";
 import { riseIn, staggerParent, transitions } from "@/lib/motion";
 import { CaseStatusValue } from "@/components/close/case-status-value";
 import { useCaseHref } from "@/lib/case-context";
 import { formatMoney, formatSigned } from "@/lib/money";
 import { routes } from "@/lib/routes";
-import { CaseNotesIcon } from "./glyphs";
 import { useObligationScreen } from "./screen-context";
 
 /**
@@ -74,22 +71,9 @@ export function CaseHeader() {
           </div>
         </div>
 
-        <div className="flex flex-none items-center gap-2.5 pt-1.5">
-          {/* leading-none has to come after the size: tailwind-merge treats a
-              font size as conflicting with a line-height, so the primitive's
-              own leading-none is dropped when a size arrives after it. */}
-          <Button className="gap-[9px] px-3.5 py-[9px] text-[13.5px] leading-none shadow-[var(--shadow-hairline)]">
-            <CaseNotesIcon className="text-muted-3" />
-            View case notes
-          </Button>
-          <button
-            type="button"
-            aria-label="More case actions"
-            className="flex h-9 w-[38px] cursor-pointer items-center justify-center rounded-xl border border-transparent bg-transparent text-muted-3 transition-colors duration-[160ms] ease-[var(--ease-out-soft)] hover:bg-wash"
-          >
-            <MoreIcon className="text-[15px]" />
-          </button>
-        </div>
+        {/* The comp's "View case notes" and "..." actions opened screens
+            that have no backend behind them, so they are not drawn: an
+            affordance that leads nowhere is worse than none. */}
       </div>
 
       <motion.div

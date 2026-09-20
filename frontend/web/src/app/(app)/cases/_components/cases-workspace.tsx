@@ -50,9 +50,11 @@ function matchesFilters(
  */
 export function CasesWorkspace({
   cases: backendCases,
+  periodLabel,
   animateRows = true,
 }: {
   cases: readonly CaseRecord[];
+  periodLabel: string;
   animateRows?: boolean;
 }) {
   const cases = useLiveRecords(backendCases);
@@ -169,6 +171,7 @@ export function CasesWorkspace({
         <CasesToolbar
           query={query}
           onQueryChange={setQuery}
+          periodLabel={periodLabel}
           status={status}
           statusCounts={statusCounts}
           statusMenuOpen={statusMenuOpen}
@@ -192,6 +195,7 @@ export function CasesWorkspace({
         onClearFilters={clearFilters}
         animateRows={animateRows}
         noCases={cases.length === 0}
+        periodLabel={periodLabel}
       />
     </>
   );

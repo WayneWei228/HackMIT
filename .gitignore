@@ -4,3 +4,4 @@
 # Editor/OS cruft
 *.swp
 Thumbs.db
+.gstack/

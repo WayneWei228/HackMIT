@@ -171,13 +171,15 @@ def _workpaper(session: Session, ob: m.TrueUpObligation) -> m.TrueUpWorkpaper | 
     return session.get(m.TrueUpWorkpaper, ob.current_workpaper_id)
 
 
-def _period_obligations(session: Session, period: str) -> list[m.TrueUpObligation]:
+def _period_obligations(
+    session: Session, period: str, *, include_history: bool = False
+) -> list[m.TrueUpObligation]:
+    query = select(m.TrueUpObligation).where(m.TrueUpObligation.period == period)
+    if not include_history:
+        query = query.where(~m.TrueUpObligation.obligation_id.like(f"{HISTORY_PREFIX}%"))
     return list(
         session.scalars(
-            select(m.TrueUpObligation)
-            .where(m.TrueUpObligation.period == period)
-            .where(~m.TrueUpObligation.obligation_id.like(f"{HISTORY_PREFIX}%"))
-            .order_by(m.TrueUpObligation.opened_at, m.TrueUpObligation.obligation_id)
+            query.order_by(m.TrueUpObligation.opened_at, m.TrueUpObligation.obligation_id)
         )
     )
 
@@ -264,12 +266,17 @@ def close_view(
     now: datetime,
     universe: FileUniverse,
     moments: timeline.Moments,
+    archived: bool = False,
 ) -> v.CloseView:
     people = _config(session, "people") or []
     names = {p["person_id"]: p["name"] for p in people}
     controller = controller_id(session)
-    obligations = _period_obligations(session, period)
+    obligations = _period_obligations(session, period, include_history=archived)
     rows = [case_row(session, ob, phase=phase, universe=universe) for ob in obligations]
+    if archived:
+        for row in rows:
+            row.can_start = False
+            row.current_agent = None
     pending = session.scalars(
         select(m.TrueUpLearningRule).where(
             m.TrueUpLearningRule.status == e.LearningStatus.REPLAY_PASSED
@@ -287,10 +294,15 @@ def close_view(
         queue_count=len(review_queue(session, now=now)),
         pending_rules=len(pending),
         actions=v.CloseActions(
-            can_run_close=phase != "JANUARY" and any(is_pending(ob) for ob in obligations),
-            can_advance_to_january=phase == "CLOSED"
+            can_run_close=not archived
+            and phase != "JANUARY"
+            and any(is_pending(ob) for ob in obligations),
+            can_advance_to_january=not archived
+            and phase == "CLOSED"
             and not any(is_pending(ob) for ob in obligations),
-            can_advance_to_vendor_reply=phase == "JANUARY" and _has_open_request(session),
+            can_advance_to_vendor_reply=not archived
+            and phase == "JANUARY"
+            and _has_open_request(session),
         ),
         timeline=timeline.clock_stops(
             phase=phase, now=now, moments=moments, counts=_clock_counts(session, obligations)
@@ -1092,7 +1104,9 @@ def _outreach(cards: list[m.TrueUpEvidence]) -> list[v.OutreachMessage]:
                 body=value.get("body") if request else (card.source_excerpt or card.fact),
                 to=value.get("recipient_email"),
                 at=value.get("sent_at") or utc_iso(card.created_at),
-                status=card.status.value,
+                # A closed request says why it closed (ANSWERED, EXPIRED), not that its evidence
+                # card was superseded.
+                status=value.get("closed_reason") or card.status.value,
             )
         )
     return messages

@@ -1,28 +1,34 @@
 import { AppShell } from "@/components/shell/app-shell";
 import { AppProviders } from "@/components/shell/providers";
 import type { SidebarIdentity } from "@/components/shell/sidebar";
-import { getClose } from "@/lib/api";
+import { getClose, getPeriods } from "@/lib/api";
 import type { CloseView } from "@/lib/api-types";
+import type { PeriodsView } from "@/lib/report-types";
 
 /** Every screen shows live backend state, so nothing here is prerendered at build time. */
 export const dynamic = "force-dynamic";
 
-/** The close, or null when the backend is not reachable, so the sidebar can say so. */
-async function readClose(): Promise<CloseView | null> {
+type Shell = { close: CloseView; calendar: PeriodsView };
+
+/** The close and its calendar, or null when the backend is not reachable, so the sidebar can say so. */
+async function readShell(): Promise<Shell | null> {
   try {
-    return await getClose();
+    const [close, calendar] = await Promise.all([getClose(), getPeriods()]);
+    return { close, calendar };
   } catch {
     return null;
   }
 }
 
 /** The user the app acts for is the configured Controller; without a backend the sidebar says so. */
-function identityOf(close: CloseView | null): SidebarIdentity | undefined {
-  if (!close) return undefined;
+function identityOf(shell: Shell | null): SidebarIdentity | undefined {
+  if (!shell) return undefined;
+  const { close, calendar } = shell;
   return {
     periodLabel: close.period_label,
     controllerName: close.controller_name,
     controllerRole: close.people.find((p) => p.person_id === close.controller_id)?.role ?? "Controller",
+    calendar,
   };
 }
 
@@ -35,10 +41,10 @@ export default async function AppLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const close = await readClose();
+  const shell = await readShell();
   return (
     <AppProviders>
-      <AppShell identity={identityOf(close)} close={close}>
+      <AppShell identity={identityOf(shell)} close={shell?.close ?? null}>
         {children}
       </AppShell>
     </AppProviders>

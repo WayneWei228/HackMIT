@@ -24,6 +24,7 @@ export function CaseTable({
   onClearFilters,
   animateRows = true,
   noCases = false,
+  periodLabel,
 }: {
   rows: CaseRecord[];
   sortKey: SortKey;
@@ -32,6 +33,7 @@ export function CaseTable({
   onClearFilters: () => void;
   animateRows?: boolean;
   noCases?: boolean;
+  periodLabel: string;
 }) {
   const reduceMotion = useReducedMotion();
 
@@ -82,6 +84,7 @@ export function CaseTable({
           onClear={onClearFilters}
           instant={!!reduceMotion}
           noCases={noCases}
+          periodLabel={periodLabel}
         />
       )}
     </div>
