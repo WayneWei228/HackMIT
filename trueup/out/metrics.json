@@ -1,0 +1,156 @@
+{
+  "baseline_live": {
+    "label": "FROZEN BASELINE / live",
+    "periods": [
+      "2026-12"
+    ],
+    "cases_graded": 14,
+    "mean_absolute_error": "378.23",
+    "median_absolute_percent_error": "0.00",
+    "total_absolute_variance": "5295.26",
+    "total_signed_variance": "5295.26",
+    "material_variance_count": 1,
+    "material_variance_rate": "7.14",
+    "obligations": 16,
+    "posted_accruals": 14,
+    "no_accrual_decisions": 1,
+    "correct_no_accrual_decisions": 1,
+    "duplicate_accruals": 0,
+    "duplicate_accrual_rate": "0.00",
+    "escalations": 4,
+    "escalation_rate": "25.00",
+    "autonomous_postings": 11,
+    "false_autonomy_count": 1,
+    "autonomous_action_precision": "90.91",
+    "rule_replay_regressions": 0,
+    "active_rules": 0
+  },
+  "calibrated_live": {
+    "label": "CALIBRATED AGENT / live",
+    "periods": [
+      "2026-12"
+    ],
+    "cases_graded": 14,
+    "mean_absolute_error": "30.86",
+    "median_absolute_percent_error": "0.00",
+    "total_absolute_variance": "432.00",
+    "total_signed_variance": "432.00",
+    "material_variance_count": 1,
+    "material_variance_rate": "7.14",
+    "obligations": 16,
+    "posted_accruals": 14,
+    "no_accrual_decisions": 1,
+    "correct_no_accrual_decisions": 1,
+    "duplicate_accruals": 0,
+    "duplicate_accrual_rate": "0.00",
+    "escalations": 4,
+    "escalation_rate": "25.00",
+    "autonomous_postings": 11,
+    "false_autonomy_count": 1,
+    "autonomous_action_precision": "90.91",
+    "rule_replay_regressions": 0,
+    "active_rules": 1
+  },
+  "baseline_all": {
+    "label": "FROZEN BASELINE / all periods",
+    "periods": "ALL",
+    "cases_graded": 115,
+    "mean_absolute_error": "331.70",
+    "median_absolute_percent_error": "0.00",
+    "total_absolute_variance": "38145.26",
+    "total_signed_variance": "38055.26",
+    "material_variance_count": 2,
+    "material_variance_rate": "1.74",
+    "obligations": 148,
+    "posted_accruals": 115,
+    "no_accrual_decisions": 12,
+    "correct_no_accrual_decisions": 12,
+    "duplicate_accruals": 0,
+    "duplicate_accrual_rate": "0.00",
+    "escalations": 29,
+    "escalation_rate": "19.59",
+    "autonomous_postings": 87,
+    "false_autonomy_count": 1,
+    "autonomous_action_precision": "98.85",
+    "rule_replay_regressions": 0,
+    "active_rules": 0
+  },
+  "calibrated_all": {
+    "label": "CALIBRATED AGENT / all periods",
+    "periods": "ALL",
+    "cases_graded": 115,
+    "mean_absolute_error": "289.41",
+    "median_absolute_percent_error": "0.00",
+    "total_absolute_variance": "33282.00",
+    "total_signed_variance": "33192.00",
+    "material_variance_count": 2,
+    "material_variance_rate": "1.74",
+    "obligations": 148,
+    "posted_accruals": 115,
+    "no_accrual_decisions": 12,
+    "correct_no_accrual_decisions": 12,
+    "duplicate_accruals": 0,
+    "duplicate_accrual_rate": "0.00",
+    "escalations": 29,
+    "escalation_rate": "19.59",
+    "autonomous_postings": 87,
+    "false_autonomy_count": 1,
+    "autonomous_action_precision": "98.85",
+    "rule_replay_regressions": 0,
+    "active_rules": 1
+  },
+  "comparison_live": {
+    "mean_absolute_error": {
+      "baseline": "378.23",
+      "calibrated": "30.86",
+      "delta": "-347.37",
+      "improved": true
+    },
+    "median_absolute_percent_error": {
+      "baseline": "0.00",
+      "calibrated": "0.00",
+      "delta": "0.00",
+      "improved": null
+    },
+    "total_absolute_variance": {
+      "baseline": "5295.26",
+      "calibrated": "432.00",
+      "delta": "-4863.26",
+      "improved": true
+    },
+    "material_variance_rate": {
+      "baseline": "7.14",
+      "calibrated": "7.14",
+      "delta": "0.00",
+      "improved": null
+    },
+    "duplicate_accrual_rate": {
+      "baseline": "0.00",
+      "calibrated": "0.00",
+      "delta": "0.00",
+      "improved": null
+    },
+    "false_autonomy_count": {
+      "baseline": "1",
+      "calibrated": "1",
+      "delta": "0",
+      "improved": null
+    },
+    "autonomous_action_precision": {
+      "baseline": "90.91",
+      "calibrated": "90.91",
+      "delta": "0.00",
+      "improved": null
+    },
+    "escalation_rate": {
+      "baseline": "25.00",
+      "calibrated": "25.00",
+      "delta": "0.00",
+      "improved": null
+    },
+    "active_rules": {
+      "baseline": 0,
+      "calibrated": 1
+    }
+  }
+}

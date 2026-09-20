@@ -41,3 +41,28 @@ Located in `output/pdf/startup_minimal_data/`:
 
 `out/classifications.json` — one record per vendor case with category,
 expected amount, and key evidence quoted from the PDFs.
+
+---
+
+## TrueUp backend (`trueup/`)
+
+The `trueup/` directory on this branch contains the full agentic month-end
+accrual backend: FastAPI + SQLAlchemy, 13 tables, 12 agent services, a seeded
+company simulator, an 11-month historical backtest, and the replay-gated
+learning loop that produces `trueup/out/improvements.md`.
+
+The classifier above (`classify_documents.py`) established the four vendor cases
+from the source PDFs. TrueUp reproduces all four to the cent as part of its
+December 2026 close, then goes further: it posts balanced simulated journal
+entries, waits for the later invoices to grade those estimates, diagnoses the
+variances against recorded evidence, and replay-tests candidate rules before a
+Controller may activate them.
+
+```bash
+cd trueup
+python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+.venv/bin/python -m pytest -q        # 44 tests, no API key needed
+.venv/bin/python scripts/run_demo.py # baseline vs calibrated, 12 months
+```
+
+See `trueup/README.md` for the design decisions and measured results.
