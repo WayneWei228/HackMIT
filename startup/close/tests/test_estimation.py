@@ -1,0 +1,130 @@
+from close import classifier, detection, estimation, improvements, invoice_lookup, store
+
+from .fakes import FakeLLM, make_ws
+
+P = "2026-12"
+YEAR = {"validity_start": "2026-09-01", "validity_end": "2027-08-31"}
+HEADERS = [
+    {"po_number": "PO-001", "vendor_id": "V001", "order_type": "FO", "status": "Open", **YEAR},
+    {"po_number": "PO-002", "vendor_id": "V002", "order_type": "FO", "status": "Open", **YEAR},
+    {"po_number": "PO-003", "vendor_id": "V003", "order_type": "NB", "status": "Open", "validity_start": None, "validity_end": None},
+    {"po_number": "CAMPAIGN-004", "vendor_id": "V004", "order_type": "NB", "status": "Open", "validity_start": "2026-12-01", "validity_end": "2026-12-31"},
+]
+LINES = [
+    {"po_line_id": "PO-001-001", "po_number": "PO-001", "item_category": "P", "contract_id": "CTR-001", "gr_required": False, "unit_price": 1200, "line_description": "a"},
+    {"po_line_id": "PO-002-001", "po_number": "PO-002", "item_category": "B", "contract_id": "CTR-002", "gr_required": False, "line_description": "b"},
+    {"po_line_id": "PO-003-001", "po_number": "PO-003", "item_category": "", "contract_id": None, "gr_required": True, "quantity_ordered": 25,
+     "unit_price": 1600, "quantity_received": 20, "quantity_billed": 0, "line_description": "c"},
+    {"po_line_id": "CAMPAIGN-004-001", "po_number": "CAMPAIGN-004", "item_category": "B", "contract_id": None, "gr_required": False, "overall_limit": 30000, "line_description": "d"},
+]
+CONTRACTS = [
+    {"contract_id": "CTR-001", "version": 1, "monthly_rate": 1200.0, "unit_rate": None, "effective_start": "2026-01-01", "effective_end": "2026-11-30", "status": "Superseded"},
+    {"contract_id": "CTR-001", "version": 2, "monthly_rate": 1400.0, "unit_rate": None, "effective_start": "2026-12-01", "effective_end": None, "status": "Active"},
+    {"contract_id": "CTR-002", "version": 1, "monthly_rate": None, "unit_rate": 0.02, "effective_start": "2026-01-01", "effective_end": None, "status": "Active"},
+]
+HISTORY = [{"invoice_id": f"INV-OPENAI-{m}", "vendor_id": "V002", "po_line_id": "PO-002-001", "service_period": f"2026-{m}", "amount": a, "status": "POSTED"}
+           for m, a in (("09", 14200.0), ("10", 16800.0), ("11", 15500.0))]
+PARTIAL = {"activity_id": "USG-DEC", "po_line_id": "PO-002-001", "kind": "USAGE", "service_period": P, "coverage_start": "2026-12-01",
+           "coverage_end": "2026-12-25", "quantity": 700000.0, "value": None, "replaced_by": None}
+FULL = {**PARTIAL, "activity_id": "USG-DEC-FINAL", "coverage_end": "2026-12-31", "quantity": 930000.0}
+DELIVERY = {"activity_id": "META-DEL", "po_line_id": "CAMPAIGN-004-001", "kind": "DELIVERY", "service_period": P, "value": 24700.0, "replaced_by": None}
+
+
+def close(tmp_path, llm=None, activity=(), invoices=HISTORY, lessons=None):
+    ws = make_ws(tmp_path)
+    for name, rows in (("po_headers", HEADERS), ("po_lines", LINES), ("contracts", CONTRACTS), ("invoices", list(invoices)), ("activity", list(activity))):
+        store.save_table(ws, name, rows)
+    if lessons:
+        improvements.path(ws).write_text(lessons)
+    llm = llm or FakeLLM(read_description=lambda v: {"category": None, "confidence": 0.0})
+    detection.run(ws, P)
+    invoice_lookup.run(ws, P)
+    classifier.run(ws, llm, P)
+    return ws, {c["case_key"]: c for c in estimation.run(ws, llm, P)}
+
+
+def test_base_formulas_without_lessons(tmp_path):
+    _, cases = close(tmp_path, activity=[FULL, DELIVERY])
+    est = {k: c["estimate"] for k, c in cases.items()}
+    assert (est["PO-001-001"]["estimator"], est["PO-001-001"]["amount"], est["PO-001-001"]["calculation"]) == ("PO_RATE", 1200.0, "1200")
+    assert (est["PO-002-001"]["estimator"], est["PO-002-001"]["amount"], est["PO-002-001"]["calculation"]) == ("USAGE_X_RATE", 18600.0, "930000 * 0.02")
+    assert (est["PO-003-001"]["amount"], est["PO-003-001"]["calculation"]) == (32000.0, "1600 * (20 - 0)")       # not the 40,000 ordered
+    assert (est["CAMPAIGN-004-001"]["amount"], est["CAMPAIGN-004-001"]["calculation"]) == (24700.0, "24700")    # not the 30,000 cap
+    assert all(c["status"] == "ESTIMATED" and c["estimate"]["complete"] and c["flags"] == [] for c in cases.values())
+    assert [d["action"] for d in cases["PO-003-001"]["decision_log"] if d["worker"] == "estimation"][-2:] == ["RECEIVED_X_PRICE", "ESTIMATE_REQUIRED -> ESTIMATED"]
+
+
+def test_partial_usage_forces_the_three_month_average(tmp_path):
+    _, cases = close(tmp_path, activity=[PARTIAL])
+    e = cases["PO-002-001"]["estimate"]
+    assert (e["estimator"], e["amount"], e["calculation"], e["complete"], e["forced"]) == ("TRAILING_AVERAGE", 15500.0, "(14200 + 16800 + 15500) / 3", False, True)
+    assert e["missing"] == "usage after 2026-12-25" and cases["PO-002-001"]["flags"] == ["FORCED_ESTIMATE"]
+
+
+def test_forced_estimate_is_never_below_the_partial_report(tmp_path):
+    low = [dict(i, amount=9000.0) for i in HISTORY]
+    _, cases = close(tmp_path, activity=[PARTIAL], invoices=low)
+    assert cases["PO-002-001"]["estimate"]["amount"] == 14000.0  # 700,000 x 0.02 already used
+
+
+def test_nothing_delivered_is_not_accrued_at_the_cap(tmp_path):
+    _, cases = close(tmp_path)
+    c = cases["CAMPAIGN-004-001"]
+    assert c["estimate"]["amount"] is None and c["estimate"]["missing"] == "delivery report for the period"
+    assert c["status"] == "OUTREACH_PENDING" and c["flags"] == ["MISSING_DATA"]
+
+
+def test_invoiced_cases_are_not_estimated_and_ambiguous_ones_go_to_review(tmp_path):
+    dec = {"invoice_id": "INV-DEC", "vendor_id": "V001", "po_line_id": "PO-001-001", "service_period": P, "amount": 1200.0, "status": "QUEUE"}
+    dupes = [{"invoice_id": f"D{i}", "vendor_id": "V002", "po_line_id": "PO-002-001", "service_period": P, "amount": 500.0, "status": "QUEUE"} for i in (1, 2)]
+    _, cases = close(tmp_path, invoices=[*HISTORY, dec, *dupes])
+    assert cases["PO-001-001"]["status"] == "INVOICED" and cases["PO-001-001"]["estimate"] is None
+    assert cases["PO-002-001"]["status"] == "REVIEW" and cases["PO-002-001"]["estimate"] is None
+
+
+LESSONS = """## RECURRING_FIXED
+- [ACTIVE] I-001: Before copying the PO line rate, find the contract version in effect for the
+  service period. If it differs, use the contract rate and raise DATA_MISMATCH.
+- [PROPOSED] I-009: Not approved yet.
+
+## RECURRING_VARIABLE
+- [ACTIVE] I-002: When a usage report covers only part of the period, extend its daily rate to the full period.
+"""
+
+
+def lesson_llm(**replies):
+    def apply(variables):
+        return replies[variables["CATEGORY"]]
+    return FakeLLM(read_description=lambda v: {"category": None, "confidence": 0.0}, apply_improvements=apply)
+
+
+def test_parse_improvements():
+    lessons = improvements.parse(LESSONS)
+    assert [(l["id"], l["status"], l["category"]) for l in lessons] == [("I-001", "ACTIVE", "RECURRING_FIXED"), ("I-009", "PROPOSED", "RECURRING_FIXED"), ("I-002", "ACTIVE", "RECURRING_VARIABLE")]
+    assert lessons[0]["text"].endswith("use the contract rate and raise DATA_MISMATCH.")
+
+
+def test_active_lessons_correct_the_base_and_code_recomputes(tmp_path):
+    llm = lesson_llm(
+        RECURRING_FIXED={"calculation": "1400", "lessons_applied": ["I-001"], "sources": ["CTR-001 v2"], "mismatch": "PO line says 1200, contract v2 says 1400", "explanation": "x"},
+        RECURRING_VARIABLE={"calculation": "700000 / 25 * 31 * 0.02", "lessons_applied": ["I-002"], "sources": ["USG-DEC"], "mismatch": None, "explanation": "y"})
+    _, cases = close(tmp_path, llm=llm, activity=[PARTIAL, DELIVERY], lessons=LESSONS)
+    fixed, variable = cases["PO-001-001"], cases["PO-002-001"]
+    assert (fixed["estimate"]["amount"], fixed["estimate"]["base"]["amount"], fixed["estimate"]["lessons_applied"]) == (1400.0, 1200.0, ["I-001"])
+    assert fixed["flags"] == ["DATA_MISMATCH"] and fixed["estimate"]["mismatch"].startswith("PO line says 1200")
+    assert (variable["estimate"]["amount"], variable["estimate"]["base"]["amount"]) == (17360.0, 15500.0)
+    assert variable["estimate"]["forced"] is True and variable["flags"] == ["FORCED_ESTIMATE"]   # better number, still incomplete evidence
+    calls = [v for name, v in llm.calls if name == "apply_improvements"]
+    assert sorted(v["CATEGORY"] for v in calls) == ["RECURRING_FIXED", "RECURRING_VARIABLE"]      # no lessons for the one-time categories: no call
+    assert "I-009" not in calls[0]["LESSONS"] and calls[0]["FACTS"]["contract_in_effect"]["monthly_rate"] == 1400.0
+
+
+def test_bad_corrections_never_replace_the_base(tmp_path):
+    for i, reply in enumerate([
+        {"calculation": "1999", "lessons_applied": ["I-001"]},                       # a number that is nowhere in the facts
+        {"calculation": "__import__('os')", "lessons_applied": ["I-001"]},           # not arithmetic
+        {"calculation": "1400", "lessons_applied": ["I-404"]},                       # cites a lesson that is not active
+        {"calculation": "1400", "lessons_applied": []},                              # model says no lesson applies
+    ]):
+        _, cases = close(tmp_path / str(i), llm=lesson_llm(RECURRING_FIXED=reply, RECURRING_VARIABLE=reply), lessons=LESSONS)
+        assert cases["PO-001-001"]["estimate"]["amount"] == 1200.0 and cases["PO-001-001"]["estimate"]["lessons_applied"] == []

@@ -1,11 +1,12 @@
-"""Run the workers built so far (Evidence, Detection, Invoice Lookup, Classification) month by month on a folder of PDFs.
+"""Run the workers built so far (Evidence, Detection, Invoice Lookup, Classification, Estimation) month by month on a folder of PDFs.
 
     cd startup && ../.venv/bin/python -m close.try_run ../output/pdf/startup_minimal_data [2026-12 ...] [--fresh]
 
 <pdf_dir>/<YYYY-MM>/ holds the documents of that month. Each monthly run reads ONLY its own folder; what earlier
 months established (contracts, invoices) is already in the db, exactly as in a real close. With no period given,
 every month folder is run in order. The clock of a run is the 5th of the following month.
-Everything is written under close/_run/try/ (git-ignored).
+Everything is written under close/_run/try/ (git-ignored). Estimation reads close/_run/try/state/improvements.md if it
+exists; --improvements FILE copies a lessons file there first (it survives --fresh).
 """
 import argparse
 import json
@@ -13,7 +14,7 @@ import re
 import shutil
 from pathlib import Path
 
-from . import classifier, detection, evidence, invoice_lookup, store
+from . import classifier, detection, estimation, evidence, improvements, invoice_lookup, store
 from .llm import bedrock_llm
 from .workspace import CLOSE_DIR, Workspace
 
@@ -54,7 +55,7 @@ def show(title: str, rows: list[dict], cols: tuple[str, ...]) -> None:
         print("    " + "  ".join(f"{c}={r.get(c)}" for c in cols))
 
 
-def snapshot(ws, period: str, documents: list[dict], cases: list[dict], matched: list[dict], classified: list[dict]) -> None:
+def snapshot(ws, period: str, documents: list[dict], cases: list[dict], matched: list[dict], classified: list[dict], estimated: list[dict]) -> None:
     """Freeze what each worker produced for this month under out/<period>/, so later months do not overwrite it."""
     out = ws.out_dir / period
     shutil.rmtree(out, ignore_errors=True)
@@ -85,6 +86,15 @@ def snapshot(ws, period: str, documents: list[dict], cases: list[dict], matched:
                "output_classification": c["classification"], "flags": [f for f in c["flags"] if f.startswith("CLASSIFICATION_")],
                "decision": [d for d in c["decision_log"] if d["worker"] == "classifier"]}
         (out / "classification" / f"{c['case_key']}.json").write_text(json.dumps(one, indent=2))
+    (out / "estimation").mkdir()
+    (out / "estimation" / "cases.json").write_text(json.dumps(estimated, indent=2))
+    for c in estimated:  # one file per PO line: the facts it used, the calculation, and the result
+        one = {"case_id": c["case_id"], "status": c["status"], "category": (c["classification"] or {}).get("final"),
+               "invoice_result": c["invoice_match"]["result"],
+               "input_facts": estimation.gather(ws, c) if c["estimate"] else None,
+               "output_estimate": c["estimate"], "flags": c["flags"],
+               "decision": [d for d in c["decision_log"] if d["worker"] == "estimation"]}
+        (out / "estimation" / f"{c['case_key']}.json").write_text(json.dumps(one, indent=2))
     invoices = store.visible(store.load_table(ws, "invoices"), ws.as_of)
     for c in matched:  # one file per detected PO line: what lookup saw, and what it concluded
         same_line = [i for i in invoices if i.get("po_line_id") == c["po_line_id"]]
@@ -100,6 +110,7 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("pdf_dir", type=Path)
     ap.add_argument("periods", nargs="*", help="months to run, e.g. 2026-12 (default: every month folder, in order)")
+    ap.add_argument("--improvements", type=Path, help="a lessons file to install as state/improvements.md before the run")
     ap.add_argument("--fresh", action="store_true", help="wipe close/_run/try first (otherwise earlier months and unchanged documents are kept)")
     args = ap.parse_args()
 
@@ -107,6 +118,9 @@ def main() -> None:
     if args.fresh:
         shutil.rmtree(root, ignore_errors=True)
     build_world(root / "world", args.pdf_dir)
+    if args.improvements:
+        (root / "state").mkdir(parents=True, exist_ok=True)
+        shutil.copy(args.improvements, root / "state" / "improvements.md")
     periods = args.periods or sorted(p.name for p in args.pdf_dir.iterdir() if re.fullmatch(r"\d{4}-\d{2}", p.name))
     ws = Workspace(world_dir=root / "world", db_dir=root / "db", state_dir=root / "state", out_dir=root / "out",
                    as_of=close_clock(periods[0])).ensure()
@@ -141,7 +155,20 @@ def main() -> None:
             k = c["classification"]
             read = f"{k['model']} ({k['model_confidence']:.2f}{', cached' if k['cache_hit'] else ''})" if k["model"] else "no answer"
             print(f"  {c['case_key']:<18} rules={k['rules']:<19} model={read:<34} final={k['final']}  {[f for f in c['flags'] if f.startswith('CLASS')] or ''}")
-        snapshot(ws, period, done, detected, looked_up, classified)
+        classified = json.loads(json.dumps(classified))
+        active = [l["id"] for l in improvements.load(ws) if l["status"] == "ACTIVE"]
+        print(f"\n  --- Estimation for {period} (input: cases + Evidence tables + improvements.md; active lessons: {active or 'none'}) ---")
+        estimated = estimation.run(ws, bedrock_llm, period)
+        for c in estimated:
+            e = c["estimate"]
+            if e is None:
+                print(f"  {c['case_key']:<18} {c['status']:<17} not estimated ({c['invoice_match']['result']})")
+                continue
+            amount = "       n/a" if e["amount"] is None else f"{e['amount']:>10,.2f}"
+            note = f"  lessons {e['lessons_applied']} (base {e['base']['amount']})" if e["lessons_applied"] else ""
+            note += f"  MISSING: {e['missing']}" if e["missing"] else ""
+            print(f"  {c['case_key']:<18} {c['status']:<17} {amount} = {e['calculation']}  [{e['estimator']}]{note}")
+        snapshot(ws, period, done, detected, looked_up, classified, estimated)
 
     print(f"\n=== db after {periods[-1]} ===")
     show("contracts", store.load_table(ws, "contracts"),
@@ -150,7 +177,7 @@ def main() -> None:
     show("activity", store.load_table(ws, "activity"),
          ("activity_id", "po_line_id", "kind", "service_period", "coverage_start", "coverage_end", "quantity", "value"))
     show("goods_receipts", store.load_table(ws, "goods_receipts"), ("gr_id", "po_line_id", "received_date", "quantity"))
-    print(f"\nPer-month output files: {root / 'out'}/<YYYY-MM>/ (evidence, detection, invoice_lookup, classification)")
+    print(f"\nPer-month output files: {root / 'out'}/<YYYY-MM>/ (evidence, detection, invoice_lookup, classification, estimation)")
 
 
 if __name__ == "__main__":
