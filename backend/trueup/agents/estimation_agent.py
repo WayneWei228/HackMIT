@@ -598,7 +598,13 @@ def _fixed(ctx: Context) -> Estimate:
     if card_warnings:
         inputs["rate_source"] = "document"
         # A card that an amendment superseded is not a conflict: it documented the old fee.
-        rates |= {c.fee for day in days for c in _document_fee_candidates(ctx, day)}
+        currency = _obligation_currency(ctx)
+        rates |= {
+            c.fee
+            for day in days
+            for c in _document_fee_candidates(ctx, day)
+            if c.currency == currency
+        }
     return Estimate(
         method=e.EstimationMethod.FIXED_CONTRACT_RATE,
         amount=_round(raw),
