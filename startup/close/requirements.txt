@@ -1,0 +1,4 @@
+typesafe-sdk
+openai
+python-dotenv
+pytest
